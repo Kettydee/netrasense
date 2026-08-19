@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { property: "og:description", content: "Live obstacle telemetry and caregiver quick-glance panel." },
     ],
   }),
-  component: DashboardPage;
+  component: DashboardPage,
 });
 
 function StatCard({
