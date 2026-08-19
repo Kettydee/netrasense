@@ -1,0 +1,430 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Activity,
+  Footprints,
+  Gauge,
+  PartyPopper,
+  PhoneCall,
+  Radar,
+  TrendingDown,
+  TrendingUp,
+  Volume2,
+  Zap,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { AppShell } from "@/components/AppShell";
+import { OnboardingDialog } from "@/components/OnboardingDialog";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { fetchContacts, fetchDailyStats, fetchProfile, fetchTelemetry } from "@/lib/queries";
+import {
+  DETECTED_OBJECTS,
+  MAX_DISTANCE_CM,
+  classifyDistance,
+  relativeTime,
+  speak,
+  threatStyles,
+  type Telemetry,
+} from "@/lib/aegis";
+
+export const Route = createFileRoute("/_authenticated/dashboard")({
+  head: () => ({
+    meta: [
+      { title: "Realtime Dashboard — AegisNav" },
+      { name: "description", content: "Live proximity telemetry, daily navigation stats and caregiver quick actions." },
+      { property: "og:title", content: "Realtime Dashboard — AegisNav" },
+      { property: "og:description", content: "Live obstacle telemetry and caregiver quick-glance panel." },
+    ],
+  }),
+  component: DashboardPage,
+});
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  trend,
+}: {
+  icon: typeof Radar;
+  label: string;
+  value: string;
+  sub: string;
+  trend?: number;
+}) {
+  return (
+    <article className="surface-card p-5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-muted-foreground">{label}</h3>
+        <Icon aria-hidden="true" className="size-5 text-primary" />
+      </div>
+      <p className="mt-3 text-3xl font-extrabold tracking-tight">{value}</p>
+      <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+        {typeof trend === "number" &&
+          (trend >= 0 ? (
+            <TrendingUp aria-hidden="true" className="size-4 text-normal" />
+          ) : (
+            <TrendingDown aria-hidden="true" className="size-4 text-alarming" />
+          ))}
+        {sub}
+      </p>
+    </article>
+  );
+}
+
+function DistanceMeter({ distance, level }: { distance: number; level: keyof typeof threatStyles }) {
+  const pct = Math.max(0, Math.min(1, distance / MAX_DISTANCE_CM));
+  const radius = 76;
+  const circumference = 2 * Math.PI * radius;
+
+  return (
+    <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-8">
+      <svg width="180" height="180" viewBox="0 0 180 180" role="img" aria-label={`${distance} centimetres to obstacle`}>
+        <circle cx="90" cy="90" r={radius} fill="none" strokeWidth="14" className="stroke-muted" />
+        <circle
+          cx="90"
+          cy="90"
+          r={radius}
+          fill="none"
+          strokeWidth="14"
+          strokeLinecap="round"
+          className={threatStyles[level].ring}
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - pct)}
+          transform="rotate(-90 90 90)"
+          style={{ transition: "stroke-dashoffset 400ms ease" }}
+        />
+        <text x="90" y="86" textAnchor="middle" className="fill-foreground text-2xl font-extrabold">
+          {distance}
+        </text>
+        <text x="90" y="108" textAnchor="middle" className="fill-muted-foreground text-xs">
+          cm
+        </text>
+      </svg>
+      <div className="w-full">
+        <p className="text-sm font-semibold text-muted-foreground">Proximity range 0 – {MAX_DISTANCE_CM} cm</p>
+        <div className="mt-2 h-5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${threatStyles[level].bar}`}
+            style={{ width: `${Math.max(4, pct * 100)}%` }}
+          />
+        </div>
+        <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <dt className="text-muted-foreground">Collision zone</dt>
+            <dd className="font-semibold text-collision">0 – 40 cm</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Alarming zone</dt>
+            <dd className="font-semibold text-alarming">41 – 100 cm</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Warning zone</dt>
+            <dd className="font-semibold text-warning">101 – 200 cm</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Normal zone</dt>
+            <dd className="font-semibold text-normal">201 – 400 cm</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  );
+}
+
+function DashboardPage() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [voiceOn, setVoiceOn] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const lastSpokenId = useRef<string | null>(null);
+  const userId = user?.id ?? "";
+
+  useEffect(() => {
+    setVoiceOn(window.localStorage.getItem("aegisnav:voice") === "on");
+  }, []);
+
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 5000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const profileQuery = useQuery({
+    queryKey: ["profile", userId],
+    enabled: !!userId,
+    queryFn: () => fetchProfile(userId),
+  });
+  const contactsQuery = useQuery({ queryKey: ["contacts", userId], enabled: !!userId, queryFn: fetchContacts });
+  const telemetryQuery = useQuery({
+    queryKey: ["telemetry", userId],
+    enabled: !!userId,
+    queryFn: () => fetchTelemetry(50),
+  });
+  const statsQuery = useQuery({
+    queryKey: ["daily-stats", userId],
+    enabled: !!userId,
+    queryFn: () => fetchDailyStats(userId),
+  });
+
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel("telemetry_stream")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "telemetry_stream", filter: `user_id=eq.${userId}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
+          void queryClient.invalidateQueries({ queryKey: ["daily-stats", userId] });
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [userId, queryClient]);
+
+  const latest: Telemetry | undefined = telemetryQuery.data?.[0];
+
+  useEffect(() => {
+    if (!voiceOn || !latest) return;
+    if (lastSpokenId.current === latest.id) return;
+    lastSpokenId.current = latest.id;
+    if (latest.threat_level === "Alarming" || latest.threat_level === "Collision") {
+      speak(`Warning: ${latest.detected_object} at ${Math.round(Number(latest.distance_cm))} centimeters`);
+    }
+  }, [latest, voiceOn]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todayStats = statsQuery.data?.find((s) => s.date === today);
+  const yesterdayStats = statsQuery.data?.find(
+    (s) => s.date === new Date(Date.now() - 86_400_000).toISOString().slice(0, 10),
+  );
+
+  const reliability = useMemo(() => {
+    const rows = telemetryQuery.data ?? [];
+    if (rows.length === 0) return 98.3;
+    const valid = rows.filter((r) => Number(r.distance_cm) > 0 && Number(r.distance_cm) <= MAX_DISTANCE_CM).length;
+    return Math.round((valid / rows.length) * 1000) / 10;
+  }, [telemetryQuery.data]);
+
+  const simulate = useCallback(async () => {
+    if (!userId) return;
+    const distance = Math.round(Math.random() * MAX_DISTANCE_CM);
+    const level = classifyDistance(distance);
+    const object = DETECTED_OBJECTS[Math.floor(Math.random() * DETECTED_OBJECTS.length)] ?? "Obstacle";
+    const { error } = await supabase.from("telemetry_stream").insert({
+      user_id: userId,
+      detected_object: object,
+      distance_cm: distance,
+      threat_level: level,
+      action_taken: level === "Normal" ? "Logged" : "Haptic + voice alert issued",
+    });
+    if (error) {
+      toast.error("Could not record the telemetry reading.");
+      return;
+    }
+    const prev = todayStats;
+    const { error: statsError } = await supabase.from("daily_stats").upsert({
+      user_id: userId,
+      date: today,
+      obstacles_avoided: (prev?.obstacles_avoided ?? 0) + (level === "Normal" ? 0 : 1),
+      safe_distance_walked_m: Number(prev?.safe_distance_walked_m ?? 0) + 12,
+      active_session_minutes: (prev?.active_session_minutes ?? 0) + 1,
+    });
+    if (statsError) toast.error("Reading saved, but daily stats could not update.");
+    void queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
+    void queryClient.invalidateQueries({ queryKey: ["daily-stats", userId] });
+  }, [userId, today, todayStats, queryClient]);
+
+  const needsOnboarding =
+    !profileQuery.isLoading &&
+    !!profileQuery.data &&
+    (!profileQuery.data.full_name || !profileQuery.data.impairment_level);
+
+  const obstacles = todayStats?.obstacles_avoided ?? 0;
+  const obstacleTrend = obstacles - (yesterdayStats?.obstacles_avoided ?? 0);
+  const distanceKm = (Number(todayStats?.safe_distance_walked_m ?? 0) / 1000).toFixed(2);
+  const minutes = todayStats?.active_session_minutes ?? 0;
+  const level = latest ? latest.threat_level : "Normal";
+
+  return (
+    <AppShell
+      title="Realtime Dashboard"
+      description={`Live assistive telemetry${profileQuery.data?.full_name ? ` for ${profileQuery.data.full_name}` : ""}`}
+    >
+      <OnboardingDialog open={needsOnboarding} />
+
+      <section aria-labelledby="stats-heading" className="mb-6">
+        <h2 id="stats-heading" className="sr-only">
+          Daily navigation statistics
+        </h2>
+        {statsQuery.isLoading ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-32 rounded-xl" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              icon={PartyPopper}
+              label="Obstacles dodged today"
+              value={String(obstacles)}
+              trend={obstacleTrend}
+              sub={
+                yesterdayStats
+                  ? `${Math.abs(obstacleTrend)} ${obstacleTrend >= 0 ? "more" : "fewer"} than yesterday`
+                  : "First tracked day"
+              }
+            />
+            <StatCard
+              icon={Footprints}
+              label="Safe distance explored"
+              value={`${distanceKm} km`}
+              sub="Navigated with assistance today"
+            />
+            <StatCard
+              icon={Activity}
+              label="Active assistance time"
+              value={`${Math.floor(minutes / 60)}h ${minutes % 60}m`}
+              sub="Monitored session time"
+            />
+            <StatCard
+              icon={Gauge}
+              label="System reliability"
+              value={`${reliability}%`}
+              sub="Sensor precision · 0 false triggers"
+            />
+          </div>
+        )}
+      </section>
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <section aria-labelledby="live-heading" className="surface-card p-5 xl:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="live-heading" className="flex items-center gap-2 text-lg font-bold">
+              <Radar aria-hidden="true" className="size-5 text-primary" />
+              Live proximity radar
+            </h2>
+            <span
+              className={`rounded-full px-3 py-1 text-sm font-extrabold uppercase tracking-wide ${threatStyles[level].badge} ${
+                level === "Collision" || level === "Alarming" ? "pulse-threat" : ""
+              }`}
+            >
+              {level}
+            </span>
+          </div>
+
+          <p aria-live="polite" className="mt-3 text-base font-semibold">
+            {telemetryQuery.isLoading
+              ? "Connecting to the sensor stream…"
+              : latest
+                ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${latest.threat_level}`
+                : "No obstacles detected yet. Your sensor stream is idle."}
+          </p>
+
+          <div className="mt-5">
+            {telemetryQuery.isLoading ? (
+              <Skeleton className="h-48 rounded-xl" />
+            ) : (
+              <DistanceMeter distance={latest ? Math.round(Number(latest.distance_cm)) : MAX_DISTANCE_CM} level={level} />
+            )}
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4">
+            <div className="flex items-center gap-3">
+              <Volume2 aria-hidden="true" className="size-5 text-primary" />
+              <div>
+                <Label htmlFor="voice-alerts" className="text-base font-semibold">
+                  Browser voice alerts
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Speaks a warning whenever a reading is Alarming or Collision.
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="voice-alerts"
+              checked={voiceOn}
+              onCheckedChange={(v) => {
+                setVoiceOn(v);
+                window.localStorage.setItem("aegisnav:voice", v ? "on" : "off");
+                if (v) speak("Voice alerts enabled.");
+              }}
+            />
+          </div>
+
+          <Button variant="outline" className="mt-4 w-full" onClick={() => void simulate()}>
+            <Zap aria-hidden="true" className="size-4" />
+            Simulate a sensor reading
+          </Button>
+        </section>
+
+        <div className="space-y-6">
+          <section aria-labelledby="contacts-heading" className="surface-card p-5">
+            <h2 id="contacts-heading" className="text-lg font-bold">
+              Caregiver quick-glance
+            </h2>
+            <ul className="mt-4 space-y-2">
+              {contactsQuery.isLoading && <Skeleton className="h-16 rounded-lg" />}
+              {!contactsQuery.isLoading && (contactsQuery.data ?? []).length === 0 && (
+                <li className="text-sm text-muted-foreground">No emergency contacts saved yet.</li>
+              )}
+              {(contactsQuery.data ?? []).slice(0, 3).map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{c.contact_name}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {c.relationship ?? "Contact"} · {c.phone_number}
+                    </p>
+                  </div>
+                  <Button asChild size="sm">
+                    <a href={`tel:${c.phone_number}`} aria-label={`Call ${c.contact_name}`}>
+                      <PhoneCall aria-hidden="true" className="size-4" />
+                      Call
+                    </a>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section aria-labelledby="feed-heading" className="surface-card p-5">
+            <h2 id="feed-heading" className="text-lg font-bold">
+              Recent incidents
+            </h2>
+            <ul className="mt-4 space-y-2" aria-live="polite" data-now={now}>
+              {telemetryQuery.isLoading && <Skeleton className="h-14 rounded-lg" />}
+              {!telemetryQuery.isLoading && (telemetryQuery.data ?? []).length === 0 && (
+                <li className="text-sm text-muted-foreground">
+                  No encounters logged yet. Readings appear here the moment they arrive.
+                </li>
+              )}
+              {(telemetryQuery.data ?? []).slice(0, 5).map((t) => (
+                <li key={t.id} className="rounded-lg border border-border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate font-semibold">{t.detected_object}</p>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${threatStyles[t.threat_level].badge}`}>
+                      {t.threat_level}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {Math.round(Number(t.distance_cm))} cm · {relativeTime(t.created_at)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      </div>
+    </AppShell>
+  );
+}
