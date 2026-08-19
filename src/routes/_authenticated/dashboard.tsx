@@ -219,7 +219,7 @@ function DashboardPage() {
     if (!userId) return;
     const distance = Math.round(Math.random() * MAX_DISTANCE_CM);
     const level = classifyDistance(distance);
-    const object = DETECTED_OBJECTS[Math.floor(Math.random() * DETECTED_OBJECTS.length)];
+    const object = DETECTED_OBJECTS[Math.floor(Math.random() * DETECTED_OBJECTS.length)] ?? "Obstacle";
     const { error } = await supabase.from("telemetry_stream").insert({
       user_id: userId,
       detected_object: object,
