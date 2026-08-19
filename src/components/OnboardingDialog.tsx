@@ -62,8 +62,7 @@ export function OnboardingDialog({ open }: { open: boolean }) {
   return (
     <Dialog open={open}>
       <DialogContent
-        className="max-h-[90vh] overflow-y-auto sm:max-w-xl"
-        showCloseButton={false}
+        className="max-h-[90vh] overflow-y-auto sm:max-w-xl [&>button]:hidden"
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
       >
