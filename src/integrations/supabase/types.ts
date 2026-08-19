@@ -14,7 +14,156 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_stats: {
+        Row: {
+          active_session_minutes: number
+          date: string
+          obstacles_avoided: number
+          safe_distance_walked_m: number
+          user_id: string
+        }
+        Insert: {
+          active_session_minutes?: number
+          date?: string
+          obstacles_avoided?: number
+          safe_distance_walked_m?: number
+          user_id: string
+        }
+        Update: {
+          active_session_minutes?: number
+          date?: string
+          obstacles_avoided?: number
+          safe_distance_walked_m?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emergency_contacts: {
+        Row: {
+          contact_name: string
+          created_at: string
+          id: string
+          is_primary: boolean
+          notify_on_collision: boolean
+          phone_number: string
+          relationship: string | null
+          user_id: string
+        }
+        Insert: {
+          contact_name: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          notify_on_collision?: boolean
+          phone_number: string
+          relationship?: string | null
+          user_id: string
+        }
+        Update: {
+          contact_name?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          notify_on_collision?: boolean
+          phone_number?: string
+          relationship?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_contacts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          age: number | null
+          blood_group: string | null
+          created_at: string
+          emergency_medical_notes: string | null
+          full_name: string
+          home_address: string | null
+          id: string
+          impairment_level:
+            | Database["public"]["Enums"]["impairment_level"]
+            | null
+        }
+        Insert: {
+          age?: number | null
+          blood_group?: string | null
+          created_at?: string
+          emergency_medical_notes?: string | null
+          full_name?: string
+          home_address?: string | null
+          id: string
+          impairment_level?:
+            | Database["public"]["Enums"]["impairment_level"]
+            | null
+        }
+        Update: {
+          age?: number | null
+          blood_group?: string | null
+          created_at?: string
+          emergency_medical_notes?: string | null
+          full_name?: string
+          home_address?: string | null
+          id?: string
+          impairment_level?:
+            | Database["public"]["Enums"]["impairment_level"]
+            | null
+        }
+        Relationships: []
+      }
+      telemetry_stream: {
+        Row: {
+          action_taken: string | null
+          created_at: string
+          detected_object: string
+          distance_cm: number
+          id: string
+          threat_level: Database["public"]["Enums"]["threat_level"]
+          user_id: string
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string
+          detected_object: string
+          distance_cm: number
+          id?: string
+          threat_level?: Database["public"]["Enums"]["threat_level"]
+          user_id: string
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string
+          detected_object?: string
+          distance_cm?: number
+          id?: string
+          threat_level?: Database["public"]["Enums"]["threat_level"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telemetry_stream_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +172,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      impairment_level: "Partial" | "Legal Blindness" | "Total"
+      threat_level: "Normal" | "Warning" | "Alarming" | "Collision"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +300,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      impairment_level: ["Partial", "Legal Blindness", "Total"],
+      threat_level: ["Normal", "Warning", "Alarming", "Collision"],
+    },
   },
 } as const
