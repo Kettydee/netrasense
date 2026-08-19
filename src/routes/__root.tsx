@@ -127,6 +127,13 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    const stored = window.localStorage.getItem("aegisnav:theme");
+    if (stored) document.documentElement.classList.toggle("dark", stored === "dark");
+  }, []);
+
+
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
