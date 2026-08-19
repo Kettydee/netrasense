@@ -277,7 +277,7 @@ function DashboardPage() {
             <StatCard
               icon={PartyPopper}
               label="Obstacles dodged today"
-              value={`🎉 ${obstacles}`}
+              value={String(obstacles)}
               trend={obstacleTrend}
               sub={
                 yesterdayStats
