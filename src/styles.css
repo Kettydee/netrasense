@@ -1,89 +1,163 @@
 @import "tailwindcss";
 
 @layer base {
-  /* --- Default / Light Theme: Calming MedTech --- */
+  /* =========================================================
+     LIGHT MODE: Calming Porcelain & Bio-Sage Clinical Palette
+     ========================================================= */
   :root {
-    --background: 210 20% 98%;          /* Soft Canvas #F6F8FA */
-    --foreground: 215 25% 20%;          /* Gentle Deep Slate #1E293B */
+    --background: 165 14% 96%;          /* Crisp Linen #F4F7F6 */
+    --foreground: 220 24% 18%;          /* Deep Graphite #222B38 */
 
-    --card: 0 0% 100%;                  /* Pure White #FFFFFF */
-    --card-foreground: 215 25% 20%;
+    --card: 0 0% 100%;                  /* Porcelain White #FFFFFF */
+    --card-foreground: 220 24% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 20%;
+    --popover-foreground: 220 24% 18%;
 
-    --primary: 175 84% 32%;             /* Calming Teal #0D9488 */
+    --primary: 174 100% 27%;            /* MedTech Clean Sage/Teal #00897B */
     --primary-foreground: 0 0% 100%;
 
-    --muted: 210 25% 94%;               /* Soft Neutral #EEF2F6 */
-    --muted-foreground: 215 16% 50%;    /* Slate #64748B */
-    --border: 214 20% 90%;              /* Light Border #E2E8F0 */
-    --input: 214 20% 90%;
-    --ring: 175 84% 32%;
+    --muted: 165 20% 92%;               /* Soft Mineral Neutral #E5ECE9 */
+    --muted-foreground: 215 16% 45%;    /* High-contrast Slate #607285 */
+    --border: 165 15% 88%;              /* Subtle Card Border #DAE3E0 */
+    --input: 165 15% 88%;
+    --ring: 174 100% 27%;
 
-    --live: 175 84% 32%;
-    --live-surface: 168 76% 96%;
-    --live-border: 172 66% 85%;
+    --live: 174 100% 27%;
+    --live-surface: 165 60% 94%;
+    --live-border: 165 40% 82%;
 
-    --destructive: 24 94% 53%;          /* Amber/Coral #F97316 */
+    --destructive: 24 95% 53%;          /* Amber Warning #EA580C */
     --destructive-foreground: 0 0% 100%;
 
     --radius: 0.875rem;
   }
 
-  /* --- Dark Theme: Enterprise HealthTech Slate --- */
+  /* =========================================================
+     DARK MODE: Premium Titanium Obsidian & Luminous Bio-Teal
+     ========================================================= */
   .dark {
-    --background: 222 47% 10%;         /* Deep Slate #0F172A */
-    --foreground: 210 40% 98%;         /* Ice White #F8FAFC */
+    --background: 216 33% 7%;           /* Deep Onyx Slate #0B1017 */
+    --foreground: 210 40% 98%;          /* Pure Ice White #F8FAFC */
 
-    --card: 217 33% 16%;               /* Elevated Slate #1E293B */
+    --card: 217 31% 12%;                /* Midnight Titanium #151C28 */
     --card-foreground: 210 40% 98%;
 
-    --popover: 217 33% 16%;
+    --popover: 217 31% 12%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 174 100% 33%;           /* Glowing Teal #00A896 */
-    --primary-foreground: 0 0% 100%;
+    --primary: 173 100% 41%;            /* Luminous Bio-Teal #00D2B4 */
+    --primary-foreground: 216 33% 7%;
 
-    --muted: 215 28% 22%;              /* Dark Slate #334155 */
-    --muted-foreground: 215 16% 65%;   /* Soft Slate #94A3B8 */
-    --border: 215 25% 25%;             /* Slate Border #334155 */
-    --input: 215 25% 25%;
-    --ring: 174 100% 33%;
+    --muted: 215 25% 18%;               /* Slate Neutral #222C3D */
+    --muted-foreground: 215 16% 70%;    /* Readable Silver Slate #A0AEC0 */
+    --border: 215 25% 20%;              /* Dark Slate Border #263245 */
+    --input: 215 25% 20%;
+    --ring: 173 100% 41%;
 
-    --live: 174 100% 40%;
-    --live-surface: 174 100% 10%;
-    --live-border: 174 100% 25%;
+    --live: 173 100% 41%;
+    --live-surface: 173 100% 8%;
+    --live-border: 173 80% 22%;
 
-    --destructive: 18 95% 48%;
+    --destructive: 20 90% 55%;          /* Clinical Hazard Amber #F97316 */
     --destructive-foreground: 0 0% 100%;
   }
 
-  body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+  /* --- Full Screen Surface Canvas Overrides --- */
+  html, body, #root {
+    min-height: 100vh;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    transition: background-color 0.25s ease, color 0.25s ease;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Light Theme Canvas Gradient */
+  html:not(.dark) body {
+    background-color: #f4f7f6 !important;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(0, 137, 123, 0.06) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(220, 233, 230, 0.5) 0px, transparent 50%) !important;
+    background-attachment: fixed !important;
+    color: #222b38 !important;
+  }
+
+  /* Dark Theme Canvas Gradient */
+  html.dark body {
+    background-color: #0b1017 !important;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(0, 210, 180, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(10, 15, 24, 0.95) 0px, transparent 50%) !important;
+    background-attachment: fixed !important;
+    color: #f8fafc !important;
   }
 }
 
-/* --- Surface Cards Hover Elevation --- */
-.surface-card {
-  background-color: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
+/* =========================================================
+   SIDEBAR & CARD COLOR OVERRIDES
+   ========================================================= */
+
+/* Light Mode: Sidebar & Cards */
+html:not(.dark) aside {
+  background-color: #e9f0ee !important;
+  border-right: 1px solid #dae3e0 !important;
+}
+
+html:not(.dark) .surface-card,
+html:not(.dark) [class*="bg-card"],
+html:not(.dark) [class*="bg-slate-900"],
+html:not(.dark) [class*="bg-zinc-900"],
+html:not(.dark) [class*="bg-gray-900"] {
+  background-color: #ffffff !important;
+  border: 1px solid #dae3e0 !important;
+  color: #222b38 !important;
+  box-shadow: 0 4px 16px -2px rgba(34, 43, 56, 0.04) !important;
+}
+
+/* Dark Mode: Sidebar & Cards */
+html.dark aside {
+  background-color: #0e141f !important;
+  border-right: 1px solid #1f2a3c !important;
+}
+
+html.dark .surface-card,
+html.dark [class*="bg-card"],
+html.dark [class*="bg-slate-900"],
+html.dark [class*="bg-zinc-900"],
+html.dark [class*="bg-gray-900"] {
+  background-color: #151c28 !important;
+  border: 1px solid #263245 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* =========================================================
+   ELEVATION & HOVER INTERACTIONS (1.06x Zoom & Glowing Borders)
+   ========================================================= */
+.surface-card,
+[class*="bg-card"] {
   border-radius: var(--radius);
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), 
               border-color 0.2s ease, 
               box-shadow 0.22s ease;
 }
 
-.surface-card:hover {
+.surface-card:hover,
+[class*="bg-card"]:hover {
   transform: translateY(-2px) scale(1.015);
-  border-color: hsl(var(--primary));
-  box-shadow: 0 10px 25px -5px rgba(13, 148, 136, 0.15);
 }
 
-/* --- POP OUT + HIGHLIGHT GLOW ON HOVER --- */
+html:not(.dark) .surface-card:hover,
+html:not(.dark) [class*="bg-card"]:hover {
+  border-color: #00897b !important;
+  box-shadow: 0 12px 28px -6px rgba(0, 137, 123, 0.18) !important;
+}
+
+html.dark .surface-card:hover,
+html.dark [class*="bg-card"]:hover {
+  border-color: #00d2b4 !important;
+  box-shadow: 0 12px 30px -6px rgba(0, 210, 180, 0.25) !important;
+}
+
+/* Buttons & Links Pop-Out Feedback */
 button,
 a,
 [role="button"],
@@ -101,10 +175,21 @@ a:hover,
 [role="button"]:hover,
 .btn:hover {
   transform: scale(1.06) translateY(-1px) !important;
-  border-color: hsl(var(--primary)) !important;
-  box-shadow: 0 0 14px rgba(13, 148, 136, 0.3), 
-              0 6px 16px -2px rgba(15, 23, 42, 0.1) !important;
   z-index: 20;
+}
+
+html:not(.dark) button:hover,
+html:not(.dark) a:hover {
+  border-color: #00897b !important;
+  box-shadow: 0 0 14px rgba(0, 137, 123, 0.25), 
+              0 6px 16px -2px rgba(34, 43, 56, 0.08) !important;
+}
+
+html.dark button:hover,
+html.dark a:hover {
+  border-color: #00d2b4 !important;
+  box-shadow: 0 0 16px rgba(0, 210, 180, 0.35), 
+              0 8px 20px -4px rgba(0, 0, 0, 0.5) !important;
 }
 
 button:active,
@@ -113,7 +198,7 @@ a:active,
   transform: scale(0.98) !important;
 }
 
-/* --- Clean Minimal Scrollbar --- */
+/* Minimal Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
@@ -121,15 +206,22 @@ a:active,
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
   border-radius: 9999px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary));
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #00897b;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #2b394e;
+  border-radius: 9999px;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #00d2b4;
 }
 
-/* --- Cleanups --- */
+/* Utilities Cleanup */
 #lovable-badge,
 [data-lovable-badge],
 .lovable-badge,
