@@ -42,14 +42,23 @@
   }
 }
 
-/* Surface Cards */
+/* Surface Cards with Smooth Hover Elevation */
 .surface-card {
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              border-color 0.2s ease, 
+              box-shadow 0.22s ease;
 }
 
-/* --- FORCE ZOOM-OUT (SCALE DOWN) ON HOVER --- */
+.surface-card:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: hsl(var(--primary));
+  box-shadow: 0 12px 30px -8px rgba(0, 168, 150, 0.25);
+}
+
+/* --- POP OUT + HIGHLIGHT GLOW ON HOVER --- */
 button,
 a,
 [role="button"],
@@ -57,11 +66,15 @@ a,
 nav button,
 aside button,
 aside a {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  will-change: transform;
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.2s ease, 
+              border-color 0.2s ease,
+              background-color 0.2s ease !important;
+  will-change: transform, box-shadow;
 }
 
-/* Zoom out to 92% size on hover */
+/* Hover: Pops outward (scale-up) and illuminates with Teal Glow */
 button:hover,
 a:hover,
 [role="button"]:hover,
@@ -69,21 +82,27 @@ a:hover,
 nav button:hover,
 aside button:hover,
 aside a:hover {
-  transform: scale(0.92) !important;
+  transform: scale(1.05) translateY(-1px) !important;
+  border-color: #00A896 !important;
+  box-shadow: 0 0 18px rgba(0, 168, 150, 0.45), 
+              0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
+  z-index: 20;
 }
 
-/* Extra tactile zoom out on click */
+/* Active: Tactile click feedback */
 button:active,
 a:active,
 [role="button"]:active {
-  transform: scale(0.88) !important;
+  transform: scale(0.98) !important;
+  box-shadow: 0 0 8px rgba(0, 168, 150, 0.3) !important;
 }
 
-/* Lovable removal */
+/* Hide Lovable Badge */
 #lovable-badge,
 [data-lovable-badge],
 .lovable-badge {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
+  pointer-events: none !important;
 }
