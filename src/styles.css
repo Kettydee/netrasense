@@ -1,228 +1,74 @@
-@import "tailwindcss" source(none);
-@source "../src";
-@import "tw-animate-css";
-
-@custom-variant dark (&:is(.dark *));
-
-/*
- * NetraSense design system — WCAG AAA High Contrast Slate & Electric Indigo
- * Crisp elevated cards, semantic threat colors, and accessible focus states.
- */
-
-@theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --font-sans: "Inter Tight", "Segoe UI", system-ui, sans-serif;
-
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-ring-offset-background: var(--background);
-  --color-normal: var(--normal);
-  --color-normal-foreground: var(--normal-foreground);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-alarming: var(--alarming);
-  --color-alarming-foreground: var(--alarming-foreground);
-  --color-collision: var(--collision);
-  --color-collision-foreground: var(--collision-foreground);
-  --color-surface: var(--surface);
-  --color-input-background: var(--input-background);
-  --color-live: var(--live);
-  --color-live-surface: var(--live-surface);
-  --color-live-border: var(--live-border);
-
-  --color-chart-1: var(--normal);
-  --color-chart-2: var(--warning);
-  --color-chart-3: var(--alarming);
-  --color-chart-4: var(--collision);
-  --color-chart-5: var(--primary);
-}
-
-:root {
-  --radius: 0.75rem;
-
-  /* Clean Clinical Light Slate Surfaces */
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --surface: #f1f5f9;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-
-  /* Electric Indigo Accent */
-  --primary: #4f46e5;
-  --primary-foreground: #ffffff;
-
-  /* Secondary & Input Components */
-  --secondary: #e2e8f0;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #e0e7ff;
-  --accent-foreground: #3730a3;
-
-  /* Danger / SOS Alert */
-  --destructive: #dc2626;
-  --destructive-foreground: #ffffff;
-
-  /* Crisp Border Definition */
-  --border: #cbd5e1;
-  --input: #cbd5e1;
-  --input-background: #ffffff;
-  --ring: #4f46e5;
-
-  /* Threat Semantic Colors */
-  --normal: #059669;
-  --normal-foreground: #ffffff;
-  --warning: #d97706;
-  --warning-foreground: #ffffff;
-  --alarming: #ea580c;
-  --alarming-foreground: #ffffff;
-  --collision: #dc2626;
-  --collision-foreground: #ffffff;
-
-  /* ESP32 Telemetry Status */
-  --live: #059669;
-  --live-surface: #ecfdf5;
-  --live-border: #a7f3d0;
-}
-
-.dark {
-  /* Rich Deep Matte Slate */
-  --background: #0b0f19;
-  --foreground: #f8fafc;
-
-  /* Elevated Distinct Slate Cards */
-  --card: #161e2e;
-  --card-foreground: #f8fafc;
-  --surface: #111827;
-  --popover: #161e2e;
-  --popover-foreground: #f8fafc;
-
-  /* Vibrant Electric Indigo */
-  --primary: #6366f1;
-  --primary-foreground: #ffffff;
-
-  /* Secondary, Muted & Interactive States */
-  --secondary: #1f293d;
-  --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #1e293b;
-  --accent-foreground: #f8fafc;
-
-  /* High-Alert Crimson Red */
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-
-  /* Clean Borders & Input Backgrounds */
-  --border: #2d3748;
-  --input: #374151;
-  --input-background: #0d131f;
-  --ring: #818cf8;
-
-  /* High-Contrast Proximity Risk Scale */
-  --normal: #10b981;
-  --normal-foreground: #022c22;
-  --warning: #f59e0b;
-  --warning-foreground: #451a03;
-  --alarming: #f97316;
-  --alarming-foreground: #431407;
-  --collision: #ef4444;
-  --collision-foreground: #ffffff;
-
-  /* ESP32 Active Connection Badge */
-  --live: #10b981;
-  --live-surface: rgba(16, 185, 129, 0.12);
-  --live-border: rgba(16, 185, 129, 0.35);
-}
+@import "tailwindcss";
 
 @layer base {
-  * {
-    border-color: var(--color-border);
+  :root {
+    /* Main Background & Deep Surface Layers */
+    --background: 222 47% 4%;       /* #050811 - Deep Obsidian Void */
+    --foreground: 210 40% 98%;      /* #F8FAFC - Ultra-bright Crisp White */
+
+    --card: 222 47% 7%;             /* #090F1D - Elevated Midnight Slate */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 7%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Electric Indigo Accents */
+    --primary: 238 84% 67%;         /* #6366F1 */
+    --primary-foreground: 0 0% 100%;
+
+    /* Muted Elements & Sub-texts */
+    --muted: 217 33% 14%;           /* #172033 */
+    --muted-foreground: 215 20% 70%;/* #94A3B8 */
+
+    /* Subtle Architectural Borders */
+    --border: 217 33% 17%;          /* #1E293B */
+    --input: 217 33% 17%;
+    --ring: 238 84% 67%;
+
+    /* Live Telemetry / Assistive Status Tiers */
+    --live: 160 84% 45%;            /* #10B981 Emerald */
+    --live-surface: 160 84% 8%;     /* Deep tinted surface */
+    --live-border: 160 84% 20%;
+
+    --radius: 0.85rem;
   }
 
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    font-family: var(--font-sans);
-    line-height: 1.65;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  h1,
-  h2,
-  h3 {
-    letter-spacing: -0.015em;
-    line-height: 1.25;
-  }
-
-  :focus-visible {
-    outline: 3px solid var(--ring);
-    outline-offset: 2px;
-    border-radius: 6px;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
-@utility surface-card {
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.25), 0 4px 6px -4px rgba(0, 0, 0, 0.25);
+/* Custom High-Contrast Surface Card Class */
+.surface-card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
-@utility skip-link {
-  position: absolute;
-  left: -9999px;
-  z-index: 100;
-  &:focus {
-    left: 1rem;
-    top: 1rem;
-    padding: 0.75rem 1rem;
-    background-color: var(--color-primary);
-    color: var(--color-primary-foreground);
-    border-radius: var(--radius-md);
-  }
+.surface-card:hover {
+  border-color: rgba(99, 102, 241, 0.45);
 }
 
-@utility pulse-threat {
-  animation: pulse-threat 1.1s ease-in-out infinite;
-}
-
+/* Pulse Threat Keyframes */
 @keyframes pulse-threat {
-  0%,
-  100% {
+  0%, 100% {
     opacity: 1;
     transform: scale(1);
   }
   50% {
     opacity: 0.75;
-    transform: scale(1.03);
+    transform: scale(1.02);
   }
 }
-/* Hide any residual Lovable badge or floating elements */
+
+.pulse-threat {
+  animation: pulse-threat 1.2s ease-in-out infinite;
+}
+
+/* Hide Lovable Badges */
 #lovable-badge,
 [data-lovable-badge],
 .lovable-badge {
