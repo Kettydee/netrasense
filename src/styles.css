@@ -2,34 +2,34 @@
 
 @layer base {
   :root {
-    /* Modern HealthTech Palette */
-    --background: 222 47% 7%;        /* Deep Slate #0F172A */
-    --foreground: 210 40% 98%;       /* Clean White #F8FAFC */
+    /* MedTech Modern HealthTech Palette */
+    --background: 222 47% 6%;          /* Deep HealthTech Slate #0B132B */
+    --foreground: 210 40% 98%;         /* Clean Ice White #F8FAFC */
 
-    --card: 217 33% 12%;             /* Elevated Slate #141E33 */
+    --card: 218 39% 14%;               /* Clinical Elevated Slate #162038 */
     --card-foreground: 210 40% 98%;
 
-    --popover: 217 33% 12%;
+    --popover: 218 39% 14%;
     --popover-foreground: 210 40% 98%;
 
-    /* HealthTech Clean Teal */
-    --primary: 174 100% 33%;         /* #00A896 Teal */
+    /* HealthTech Clean Teal Primary */
+    --primary: 174 100% 33%;           /* Clean Medical Teal #00A896 */
     --primary-foreground: 0 0% 100%;
 
-    /* Subtle Neutral & Borders */
-    --muted: 215 25% 18%;            /* #1E293B */
-    --muted-foreground: 215 20% 75%; /* Soft readable slate */
-    --border: 217 33% 20%;           /* #233148 */
-    --input: 217 33% 20%;
+    /* Subtle Neutral & Medical Grays */
+    --muted: 217 33% 20%;              /* #1E293B */
+    --muted-foreground: 215 20% 75%;   /* Readable Soft Slate */
+    --border: 218 30% 22%;             /* #23314F */
+    --input: 218 30% 22%;
     --ring: 174 100% 33%;
 
-    /* Status Tiers */
+    /* Proximity Status Tiers */
     --live: 174 100% 40%;
     --live-surface: 174 100% 8%;
     --live-border: 174 100% 22%;
 
     /* Emergency Accent */
-    --destructive: 18 95% 48%;       /* Energetic Amber #F77F00 */
+    --destructive: 18 95% 48%;         /* Health Alert Amber #F77F00 */
     --destructive-foreground: 0 0% 100%;
 
     --radius: 0.875rem;
@@ -37,12 +37,17 @@
 
   body {
     background-color: hsl(var(--background));
+    /* MedTech Soft Ambient Radial Glow */
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(0, 168, 150, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(15, 23, 42, 0.6) 0px, transparent 50%);
+    background-attachment: fixed;
     color: hsl(var(--foreground));
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
-/* Surface Cards with Smooth Hover Elevation */
+/* Surface Cards with HealthTech Hover Elevation */
 .surface-card {
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
@@ -107,6 +112,7 @@ a:active,
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
 /* Hide 'Skip to main content' link */
 a[href="#main"],
 a[href="#content"],
