@@ -2,58 +2,78 @@
 
 @layer base {
   :root {
-    /* MedTech Modern HealthTech Palette */
-    --background: 222 47% 6%;          /* Deep HealthTech Slate #0B132B */
-    --foreground: 210 40% 98%;         /* Clean Ice White #F8FAFC */
+    /* --- Modern HealthTech Palette (60-30-10 Rule) --- */
+    --background: 222 47% 11%;         /* Deep Slate #0F172A (60% Base) */
+    --foreground: 210 40% 98%;        /* Ice White #F8FAFC (WCAG High Contrast) */
 
-    --card: 218 39% 14%;               /* Clinical Elevated Slate #162038 */
+    --card: 217 33% 17%;              /* Clinical Slate #1E293B (Card Surfaces) */
     --card-foreground: 210 40% 98%;
 
-    --popover: 218 39% 14%;
+    --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
 
-    /* HealthTech Clean Teal Primary */
-    --primary: 174 100% 33%;           /* Clean Medical Teal #00A896 */
+    /* 30% Structural / Secondary Accent */
+    --primary: 174 100% 33%;          /* Clean Teal #00A896 */
     --primary-foreground: 0 0% 100%;
 
-    /* Subtle Neutral & Medical Grays */
-    --muted: 217 33% 20%;              /* #1E293B */
-    --muted-foreground: 215 20% 75%;   /* Readable Soft Slate */
-    --border: 218 30% 22%;             /* #23314F */
-    --input: 218 30% 22%;
+    /* Soft Slate Neutrals & Borders */
+    --muted: 215 28% 24%;             /* Slate #334155 */
+    --muted-foreground: 215 16% 65%;  /* Soft Slate #94A3B8 */
+    --border: 215 25% 27%;            /* Subtle Slate Border #334155 */
+    --input: 215 25% 27%;
     --ring: 174 100% 33%;
 
     /* Proximity Status Tiers */
     --live: 174 100% 40%;
-    --live-surface: 174 100% 8%;
-    --live-border: 174 100% 22%;
+    --live-surface: 174 100% 10%;
+    --live-border: 174 100% 25%;
 
-    /* Emergency Accent */
-    --destructive: 18 95% 48%;         /* Health Alert Amber #F77F00 */
+    /* 10% Emergency / Danger Accent */
+    --destructive: 30 100% 48%;       /* Energetic Amber #F77F00 */
     --destructive-foreground: 0 0% 100%;
 
     --radius: 0.875rem;
   }
 
   body, html, #root {
-    background-color: #0b132b !important;
+    background-color: #0f172a !important;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(0, 168, 150, 0.12) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(15, 23, 42, 0.8) 0px, transparent 50%) !important;
+      radial-gradient(at 0% 0%, rgba(0, 168, 150, 0.1) 0px, transparent 45%),
+      radial-gradient(at 100% 100%, rgba(15, 23, 42, 0.85) 0px, transparent 50%) !important;
     background-attachment: fixed !important;
     color: #f8fafc !important;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
-/* Force MedTech Card Surfaces */
+/* --- Clean MedTech Custom Scrollbar --- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+  border: 2px solid #0f172a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00a896;
+}
+
+/* --- Clinical Surface Cards with Smooth Hover Elevation --- */
 .surface-card,
 [class*="bg-card"],
 [class*="bg-slate-900"],
 [class*="bg-zinc-900"],
 [class*="bg-gray-900"] {
-  background-color: #141e33 !important;
-  border: 1px solid #23314f !important;
+  background-color: #1e293b !important;
+  border: 1px solid #334155 !important;
   border-radius: var(--radius);
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), 
               border-color 0.2s ease, 
@@ -64,7 +84,7 @@
 [class*="bg-card"]:hover {
   transform: translateY(-3px) scale(1.02);
   border-color: #00a896 !important;
-  box-shadow: 0 12px 30px -8px rgba(0, 168, 150, 0.25) !important;
+  box-shadow: 0 12px 28px -6px rgba(0, 168, 150, 0.3) !important;
 }
 
 /* --- POP OUT + HIGHLIGHT GLOW ON HOVER --- */
@@ -83,7 +103,7 @@ aside a {
   will-change: transform, box-shadow;
 }
 
-/* Hover: Pops outward (1.06x scale) + Teal Border + Ambient Glow + Depth Shadow */
+/* Hover: Pops outward (1.06x scale) + Clean Teal Border + Multi-Layer Glow */
 button:hover,
 a:hover,
 [role="button"]:hover,
@@ -107,7 +127,7 @@ a:active,
   box-shadow: 0 0 8px rgba(0, 168, 150, 0.3) !important;
 }
 
-/* Hide Lovable Badge */
+/* --- Utility Cleanups --- */
 #lovable-badge,
 [data-lovable-badge],
 .lovable-badge {
@@ -117,7 +137,6 @@ a:active,
   pointer-events: none !important;
 }
 
-/* Hide 'Skip to main content' link */
 a[href="#main"],
 a[href="#content"],
 a[href="#main-content"],
