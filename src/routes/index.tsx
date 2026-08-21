@@ -7,13 +7,13 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "AegisNav — Assistive Navigation & Telemetry" },
+      { title: "NetraSense — Assistive Navigation & Telemetry" },
       {
         name: "description",
         content:
-          "AegisNav pairs live obstacle telemetry with medical ID and caregiver alerts for visually impaired navigation.",
+          "NetraSense pairs live obstacle telemetry with medical ID and caregiver alerts for visually impaired navigation.",
       },
-      { property: "og:title", content: "AegisNav — Assistive Navigation & Telemetry" },
+      { property: "og:title", content: "NetraSense — Assistive Navigation & Telemetry" },
       {
         property: "og:description",
         content: "Live proximity radar, voice alerts, medical ID and one-tap SOS for caregivers.",
@@ -49,7 +49,7 @@ function Index() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6 lg:px-8">
         <div className="flex items-center gap-2">
           <ShieldAlert aria-hidden="true" className="size-7 text-primary" />
-          <span className="text-xl font-extrabold tracking-tight">AegisNav</span>
+          <span className="text-xl font-extrabold tracking-tight">NetraSense</span>
         </div>
         {!loading && (
           <Button asChild>
@@ -69,7 +69,7 @@ function Index() {
             Navigation confidence for visually impaired people and their caregivers.
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            AegisNav turns ultrasonic sensor telemetry into spoken warnings, caregiver visibility and a
+            NetraSense turns ultrasonic sensor telemetry into spoken warnings, caregiver visibility and a
             complete incident history — accessible by keyboard and screen reader end to end.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
