@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { speak } from "@/lib/aegis";
+import { speak } from "@/lib/netrasense";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
-      { title: "Settings & Audio Preferences — AegisNav" },
-      { name: "description", content: "Tune voice alerts, spoken thresholds and appearance for the AegisNav dashboard." },
-      { property: "og:title", content: "Settings & Audio Preferences — AegisNav" },
+      { title: "Settings & Audio Preferences — NetraSense" },
+      { name: "description", content: "Tune voice alerts, spoken thresholds and appearance for the NetraSense dashboard." },
+      { property: "og:title", content: "Settings & Audio Preferences — NetraSense" },
       { property: "og:description", content: "Accessibility, audio and appearance preferences." },
     ],
   }),
@@ -28,18 +28,18 @@ function SettingsPage() {
   const [dark, setDark] = useState(true);
 
   useEffect(() => {
-    setVoiceOn(window.localStorage.getItem("aegisnav:voice") === "on");
-    setAnnounceNormal(window.localStorage.getItem("aegisnav:announceNormal") === "on");
-    setThreshold(Number(window.localStorage.getItem("aegisnav:threshold") ?? 100));
+    setVoiceOn(window.localStorage.getItem("netrasense:voice") === "on");
+    setAnnounceNormal(window.localStorage.getItem("netrasense:announceNormal") === "on");
+    setThreshold(Number(window.localStorage.getItem("netrasense:threshold") ?? 100));
     setDark(document.documentElement.classList.contains("dark"));
   }, []);
 
   function persist(key: string, value: string) {
-    window.localStorage.setItem(`aegisnav:${key}`, value);
+    window.localStorage.setItem(`netrasense:${key}`, value);
   }
 
   return (
-    <AppShell title="Settings & Audio Preferences" description="Tune how AegisNav speaks and looks">
+    <AppShell title="Settings & Audio Preferences" description="Tune how NetraSense speaks and looks">
       <div className="grid gap-6 xl:grid-cols-2">
         <section aria-labelledby="audio-heading" className="surface-card p-5">
           <h2 id="audio-heading" className="flex items-center gap-2 text-lg font-bold">

@@ -32,14 +32,14 @@ import {
   speak,
   threatStyles,
   type Telemetry,
-} from "@/lib/aegis";
+} from "@/lib/netrasense";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Realtime Dashboard — AegisNav" },
+      { title: "Realtime Dashboard — NetraSense" },
       { name: "description", content: "Live proximity telemetry, daily navigation stats and caregiver quick actions." },
-      { property: "og:title", content: "Realtime Dashboard — AegisNav" },
+      { property: "og:title", content: "Realtime Dashboard — NetraSense" },
       { property: "og:description", content: "Live obstacle telemetry and caregiver quick-glance panel." },
     ],
   }),
@@ -148,7 +148,7 @@ function DashboardPage() {
   const userId = user?.id ?? "";
 
   useEffect(() => {
-    setVoiceOn(window.localStorage.getItem("aegisnav:voice") === "on");
+    setVoiceOn(window.localStorage.getItem("netrasense:voice") === "on");
   }, []);
 
   useEffect(() => {
@@ -356,7 +356,7 @@ function DashboardPage() {
               checked={voiceOn}
               onCheckedChange={(v) => {
                 setVoiceOn(v);
-                window.localStorage.setItem("aegisnav:voice", v ? "on" : "off");
+                window.localStorage.setItem("netrasense:voice", v ? "on" : "off");
                 if (v) speak("Voice alerts enabled.");
               }}
             />
