@@ -83,9 +83,9 @@ export function AppShell({ title, description, children, actions }: AppShellProp
 
   return (
     <div className="flex min-h-screen bg-background text-foreground overflow-x-hidden transition-colors">
-      {/* --- COLLAPSIBLE SIDEBAR --- */}
+      {/* --- COLLAPSIBLE LEFT SIDEBAR --- */}
       <aside
-        className={`relative flex flex-col border-r border-border bg-card/80 backdrop-blur-md transition-all duration-300 ease-in-out z-30 shrink-0 ${
+        className={`relative flex flex-col justify-between border-r border-border bg-card/80 backdrop-blur-md transition-all duration-300 ease-in-out z-30 shrink-0 ${
           isSidebarOpen ? "w-64 p-5" : "w-20 p-3 items-center"
         }`}
       >
@@ -110,7 +110,7 @@ export function AppShell({ title, description, children, actions }: AppShellProp
             </button>
           </div>
 
-          {/* Theme Switcher */}
+          {/* Theme Switcher: Light / Dark / Auto */}
           <div className="mt-4 flex w-full items-center justify-center rounded-xl border border-border bg-muted/40 p-1">
             {isSidebarOpen ? (
               <div className="grid w-full grid-cols-3 gap-1">
@@ -203,11 +203,27 @@ export function AppShell({ title, description, children, actions }: AppShellProp
             ))}
           </nav>
         </div>
+
+        {/* --- LOGOUT IN LEFT PANEL FOOTER --- */}
+        <div className="mt-auto flex flex-col gap-2 pt-4 border-t border-border w-full">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleSignOut}
+            className={`w-full text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer ${
+              !isSidebarOpen ? "px-0 justify-center" : "justify-start"
+            }`}
+            title="Log out"
+          >
+            <LogOut className="size-4 shrink-0" />
+            {isSidebarOpen && <span className="ml-2">Log out</span>}
+          </Button>
+        </div>
       </aside>
 
       {/* --- MAIN CONTENT VIEWPORT --- */}
       <main className="flex-1 overflow-y-auto px-6 py-8 transition-all duration-300 ease-in-out max-w-full">
-        {/* --- HEADER WITH FULL RED SOS + LIGHT HIGHLIGHT IN TOP-RIGHT --- */}
+        {/* --- HEADER WITH EXPANDED FULL RED SOS ON TOP-RIGHT --- */}
         <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-border/50 pb-4">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
@@ -217,28 +233,16 @@ export function AppShell({ title, description, children, actions }: AppShellProp
           <div className="flex items-center gap-3">
             {actions}
 
-            {/* FULL RED BROADCAST SOS BUTTON WITH LIGHT HIGHLIGHT */}
+            {/* EXPANDED FULL-RED BROADCAST SOS BUTTON */}
             <button
               type="button"
               onClick={handleSos}
-              className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-[0_0_15px_rgba(239,68,68,0.35)] border border-red-400/50 hover:bg-red-500 hover:shadow-[0_0_22px_rgba(239,68,68,0.6)] hover:border-red-300 transition-all duration-200 cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-3 rounded-2xl bg-red-600 px-6 py-3 text-base font-extrabold tracking-wide text-white shadow-[0_0_20px_rgba(239,68,68,0.4)] border border-red-400/60 hover:bg-red-500 hover:shadow-[0_0_28px_rgba(239,68,68,0.65)] hover:border-red-300 transition-all duration-200 cursor-pointer active:scale-95"
               title="Broadcast SOS Emergency Alert"
             >
-              <Siren className="size-4 animate-bounce text-white shrink-0" />
+              <Siren className="size-5 animate-bounce text-white shrink-0" />
               <span>BROADCAST SOS</span>
             </button>
-
-            {/* Log out Button */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleSignOut}
-              className="flex items-center gap-2 border-border text-muted-foreground hover:text-foreground cursor-pointer"
-              title="Log out"
-            >
-              <LogOut className="size-4 shrink-0" />
-              <span>Log out</span>
-            </Button>
           </div>
         </header>
 
