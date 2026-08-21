@@ -77,11 +77,15 @@ export function AppShell({ title, description, children, actions }: AppShellProp
     window.location.href = "/";
   };
 
+  const handleSos = () => {
+    window.location.href = "/contacts";
+  };
+
   return (
     <div className="flex min-h-screen bg-background text-foreground overflow-x-hidden transition-colors">
       {/* --- COLLAPSIBLE SIDEBAR --- */}
       <aside
-        className={`relative flex flex-col justify-between border-r border-border bg-card/80 backdrop-blur-md transition-all duration-300 ease-in-out z-30 shrink-0 ${
+        className={`relative flex flex-col border-r border-border bg-card/80 backdrop-blur-md transition-all duration-300 ease-in-out z-30 shrink-0 ${
           isSidebarOpen ? "w-64 p-5" : "w-20 p-3 items-center"
         }`}
       >
@@ -106,7 +110,7 @@ export function AppShell({ title, description, children, actions }: AppShellProp
             </button>
           </div>
 
-          {/* --- Theme Switcher: Light / Dark / Auto --- */}
+          {/* Theme Switcher: Light / Dark / Auto */}
           <div className="mt-4 flex w-full items-center justify-center rounded-xl border border-border bg-muted/40 p-1">
             {isSidebarOpen ? (
               <div className="grid w-full grid-cols-3 gap-1">
@@ -199,42 +203,43 @@ export function AppShell({ title, description, children, actions }: AppShellProp
             ))}
           </nav>
         </div>
-
-        {/* Bottom Actions */}
-        <div className="mt-auto flex flex-col gap-3 pt-4 border-t border-border w-full">
-          <Button
-            type="button"
-            variant="destructive"
-            className={`w-full font-bold cursor-pointer ${!isSidebarOpen ? "px-0 justify-center" : ""}`}
-            title="Broadcast SOS"
-          >
-            <Siren className="size-4 shrink-0" />
-            {isSidebarOpen && <span className="ml-2">BROADCAST SOS</span>}
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={handleSignOut}
-            className={`w-full text-muted-foreground hover:text-foreground cursor-pointer ${
-              !isSidebarOpen ? "px-0 justify-center" : ""
-            }`}
-            title="Log out"
-          >
-            <LogOut className="size-4 shrink-0" />
-            {isSidebarOpen && <span className="ml-2">Log out</span>}
-          </Button>
-        </div>
       </aside>
 
       {/* --- MAIN CONTENT VIEWPORT --- */}
       <main className="flex-1 overflow-y-auto px-6 py-8 transition-all duration-300 ease-in-out max-w-full">
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        {/* --- HEADER WITH ACTIONS IN TOP-RIGHT --- */}
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-border/50 pb-4">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
             {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
           </div>
-          {actions && <div className="flex items-center gap-2">{actions}</div>}
+
+          {/* Top-Right Header Buttons: SOS & Log Out */}
+          <div className="flex items-center gap-3">
+            {actions}
+
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleSos}
+              className="font-bold flex items-center gap-2 px-4 shadow-sm cursor-pointer"
+              title="Broadcast SOS"
+            >
+              <Siren className="size-4 shrink-0" />
+              <span>BROADCAST SOS</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSignOut}
+              className="flex items-center gap-2 border-border text-muted-foreground hover:text-foreground cursor-pointer"
+              title="Log out"
+            >
+              <LogOut className="size-4 shrink-0" />
+              <span>Log out</span>
+            </Button>
+          </div>
         </header>
 
         {children}
