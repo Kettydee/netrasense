@@ -2,35 +2,34 @@
 
 @layer base {
   /* =========================================================
-     LIGHT MODE: TW.1 Seafoam & Mint Clinical HealthTech
+     LIGHT THEME: Ruddy Blue (#76ABDF) Clinical Palette
      ========================================================= */
   :root {
-    --background: 175 35% 95%;          /* Clinical Seafoam Frost #EDF7F6 */
-    --foreground: 185 45% 15%;          /* Deep Forest Slate #132A2F */
+    --background: 209 60% 95%;          /* Soft Ruddy Ice Canvas #E8F2FA */
+    --foreground: 215 45% 15%;          /* Deep Navy-Slate #132235 */
 
     --card: 0 0% 100%;                  /* Pure White #FFFFFF */
-    --card-foreground: 185 45% 15%;
+    --card-foreground: 215 45% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 185 45% 15%;
+    --popover-foreground: 215 45% 15%;
 
-    /* Diagnostic Seafoam Teal (TW.1 Primary) */
-    --primary: 174 100% 33%;            /* #00A896 */
+    /* Ruddy Blue Primary #76ABDF */
+    --primary: 209 61% 67%;             /* #76ABDF */
     --primary-foreground: 0 0% 100%;
 
-    /* Soft Mint & Slate Neutrals */
-    --muted: 175 30% 90%;               /* #D8ECE9 */
-    --muted-foreground: 180 18% 45%;    /* #5F7D82 */
-    --border: 175 25% 86%;              /* #C7E3DF */
-    --input: 175 25% 86%;
-    --ring: 174 100% 33%;
+    /* Soft Ruddy & Slate Neutrals */
+    --muted: 209 50% 90%;               /* #D4E6F6 */
+    --muted-foreground: 212 25% 45%;    /* #566D85 */
+    --border: 209 45% 84%;              /* #BED8EE */
+    --input: 209 45% 84%;
+    --ring: 209 61% 67%;
 
     /* Live Telemetry Pill & Radar Stream */
-    --live: 174 100% 33%;
-    --live-surface: 174 60% 94%;
-    --live-border: 174 50% 80%;
+    --live: 209 70% 50%;
+    --live-surface: 209 70% 95%;
+    --live-border: 209 60% 80%;
 
-    /* Alert / Emergency */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
@@ -38,30 +37,30 @@
   }
 
   /* =========================================================
-     DARK MODE: Deep Titanium Slate & Luminous Cyan
+     DARK THEME: TW.1 Titanium Obsidian & Luminous Bio-Cyan
      ========================================================= */
   .dark {
-    --background: 216 33% 7%;           /* Deep Onyx #0B1017 */
-    --foreground: 210 40% 98%;          /* Pure Ice White #F8FAFC */
+    --background: 190 31% 6%;           /* Deep Titanium Obsidian #0B1315 */
+    --foreground: 175 30% 96%;          /* Ice Mint White #F0FAF8 */
 
-    --card: 217 31% 12%;                /* Elevated Slate #151C28 */
-    --card-foreground: 210 40% 98%;
+    --card: 190 35% 11%;                /* Dark Seafoam Slate #122226 */
+    --card-foreground: 175 30% 96%;
 
-    --popover: 217 31% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 190 35% 11%;
+    --popover-foreground: 175 30% 96%;
 
-    --primary: 174 100% 40%;            /* Luminous Seafoam #00CCA8 */
-    --primary-foreground: 216 33% 7%;
+    --primary: 173 100% 45%;            /* #00E5C9 */
+    --primary-foreground: 190 31% 6%;
 
-    --muted: 215 25% 18%;
-    --muted-foreground: 215 16% 70%;
-    --border: 215 25% 20%;
-    --input: 215 25% 20%;
-    --ring: 174 100% 40%;
+    --muted: 190 30% 16%;
+    --muted-foreground: 180 16% 68%;
+    --border: 190 37% 18%;
+    --input: 190 37% 18%;
+    --ring: 173 100% 45%;
 
-    --live: 174 100% 40%;
-    --live-surface: 174 100% 8%;
-    --live-border: 174 80% 22%;
+    --live: 173 100% 45%;
+    --live-surface: 173 100% 8%;
+    --live-border: 173 80% 25%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -73,49 +72,49 @@
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  /* --- TW.1 Light Mode Ambient Background Mesh --- */
+  /* --- Ruddy Blue Ambient Mesh Background --- */
   html:not(.dark) body {
-    background-color: #edf7f6 !important;
+    background-color: #e8f2fa !important;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(0, 168, 150, 0.12) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, rgba(67, 198, 172, 0.1) 0px, transparent 50%),
-      radial-gradient(at 50% 100%, rgba(200, 235, 230, 0.45) 0px, transparent 55%),
-      radial-gradient(at 100% 100%, rgba(0, 168, 150, 0.08) 0px, transparent 45%) !important;
+      radial-gradient(at 0% 0%, rgba(118, 171, 223, 0.35) 0px, transparent 55%),
+      radial-gradient(at 100% 0%, rgba(118, 171, 223, 0.25) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(212, 230, 246, 0.6) 0px, transparent 60%),
+      radial-gradient(at 100% 100%, rgba(118, 171, 223, 0.2) 0px, transparent 45%) !important;
     background-attachment: fixed !important;
-    color: #132a2f !important;
+    color: #132235 !important;
   }
 
-  /* --- Dark Mode Ambient Canvas --- */
+  /* --- Dark Theme Canvas Gradient --- */
   html.dark body {
-    background-color: #0b1017 !important;
+    background-color: #0b1315 !important;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(0, 204, 168, 0.08) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(10, 15, 24, 0.95) 0px, transparent 50%) !important;
+      radial-gradient(at 0% 0%, rgba(0, 229, 201, 0.12) 0px, transparent 55%),
+      radial-gradient(at 100% 100%, rgba(7, 18, 20, 0.95) 0px, transparent 50%) !important;
     background-attachment: fixed !important;
-    color: #f8fafc !important;
+    color: #f0faf8 !important;
   }
 }
 
 /* =========================================================
-   SIDEBAR & CARD COLOR STYLING (TW.1 SEAFOAM)
+   SIDEBAR & CARD COLOR STYLING
    ========================================================= */
 
-/* Light Mode: Sidebar & Surfaces */
+/* Light Mode: Ruddy Blue Sidebar & Cards */
 html:not(.dark) aside {
-  background-color: #e2f1ef !important;
-  border-right: 1px solid #c7e3df !important;
-  color: #132a2f !important;
+  background-color: #deecf7 !important;
+  border-right: 1px solid #bed8ee !important;
+  color: #132235 !important;
 }
 
 html:not(.dark) aside a,
 html:not(.dark) aside button {
-  color: #3b6066 !important;
+  color: #405872 !important;
 }
 
 html:not(.dark) aside a:hover,
 html:not(.dark) aside button:hover {
-  color: #00a896 !important;
-  background-color: rgba(0, 168, 150, 0.09) !important;
+  color: #3174b5 !important;
+  background-color: rgba(118, 171, 223, 0.16) !important;
 }
 
 html:not(.dark) .surface-card,
@@ -124,15 +123,27 @@ html:not(.dark) [class*="bg-slate-900"],
 html:not(.dark) [class*="bg-zinc-900"],
 html:not(.dark) [class*="bg-gray-900"] {
   background-color: #ffffff !important;
-  border: 1px solid #cce6e2 !important;
-  color: #132a2f !important;
-  box-shadow: 0 4px 18px -2px rgba(19, 42, 47, 0.05) !important;
+  border: 1px solid #c5dcf0 !important;
+  color: #132235 !important;
+  box-shadow: 0 4px 18px -2px rgba(19, 34, 53, 0.05) !important;
 }
 
-/* Dark Mode: Sidebar & Surfaces */
+/* Dark Mode: Sidebar & Cards */
 html.dark aside {
-  background-color: #0e141f !important;
-  border-right: 1px solid #1f2a3c !important;
+  background-color: #0e1a1d !important;
+  border-right: 1px solid #1d383f !important;
+  color: #f0faf8 !important;
+}
+
+html.dark aside a,
+html.dark aside button {
+  color: #91b1b7 !important;
+}
+
+html.dark aside a:hover,
+html.dark aside button:hover {
+  color: #00e5c9 !important;
+  background-color: rgba(0, 229, 201, 0.1) !important;
 }
 
 html.dark .surface-card,
@@ -140,10 +151,10 @@ html.dark [class*="bg-card"],
 html.dark [class*="bg-slate-900"],
 html.dark [class*="bg-zinc-900"],
 html.dark [class*="bg-gray-900"] {
-  background-color: #151c28 !important;
-  border: 1px solid #263245 !important;
-  color: #f8fafc !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45) !important;
+  background-color: #122226 !important;
+  border: 1px solid #1d383f !important;
+  color: #f0faf8 !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* =========================================================
@@ -164,14 +175,14 @@ html.dark [class*="bg-gray-900"] {
 
 html:not(.dark) .surface-card:hover,
 html:not(.dark) [class*="bg-card"]:hover {
-  border-color: #00a896 !important;
-  box-shadow: 0 12px 28px -6px rgba(0, 168, 150, 0.22) !important;
+  border-color: #76abdf !important;
+  box-shadow: 0 12px 28px -6px rgba(118, 171, 223, 0.35) !important;
 }
 
 html.dark .surface-card:hover,
 html.dark [class*="bg-card"]:hover {
-  border-color: #00cca8 !important;
-  box-shadow: 0 12px 30px -6px rgba(0, 204, 168, 0.25) !important;
+  border-color: #00e5c9 !important;
+  box-shadow: 0 12px 30px -6px rgba(0, 229, 201, 0.3) !important;
 }
 
 /* Buttons & Links Pop-Out */
@@ -197,16 +208,16 @@ a:hover,
 
 html:not(.dark) button:hover,
 html:not(.dark) a:hover {
-  border-color: #00a896 !important;
-  box-shadow: 0 0 16px rgba(0, 168, 150, 0.35), 
-              0 6px 16px -2px rgba(19, 42, 47, 0.08) !important;
+  border-color: #76abdf !important;
+  box-shadow: 0 0 16px rgba(118, 171, 223, 0.45), 
+              0 6px 16px -2px rgba(19, 34, 53, 0.08) !important;
 }
 
 html.dark button:hover,
 html.dark a:hover {
-  border-color: #00cca8 !important;
-  box-shadow: 0 0 16px rgba(0, 204, 168, 0.35), 
-              0 8px 20px -4px rgba(0, 0, 0, 0.5) !important;
+  border-color: #00e5c9 !important;
+  box-shadow: 0 0 16px rgba(0, 229, 201, 0.45), 
+              0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
 }
 
 button:active,
@@ -215,7 +226,7 @@ a:active,
   transform: scale(0.98) !important;
 }
 
-/* Clean Seafoam Scrollbars */
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
@@ -224,21 +235,21 @@ a:active,
   background: transparent;
 }
 html:not(.dark) ::-webkit-scrollbar-thumb {
-  background: #b5dcd6;
+  background: #bed8ee;
   border-radius: 9999px;
 }
 html:not(.dark) ::-webkit-scrollbar-thumb:hover {
-  background: #00a896;
+  background: #76abdf;
 }
 html.dark ::-webkit-scrollbar-thumb {
-  background: #2b394e;
+  background: #1d383f;
   border-radius: 9999px;
 }
 html.dark ::-webkit-scrollbar-thumb:hover {
-  background: #00cca8;
+  background: #00e5c9;
 }
 
-/* Utilities Cleanup */
+/* Cleanups */
 #lovable-badge,
 [data-lovable-badge],
 .lovable-badge,
