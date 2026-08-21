@@ -88,6 +88,10 @@
   --alarming-foreground: oklch(1 0 0);
   --collision: oklch(0.577 0.237 25.331);
   --collision-foreground: oklch(1 0 0);
+  --input-background: oklch(1 0 0);
+  --live: oklch(0.55 0.13 162.48);
+  --live-surface: oklch(0.95 0.03 162.48);
+  --live-border: oklch(0.72 0.12 162.48);
 }
 
 .dark {
