@@ -1,4 +1,4 @@
-# AegisNav Companion
+# NetraSense Companion
 
 Act as an expert Senior Full-Stack Engineer and UI/UX Designer specialized in WCAG 2.1 AAA accessible web applications. Build a production-ready, highly responsive Assistive Navigation & Telemetry Dashboard called "AegisNav" designed for visually impaired individuals and their caregivers.
 
