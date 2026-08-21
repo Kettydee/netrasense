@@ -2,35 +2,37 @@
 
 @layer base {
   :root {
-    /* Main Background & Deep Surface Layers */
-    --background: 222 47% 4%;       /* #050811 - Deep Obsidian Void */
-    --foreground: 210 40% 98%;      /* #F8FAFC - Ultra-bright Crisp White */
+    /* Modern HealthTech Palette */
+    --background: 222 47% 7%;        /* Deep Slate #0F172A */
+    --foreground: 210 40% 98%;       /* Clean White #F8FAFC */
 
-    --card: 222 47% 7%;             /* #090F1D - Elevated Midnight Slate */
+    --card: 217 33% 12%;             /* Elevated Slate #141E33 */
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 47% 7%;
+    --popover: 217 33% 12%;
     --popover-foreground: 210 40% 98%;
 
-    /* Electric Indigo Accents */
-    --primary: 238 84% 67%;         /* #6366F1 */
+    /* HealthTech Clean Teal */
+    --primary: 174 100% 33%;         /* #00A896 Teal */
     --primary-foreground: 0 0% 100%;
 
-    /* Muted Elements & Sub-texts */
-    --muted: 217 33% 14%;           /* #172033 */
-    --muted-foreground: 215 20% 70%;/* #94A3B8 */
+    /* Subtle Neutral & Borders */
+    --muted: 215 25% 18%;            /* #1E293B */
+    --muted-foreground: 215 20% 75%; /* Soft readable slate */
+    --border: 217 33% 20%;           /* #233148 */
+    --input: 217 33% 20%;
+    --ring: 174 100% 33%;
 
-    /* Subtle Architectural Borders */
-    --border: 217 33% 17%;          /* #1E293B */
-    --input: 217 33% 17%;
-    --ring: 238 84% 67%;
+    /* Status Tiers */
+    --live: 174 100% 40%;            /* Clean Teal for normal safe stream */
+    --live-surface: 174 100% 8%;
+    --live-border: 174 100% 22%;
 
-    /* Live Telemetry / Assistive Status Tiers */
-    --live: 160 84% 45%;            /* #10B981 Emerald */
-    --live-surface: 160 84% 8%;     /* Deep tinted surface */
-    --live-border: 160 84% 20%;
+    /* Emergency Accent */
+    --destructive: 18 95% 48%;       /* Energetic Amber #F77F00 / Emergency Alert */
+    --destructive-foreground: 0 0% 100%;
 
-    --radius: 0.85rem;
+    --radius: 0.875rem;
   }
 
   body {
@@ -40,40 +42,49 @@
   }
 }
 
-/* Custom High-Contrast Surface Card Class */
+/* Custom Interactive Surface Cards */
 .surface-card {
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .surface-card:hover {
-  border-color: rgba(99, 102, 241, 0.45);
+  border-color: hsl(var(--primary));
+  box-shadow: 0 4px 20px -2px rgba(0, 168, 150, 0.15);
 }
 
-/* Pulse Threat Keyframes */
-@keyframes pulse-threat {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.75;
-    transform: scale(1.02);
-  }
+/* Global Zoom-out Micro-interaction on Hover for ALL Buttons & Nav Links */
+button,
+.button,
+[role="button"],
+nav a,
+.interactive-item {
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease, border-color 0.15s ease !important;
 }
 
-.pulse-threat {
-  animation: pulse-threat 1.2s ease-in-out infinite;
+/* Slightly zooms out (scale down) on hover */
+button:hover,
+.button:hover,
+[role="button"]:hover,
+nav a:hover,
+.interactive-item:hover {
+  transform: scale(0.95) !important;
 }
 
-/* Hide Lovable Badges */
+/* Tactile feedback on click */
+button:active,
+.button:active,
+[role="button"]:active {
+  transform: scale(0.92) !important;
+}
+
+/* Hide Lovable Badge */
 #lovable-badge,
 [data-lovable-badge],
 .lovable-badge {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
-  pointer-events: none !important;
 }
