@@ -74,7 +74,7 @@ aside a {
   will-change: transform, box-shadow;
 }
 
-/* Hover: Pops outward (scale-up) and illuminates with Teal Glow */
+/* Hover: Pops outward (1.06x scale) + Teal Border + Ambient Glow + Depth Shadow */
 button:hover,
 a:hover,
 [role="button"]:hover,
@@ -82,9 +82,10 @@ a:hover,
 nav button:hover,
 aside button:hover,
 aside a:hover {
-  transform: scale(1.05) translateY(-1px) !important;
+  transform: scale(1.06) translateY(-1px) !important;
   border-color: #00A896 !important;
   box-shadow: 0 0 18px rgba(0, 168, 150, 0.45), 
+              0 10px 25px -5px rgba(0, 168, 150, 0.35),
               0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
   z-index: 20;
 }
