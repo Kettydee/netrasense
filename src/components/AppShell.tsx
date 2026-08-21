@@ -38,7 +38,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
           <span className="text-lg font-extrabold tracking-tight">AegisNav</span>
         </div>
         <p
-          className="mt-3 inline-flex items-center gap-2 rounded-full bg-normal/15 px-3 py-1 text-xs font-semibold text-normal"
+          className="mt-3 inline-flex items-center gap-2 rounded-full border border-live-border bg-live-surface px-3 py-1 text-xs font-bold text-live"
           role="status"
         >
           <Radio aria-hidden="true" className="size-3.5 pulse-threat" />
