@@ -2,39 +2,43 @@
 
 @layer base {
   /* =========================================================
-     LIGHT MODE: Calming Porcelain & Bio-Sage Clinical Palette
+     LIGHT MODE: Pastel Lavender, Rose Pink & Sky Blue Palette
      ========================================================= */
   :root {
-    --background: 165 14% 96%;          /* Crisp Linen #F4F7F6 */
-    --foreground: 220 24% 18%;          /* Deep Graphite #222B38 */
+    --background: 280 35% 94%;          /* Soft Thistle Linen #F5EEF8 */
+    --foreground: 230 35% 18%;          /* Deep Slate Ink #1E2338 */
 
-    --card: 0 0% 100%;                  /* Porcelain White #FFFFFF */
-    --card-foreground: 220 24% 18%;
+    --card: 0 0% 100%;                  /* Crisp White #FFFFFF */
+    --card-foreground: 230 35% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 24% 18%;
+    --popover-foreground: 230 35% 18%;
 
-    --primary: 174 100% 27%;            /* MedTech Clean Sage/Teal #00897B */
-    --primary-foreground: 0 0% 100%;
+    /* Primary: Sky Aqua Blue #78BDD0 */
+    --primary: 193 50% 65%;
+    --primary-foreground: 230 35% 18%;
 
-    --muted: 165 20% 92%;               /* Soft Mineral Neutral #E5ECE9 */
-    --muted-foreground: 215 16% 45%;    /* High-contrast Slate #607285 */
-    --border: 165 15% 88%;              /* Subtle Card Border #DAE3E0 */
-    --input: 165 15% 88%;
-    --ring: 174 100% 27%;
+    /* Neutrals & Borders: Thistle / Pink Tint */
+    --muted: 335 100% 96%;              /* Soft Pink Mist #FFF0F5 */
+    --muted-foreground: 280 15% 45%;    /* Soft Lavender Slate #6E6278 */
+    --border: 335 60% 90%;              /* Pastel Pink Border #F8D7E3 */
+    --input: 335 60% 90%;
+    --ring: 193 50% 65%;
 
-    --live: 174 100% 27%;
-    --live-surface: 165 60% 94%;
-    --live-border: 165 40% 82%;
+    /* Telemetry & Badges: Sky Aqua */
+    --live: 193 60% 45%;
+    --live-surface: 193 70% 95%;
+    --live-border: 193 50% 75%;
 
-    --destructive: 24 95% 53%;          /* Amber Warning #EA580C */
+    /* Alert / Warning */
+    --destructive: 340 100% 75%;        /* Rose Accent #FFAFCC */
     --destructive-foreground: 0 0% 100%;
 
     --radius: 0.875rem;
   }
 
   /* =========================================================
-     DARK MODE: Premium Titanium Obsidian & Luminous Bio-Teal
+     DARK MODE: Enterprise Obsidian & Luminous Bio-Teal
      ========================================================= */
   .dark {
     --background: 216 33% 7%;           /* Deep Onyx Slate #0B1017 */
@@ -49,9 +53,9 @@
     --primary: 173 100% 41%;            /* Luminous Bio-Teal #00D2B4 */
     --primary-foreground: 216 33% 7%;
 
-    --muted: 215 25% 18%;               /* Slate Neutral #222C3D */
-    --muted-foreground: 215 16% 70%;    /* Readable Silver Slate #A0AEC0 */
-    --border: 215 25% 20%;              /* Dark Slate Border #263245 */
+    --muted: 215 25% 18%;
+    --muted-foreground: 215 16% 70%;
+    --border: 215 25% 20%;
     --input: 215 25% 20%;
     --ring: 173 100% 41%;
 
@@ -59,28 +63,29 @@
     --live-surface: 173 100% 8%;
     --live-border: 173 80% 22%;
 
-    --destructive: 20 90% 55%;          /* Clinical Hazard Amber #F97316 */
+    --destructive: 20 90% 55%;
     --destructive-foreground: 0 0% 100%;
   }
 
-  /* --- Full Screen Surface Canvas Overrides --- */
   html, body, #root {
     min-height: 100vh;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  /* Light Theme Canvas Gradient */
+  /* --- Light Mode Ambient Mesh Background --- */
   html:not(.dark) body {
-    background-color: #f4f7f6 !important;
+    background-color: #f7eff7 !important;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(0, 137, 123, 0.06) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(220, 233, 230, 0.5) 0px, transparent 50%) !important;
+      radial-gradient(at 0% 0%, rgba(205, 180, 219, 0.45) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(120, 189, 208, 0.35) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(255, 200, 221, 0.45) 0px, transparent 55%),
+      radial-gradient(at 100% 100%, rgba(255, 175, 204, 0.25) 0px, transparent 45%) !important;
     background-attachment: fixed !important;
-    color: #222b38 !important;
+    color: #1e2338 !important;
   }
 
-  /* Dark Theme Canvas Gradient */
+  /* --- Dark Mode Ambient Canvas --- */
   html.dark body {
     background-color: #0b1017 !important;
     background-image: 
@@ -92,13 +97,14 @@
 }
 
 /* =========================================================
-   SIDEBAR & CARD COLOR OVERRIDES
+   SIDEBAR & CARD COLOR STYLING
    ========================================================= */
 
 /* Light Mode: Sidebar & Cards */
 html:not(.dark) aside {
-  background-color: #e9f0ee !important;
-  border-right: 1px solid #dae3e0 !important;
+  background-color: rgba(255, 240, 246, 0.85) !important;
+  border-right: 1px solid #f2cfdc !important;
+  backdrop-filter: blur(16px);
 }
 
 html:not(.dark) .surface-card,
@@ -107,9 +113,9 @@ html:not(.dark) [class*="bg-slate-900"],
 html:not(.dark) [class*="bg-zinc-900"],
 html:not(.dark) [class*="bg-gray-900"] {
   background-color: #ffffff !important;
-  border: 1px solid #dae3e0 !important;
-  color: #222b38 !important;
-  box-shadow: 0 4px 16px -2px rgba(34, 43, 56, 0.04) !important;
+  border: 1px solid #eed0dc !important;
+  color: #1e2338 !important;
+  box-shadow: 0 4px 20px -2px rgba(205, 180, 219, 0.2) !important;
 }
 
 /* Dark Mode: Sidebar & Cards */
@@ -130,7 +136,7 @@ html.dark [class*="bg-gray-900"] {
 }
 
 /* =========================================================
-   ELEVATION & HOVER INTERACTIONS (1.06x Zoom & Glowing Borders)
+   HOVER & POP-OUT INTERACTION (1.06x Zoom & Glowing Borders)
    ========================================================= */
 .surface-card,
 [class*="bg-card"] {
@@ -147,8 +153,8 @@ html.dark [class*="bg-gray-900"] {
 
 html:not(.dark) .surface-card:hover,
 html:not(.dark) [class*="bg-card"]:hover {
-  border-color: #00897b !important;
-  box-shadow: 0 12px 28px -6px rgba(0, 137, 123, 0.18) !important;
+  border-color: #78bdd0 !important;
+  box-shadow: 0 12px 30px -6px rgba(120, 189, 208, 0.35) !important;
 }
 
 html.dark .surface-card:hover,
@@ -157,7 +163,7 @@ html.dark [class*="bg-card"]:hover {
   box-shadow: 0 12px 30px -6px rgba(0, 210, 180, 0.25) !important;
 }
 
-/* Buttons & Links Pop-Out Feedback */
+/* Buttons & Links Pop-Out */
 button,
 a,
 [role="button"],
@@ -180,9 +186,9 @@ a:hover,
 
 html:not(.dark) button:hover,
 html:not(.dark) a:hover {
-  border-color: #00897b !important;
-  box-shadow: 0 0 14px rgba(0, 137, 123, 0.25), 
-              0 6px 16px -2px rgba(34, 43, 56, 0.08) !important;
+  border-color: #78bdd0 !important;
+  box-shadow: 0 0 16px rgba(120, 189, 208, 0.4), 
+              0 6px 16px -2px rgba(255, 175, 204, 0.25) !important;
 }
 
 html.dark button:hover,
@@ -198,7 +204,7 @@ a:active,
   transform: scale(0.98) !important;
 }
 
-/* Minimal Custom Scrollbar */
+/* Custom Minimal Scrollbar */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
@@ -207,11 +213,11 @@ a:active,
   background: transparent;
 }
 html:not(.dark) ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #cdb4db;
   border-radius: 9999px;
 }
 html:not(.dark) ::-webkit-scrollbar-thumb:hover {
-  background: #00897b;
+  background: #78bdd0;
 }
 html.dark ::-webkit-scrollbar-thumb {
   background: #2b394e;
@@ -221,7 +227,7 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   background: #00d2b4;
 }
 
-/* Utilities Cleanup */
+/* Cleanups */
 #lovable-badge,
 [data-lovable-badge],
 .lovable-badge,
