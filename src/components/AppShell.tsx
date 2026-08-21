@@ -110,7 +110,7 @@ export function AppShell({ title, description, children, actions }: AppShellProp
             </button>
           </div>
 
-          {/* Theme Switcher: Light / Dark / Auto */}
+          {/* Theme Switcher */}
           <div className="mt-4 flex w-full items-center justify-center rounded-xl border border-border bg-muted/40 p-1">
             {isSidebarOpen ? (
               <div className="grid w-full grid-cols-3 gap-1">
@@ -207,28 +207,28 @@ export function AppShell({ title, description, children, actions }: AppShellProp
 
       {/* --- MAIN CONTENT VIEWPORT --- */}
       <main className="flex-1 overflow-y-auto px-6 py-8 transition-all duration-300 ease-in-out max-w-full">
-        {/* --- HEADER WITH ACTIONS IN TOP-RIGHT --- */}
+        {/* --- HEADER WITH FULL RED SOS + LIGHT HIGHLIGHT IN TOP-RIGHT --- */}
         <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-border/50 pb-4">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
             {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
           </div>
 
-          {/* Top-Right Header Buttons: SOS & Log Out */}
           <div className="flex items-center gap-3">
             {actions}
 
-            <Button
+            {/* FULL RED BROADCAST SOS BUTTON WITH LIGHT HIGHLIGHT */}
+            <button
               type="button"
-              variant="destructive"
               onClick={handleSos}
-              className="font-bold flex items-center gap-2 px-4 shadow-sm cursor-pointer"
-              title="Broadcast SOS"
+              className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-[0_0_15px_rgba(239,68,68,0.35)] border border-red-400/50 hover:bg-red-500 hover:shadow-[0_0_22px_rgba(239,68,68,0.6)] hover:border-red-300 transition-all duration-200 cursor-pointer active:scale-95"
+              title="Broadcast SOS Emergency Alert"
             >
-              <Siren className="size-4 shrink-0" />
+              <Siren className="size-4 animate-bounce text-white shrink-0" />
               <span>BROADCAST SOS</span>
-            </Button>
+            </button>
 
+            {/* Log out Button */}
             <Button
               type="button"
               variant="outline"
