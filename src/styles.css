@@ -46,6 +46,11 @@
   --color-collision: var(--collision);
   --color-collision-foreground: var(--collision-foreground);
   --color-surface: var(--surface);
+  --color-input-background: var(--input-background);
+  --color-live: var(--live);
+  --color-live-surface: var(--live-surface);
+  --color-live-border: var(--live-border);
+
   --color-chart-1: var(--normal);
   --color-chart-2: var(--warning);
   --color-chart-3: var(--alarming);
