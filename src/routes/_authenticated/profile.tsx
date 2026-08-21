@@ -14,14 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { fetchContacts, fetchProfile } from "@/lib/queries";
-import { BLOOD_GROUPS, IMPAIRMENT_LEVELS, type ImpairmentLevel } from "@/lib/aegis";
+import { BLOOD_GROUPS, IMPAIRMENT_LEVELS, type ImpairmentLevel } from "@/lib/netrasense";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
-      { title: "Profile & Medical ID — AegisNav" },
+      { title: "Profile & Medical ID — NetraSense" },
       { name: "description", content: "View and edit personal, medical and impairment details, and print an emergency medical ID card." },
-      { property: "og:title", content: "Profile & Medical ID — AegisNav" },
+      { property: "og:title", content: "Profile & Medical ID — NetraSense" },
       { property: "og:description", content: "Manage your medical ID details for emergency responders." },
     ],
   }),
@@ -178,7 +178,7 @@ function ProfilePage() {
               <HeartPulse aria-hidden="true" className="size-7" />
               <div>
                 <p className="text-lg font-extrabold uppercase tracking-wide">Emergency Medical ID</p>
-                <p className="text-sm">AegisNav assistive navigation user</p>
+                <p className="text-sm">NetraSense assistive navigation user</p>
               </div>
             </div>
             <dl className="grid gap-4 p-5 sm:grid-cols-2">
