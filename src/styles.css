@@ -24,12 +24,12 @@
     --ring: 174 100% 33%;
 
     /* Status Tiers */
-    --live: 174 100% 40%;            /* Clean Teal for normal safe stream */
+    --live: 174 100% 40%;
     --live-surface: 174 100% 8%;
     --live-border: 174 100% 22%;
 
     /* Emergency Accent */
-    --destructive: 18 95% 48%;       /* Energetic Amber #F77F00 / Emergency Alert */
+    --destructive: 18 95% 48%;       /* Energetic Amber #F77F00 */
     --destructive-foreground: 0 0% 100%;
 
     --radius: 0.875rem;
@@ -42,45 +42,44 @@
   }
 }
 
-/* Custom Interactive Surface Cards */
+/* Surface Cards */
 .surface-card {
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.surface-card:hover {
-  border-color: hsl(var(--primary));
-  box-shadow: 0 4px 20px -2px rgba(0, 168, 150, 0.15);
-}
-
-/* Global Zoom-out Micro-interaction on Hover for ALL Buttons & Nav Links */
+/* --- FORCE ZOOM-OUT (SCALE DOWN) ON HOVER --- */
 button,
-.button,
+a,
 [role="button"],
-nav a,
-.interactive-item {
-  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease, border-color 0.15s ease !important;
+.btn,
+nav button,
+aside button,
+aside a {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  will-change: transform;
 }
 
-/* Slightly zooms out (scale down) on hover */
+/* Zoom out to 92% size on hover */
 button:hover,
-.button:hover,
+a:hover,
 [role="button"]:hover,
-nav a:hover,
-.interactive-item:hover {
-  transform: scale(0.95) !important;
-}
-
-/* Tactile feedback on click */
-button:active,
-.button:active,
-[role="button"]:active {
+.btn:hover,
+nav button:hover,
+aside button:hover,
+aside a:hover {
   transform: scale(0.92) !important;
 }
 
-/* Hide Lovable Badge */
+/* Extra tactile zoom out on click */
+button:active,
+a:active,
+[role="button"]:active {
+  transform: scale(0.88) !important;
+}
+
+/* Lovable removal */
 #lovable-badge,
 [data-lovable-badge],
 .lovable-badge {
