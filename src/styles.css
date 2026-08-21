@@ -35,32 +35,36 @@
     --radius: 0.875rem;
   }
 
-  body {
-    background-color: hsl(var(--background));
-    /* MedTech Soft Ambient Radial Glow */
+  body, html, #root {
+    background-color: #0b132b !important;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(0, 168, 150, 0.08) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(15, 23, 42, 0.6) 0px, transparent 50%);
-    background-attachment: fixed;
-    color: hsl(var(--foreground));
+      radial-gradient(at 0% 0%, rgba(0, 168, 150, 0.12) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(15, 23, 42, 0.8) 0px, transparent 50%) !important;
+    background-attachment: fixed !important;
+    color: #f8fafc !important;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
-/* Surface Cards with HealthTech Hover Elevation */
-.surface-card {
-  background-color: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
+/* Force MedTech Card Surfaces */
+.surface-card,
+[class*="bg-card"],
+[class*="bg-slate-900"],
+[class*="bg-zinc-900"],
+[class*="bg-gray-900"] {
+  background-color: #141e33 !important;
+  border: 1px solid #23314f !important;
   border-radius: var(--radius);
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), 
               border-color 0.2s ease, 
               box-shadow 0.22s ease;
 }
 
-.surface-card:hover {
+.surface-card:hover,
+[class*="bg-card"]:hover {
   transform: translateY(-3px) scale(1.02);
-  border-color: hsl(var(--primary));
-  box-shadow: 0 12px 30px -8px rgba(0, 168, 150, 0.25);
+  border-color: #00a896 !important;
+  box-shadow: 0 12px 30px -8px rgba(0, 168, 150, 0.25) !important;
 }
 
 /* --- POP OUT + HIGHLIGHT GLOW ON HOVER --- */
@@ -88,7 +92,7 @@ nav button:hover,
 aside button:hover,
 aside a:hover {
   transform: scale(1.06) translateY(-1px) !important;
-  border-color: #00A896 !important;
+  border-color: #00a896 !important;
   box-shadow: 0 0 18px rgba(0, 168, 150, 0.45), 
               0 10px 25px -5px rgba(0, 168, 150, 0.35),
               0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
