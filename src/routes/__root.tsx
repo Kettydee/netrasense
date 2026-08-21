@@ -79,13 +79,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "AegisNav — Assistive Navigation Telemetry" },
+      { title: "NetraSense — Assistive Navigation Telemetry" },
       {
         name: "description",
         content:
-          "AegisNav is an accessible navigation and telemetry dashboard for visually impaired users and their caregivers.",
+          "NetraSense is an accessible navigation and telemetry dashboard for visually impaired users and their caregivers.",
       },
-      { property: "og:title", content: "AegisNav — Assistive Navigation Telemetry" },
+      { property: "og:title", content: "NetraSense — Assistive Navigation Telemetry" },
       {
         property: "og:description",
         content: "Live obstacle telemetry, medical ID and emergency contacts in one accessible dashboard.",
@@ -128,7 +128,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("aegisnav:theme");
+    const stored = window.localStorage.getItem("netrasense:theme");
     if (stored) document.documentElement.classList.toggle("dark", stored === "dark");
   }, []);
 
