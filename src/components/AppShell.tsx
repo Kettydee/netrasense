@@ -1,148 +1,151 @@
 import { useState, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
-  LayoutDashboard,
-  UserRound,
-  Siren,
-  ScrollText,
-  Settings,
-  Menu,
-  LogOut,
   ShieldAlert,
-  Radio,
+  Menu,
   X,
+  LayoutDashboard,
+  User,
+  Siren,
+  FileText,
+  Settings,
+  LogOut,
+  Radio,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
-import { SosDialog } from "@/components/SosDialog";
-import { cn } from "@/lib/utils";
 
-const NAV = [
-  { to: "/dashboard", label: "Realtime Dashboard", icon: LayoutDashboard },
-  { to: "/profile", label: "User Profile & Medical ID", icon: UserRound },
-  { to: "/contacts", label: "Emergency Contacts Hub", icon: Siren },
-  { to: "/logs", label: "Incident & Telemetry Logs", icon: ScrollText },
-  { to: "/settings", label: "Settings & Audio Preferences", icon: Settings },
-] as const;
-
-function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
-  const { signOut } = useAuth();
-  const [sosOpen, setSosOpen] = useState(false);
-
-  return (
-    <div className="flex h-full flex-col gap-6 p-4">
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <div className="flex items-center gap-2">
-          <ShieldAlert aria-hidden="true" className="size-6 text-primary" />
-          <span className="text-lg font-extrabold tracking-tight">NetraSense</span>
-        </div>
-        <p
-          className="mt-3 inline-flex items-center gap-2 rounded-full border border-live-border bg-live-surface px-3 py-1 text-xs font-bold text-live"
-          role="status"
-        >
-          <Radio aria-hidden="true" className="size-3.5 pulse-threat" />
-          ESP32 Live Stream: Connected
-        </p>
-      </div>
-
-      <nav aria-label="Primary" className="flex-1">
-        <ul className="space-y-1.5">
-          {NAV.map(({ to, label, icon: Icon }) => (
-            <li key={to}>
-              <Link
-                to={to}
-                onClick={onNavigate}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground data-[status=active]:bg-primary data-[status=active]:font-bold data-[status=active]:text-primary-foreground"
-                activeProps={{ "aria-current": "page" }}
-              >
-                <Icon aria-hidden="true" className="size-5 shrink-0" />
-                <span>{label}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <div className="space-y-2 border-t border-border pt-4">
-        <Button
-          variant="destructive"
-          size="lg"
-          className="w-full text-base font-extrabold uppercase tracking-wide"
-          onClick={() => setSosOpen(true)}
-        >
-          <Siren aria-hidden="true" className="size-5" />
-          Broadcast SOS
-        </Button>
-        <Button variant="outline" className="w-full" onClick={() => void signOut()}>
-          <LogOut aria-hidden="true" className="size-4" />
-          Log out
-        </Button>
-      </div>
-      <SosDialog open={sosOpen} onOpenChange={setSosOpen} />
-    </div>
-  );
-}
-
-export function AppShell({
-  title,
-  description,
-  children,
-}: {
+interface AppShellProps {
   title: string;
   description?: string;
   children: ReactNode;
-}) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  actions?: ReactNode;
+}
+
+const NAV_ITEMS = [
+  { to: "/dashboard", label: "Realtime Dashboard", icon: LayoutDashboard },
+  { to: "/profile", label: "User Profile & Medical ID", icon: User },
+  { to: "/contacts", label: "Emergency Contacts Hub", icon: Siren },
+  { to: "/logs", label: "Incident & Telemetry Logs", icon: FileText },
+  { to: "/settings", label: "Settings & Audio Preferences", icon: Settings },
+];
+
+export function AppShell({ title, description, children, actions }: AppShellProps) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    if (signOut) await signOut();
+    navigate({ to: "/" });
+  };
 
   return (
-    <div className="min-h-screen bg-background lg:flex">
+    <div className="flex min-h-screen bg-background text-foreground overflow-x-hidden">
+      {/* --- COLLAPSIBLE SIDEBAR --- */}
       <aside
-        aria-label="Sidebar navigation"
-        className="hidden w-80 shrink-0 border-r border-border bg-card lg:sticky lg:top-0 lg:block lg:h-screen"
+        className={`relative flex flex-col justify-between border-r border-border bg-card/70 backdrop-blur-md transition-all duration-300 ease-in-out z-30 shrink-0 ${
+          isSidebarOpen ? "w-64 p-5" : "w-20 p-3 items-center"
+        }`}
       >
-        <SidebarBody />
+        <div className="w-full">
+          {/* Top Branding & 3-Lines Toggle */}
+          <div className={`flex items-center ${isSidebarOpen ? "justify-between" : "justify-center"}`}>
+            {isSidebarOpen && (
+              <Link to="/dashboard" className="flex items-center gap-2 overflow-hidden">
+                <ShieldAlert aria-hidden="true" className="size-6 shrink-0 text-primary" />
+                <span className="text-lg font-extrabold tracking-tight truncate">NetraSense</span>
+              </Link>
+            )}
+
+            {/* 3-Lines Hamburger Button */}
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none"
+              aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              {isSidebarOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
+          </div>
+
+          {/* ESP32 Live Stream Status Pill */}
+          {isSidebarOpen ? (
+            <div className="mt-4 inline-flex w-full items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1.5 text-xs font-semibold text-live">
+              <Radio className="size-3.5 animate-pulse text-live shrink-0" />
+              <span className="truncate">ESP32 Live Stream: Connected</span>
+            </div>
+          ) : (
+            <div className="mt-4 flex justify-center" title="ESP32 Live Stream: Connected">
+              <Radio className="size-4 animate-pulse text-live" />
+            </div>
+          )}
+
+          {/* Navigation Items */}
+          <nav className="mt-6 flex flex-col gap-2 w-full" aria-label="Sidebar Navigation">
+            {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
+              const isActive = location.pathname === to || location.pathname.startsWith(`${to}/`);
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                    isSidebarOpen ? "gap-3 justify-start" : "justify-center"
+                  } ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-sm font-semibold"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                  title={!isSidebarOpen ? label : undefined}
+                >
+                  <Icon className="size-5 shrink-0" />
+                  {isSidebarOpen && <span className="truncate">{label}</span>}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Bottom Actions: SOS & Logout */}
+        <div className="mt-auto flex flex-col gap-3 pt-4 border-t border-border w-full">
+          <Button
+            variant="destructive"
+            className={`w-full font-bold cursor-pointer ${!isSidebarOpen ? "px-0 justify-center" : ""}`}
+            title="Broadcast SOS"
+          >
+            <Siren className="size-4 shrink-0" />
+            {isSidebarOpen && <span className="ml-2">BROADCAST SOS</span>}
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={handleSignOut}
+            className={`w-full text-muted-foreground hover:text-foreground cursor-pointer ${
+              !isSidebarOpen ? "px-0 justify-center" : ""
+            }`}
+            title="Log out"
+          >
+            <LogOut className="size-4 shrink-0" />
+            {isSidebarOpen && <span className="ml-2">Log out</span>}
+          </Button>
+        </div>
       </aside>
 
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-foreground/60"
-            onClick={() => setMobileOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="absolute inset-y-0 left-0 w-[19rem] max-w-[88vw] overflow-y-auto border-r border-border bg-card">
-            <div className="flex justify-end p-2">
-              <Button variant="ghost" size="icon" aria-label="Close navigation" onClick={() => setMobileOpen(false)}>
-                <X aria-hidden="true" className="size-5" />
-              </Button>
-            </div>
-            <SidebarBody onNavigate={() => setMobileOpen(false)} />
+      {/* --- DYNAMIC EXPANDABLE MAIN CONTENT VIEWPORT --- */}
+      <main className="flex-1 overflow-y-auto px-6 py-8 transition-all duration-300 ease-in-out max-w-full">
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
+            {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
           </div>
-        </div>
-      )}
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur lg:px-8 lg:py-5">
-          <Button
-            variant="outline"
-            size="icon"
-            className="lg:hidden"
-            aria-label="Open navigation"
-            aria-expanded={mobileOpen}
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu aria-hidden="true" className="size-5" />
-          </Button>
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-extrabold lg:text-2xl">{title}</h1>
-            {description && <p className="truncate text-sm text-muted-foreground">{description}</p>}
-          </div>
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
         </header>
-        <main id="main-content" className={cn("flex-1 px-4 pb-16 pt-5 lg:px-8")}>
-          {children}
-        </main>
-      </div>
+
+        {children}
+      </main>
     </div>
   );
 }
