@@ -2,68 +2,68 @@
 
 @layer base {
   /* =========================================================
-     LIGHT MODE: Pastel Lavender, Rose Pink & Sky Blue Palette
+     LIGHT MODE: TW.1 Seafoam & Mint Clinical HealthTech
      ========================================================= */
   :root {
-    --background: 280 35% 94%;          /* Soft Thistle Linen #F5EEF8 */
-    --foreground: 230 35% 18%;          /* Deep Slate Ink #1E2338 */
+    --background: 175 35% 95%;          /* Clinical Seafoam Frost #EDF7F6 */
+    --foreground: 185 45% 15%;          /* Deep Forest Slate #132A2F */
 
-    --card: 0 0% 100%;                  /* Crisp White #FFFFFF */
-    --card-foreground: 230 35% 18%;
+    --card: 0 0% 100%;                  /* Pure White #FFFFFF */
+    --card-foreground: 185 45% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 230 35% 18%;
+    --popover-foreground: 185 45% 15%;
 
-    /* Primary: Sky Aqua Blue #78BDD0 */
-    --primary: 193 50% 65%;
-    --primary-foreground: 230 35% 18%;
+    /* Diagnostic Seafoam Teal (TW.1 Primary) */
+    --primary: 174 100% 33%;            /* #00A896 */
+    --primary-foreground: 0 0% 100%;
 
-    /* Neutrals & Borders: Thistle / Pink Tint */
-    --muted: 335 100% 96%;              /* Soft Pink Mist #FFF0F5 */
-    --muted-foreground: 280 15% 45%;    /* Soft Lavender Slate #6E6278 */
-    --border: 335 60% 90%;              /* Pastel Pink Border #F8D7E3 */
-    --input: 335 60% 90%;
-    --ring: 193 50% 65%;
+    /* Soft Mint & Slate Neutrals */
+    --muted: 175 30% 90%;               /* #D8ECE9 */
+    --muted-foreground: 180 18% 45%;    /* #5F7D82 */
+    --border: 175 25% 86%;              /* #C7E3DF */
+    --input: 175 25% 86%;
+    --ring: 174 100% 33%;
 
-    /* Telemetry & Badges: Sky Aqua */
-    --live: 193 60% 45%;
-    --live-surface: 193 70% 95%;
-    --live-border: 193 50% 75%;
+    /* Live Telemetry Pill & Radar Stream */
+    --live: 174 100% 33%;
+    --live-surface: 174 60% 94%;
+    --live-border: 174 50% 80%;
 
-    /* Alert / Warning */
-    --destructive: 340 100% 75%;        /* Rose Accent #FFAFCC */
+    /* Alert / Emergency */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --radius: 0.875rem;
   }
 
   /* =========================================================
-     DARK MODE: Enterprise Obsidian & Luminous Bio-Teal
+     DARK MODE: Deep Titanium Slate & Luminous Cyan
      ========================================================= */
   .dark {
-    --background: 216 33% 7%;           /* Deep Onyx Slate #0B1017 */
+    --background: 216 33% 7%;           /* Deep Onyx #0B1017 */
     --foreground: 210 40% 98%;          /* Pure Ice White #F8FAFC */
 
-    --card: 217 31% 12%;                /* Midnight Titanium #151C28 */
+    --card: 217 31% 12%;                /* Elevated Slate #151C28 */
     --card-foreground: 210 40% 98%;
 
     --popover: 217 31% 12%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 173 100% 41%;            /* Luminous Bio-Teal #00D2B4 */
+    --primary: 174 100% 40%;            /* Luminous Seafoam #00CCA8 */
     --primary-foreground: 216 33% 7%;
 
     --muted: 215 25% 18%;
     --muted-foreground: 215 16% 70%;
     --border: 215 25% 20%;
     --input: 215 25% 20%;
-    --ring: 173 100% 41%;
+    --ring: 174 100% 40%;
 
-    --live: 173 100% 41%;
-    --live-surface: 173 100% 8%;
-    --live-border: 173 80% 22%;
+    --live: 174 100% 40%;
+    --live-surface: 174 100% 8%;
+    --live-border: 174 80% 22%;
 
-    --destructive: 20 90% 55%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
   }
 
@@ -73,23 +73,23 @@
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  /* --- Light Mode Ambient Mesh Background --- */
+  /* --- TW.1 Light Mode Ambient Background Mesh --- */
   html:not(.dark) body {
-    background-color: #f7eff7 !important;
+    background-color: #edf7f6 !important;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(205, 180, 219, 0.45) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, rgba(120, 189, 208, 0.35) 0px, transparent 50%),
-      radial-gradient(at 50% 100%, rgba(255, 200, 221, 0.45) 0px, transparent 55%),
-      radial-gradient(at 100% 100%, rgba(255, 175, 204, 0.25) 0px, transparent 45%) !important;
+      radial-gradient(at 0% 0%, rgba(0, 168, 150, 0.12) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(67, 198, 172, 0.1) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(200, 235, 230, 0.45) 0px, transparent 55%),
+      radial-gradient(at 100% 100%, rgba(0, 168, 150, 0.08) 0px, transparent 45%) !important;
     background-attachment: fixed !important;
-    color: #1e2338 !important;
+    color: #132a2f !important;
   }
 
   /* --- Dark Mode Ambient Canvas --- */
   html.dark body {
     background-color: #0b1017 !important;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(0, 210, 180, 0.08) 0px, transparent 50%),
+      radial-gradient(at 0% 0%, rgba(0, 204, 168, 0.08) 0px, transparent 50%),
       radial-gradient(at 100% 100%, rgba(10, 15, 24, 0.95) 0px, transparent 50%) !important;
     background-attachment: fixed !important;
     color: #f8fafc !important;
@@ -97,14 +97,25 @@
 }
 
 /* =========================================================
-   SIDEBAR & CARD COLOR STYLING
+   SIDEBAR & CARD COLOR STYLING (TW.1 SEAFOAM)
    ========================================================= */
 
-/* Light Mode: Sidebar & Cards */
+/* Light Mode: Sidebar & Surfaces */
 html:not(.dark) aside {
-  background-color: rgba(255, 240, 246, 0.85) !important;
-  border-right: 1px solid #f2cfdc !important;
-  backdrop-filter: blur(16px);
+  background-color: #e2f1ef !important;
+  border-right: 1px solid #c7e3df !important;
+  color: #132a2f !important;
+}
+
+html:not(.dark) aside a,
+html:not(.dark) aside button {
+  color: #3b6066 !important;
+}
+
+html:not(.dark) aside a:hover,
+html:not(.dark) aside button:hover {
+  color: #00a896 !important;
+  background-color: rgba(0, 168, 150, 0.09) !important;
 }
 
 html:not(.dark) .surface-card,
@@ -113,12 +124,12 @@ html:not(.dark) [class*="bg-slate-900"],
 html:not(.dark) [class*="bg-zinc-900"],
 html:not(.dark) [class*="bg-gray-900"] {
   background-color: #ffffff !important;
-  border: 1px solid #eed0dc !important;
-  color: #1e2338 !important;
-  box-shadow: 0 4px 20px -2px rgba(205, 180, 219, 0.2) !important;
+  border: 1px solid #cce6e2 !important;
+  color: #132a2f !important;
+  box-shadow: 0 4px 18px -2px rgba(19, 42, 47, 0.05) !important;
 }
 
-/* Dark Mode: Sidebar & Cards */
+/* Dark Mode: Sidebar & Surfaces */
 html.dark aside {
   background-color: #0e141f !important;
   border-right: 1px solid #1f2a3c !important;
@@ -153,14 +164,14 @@ html.dark [class*="bg-gray-900"] {
 
 html:not(.dark) .surface-card:hover,
 html:not(.dark) [class*="bg-card"]:hover {
-  border-color: #78bdd0 !important;
-  box-shadow: 0 12px 30px -6px rgba(120, 189, 208, 0.35) !important;
+  border-color: #00a896 !important;
+  box-shadow: 0 12px 28px -6px rgba(0, 168, 150, 0.22) !important;
 }
 
 html.dark .surface-card:hover,
 html.dark [class*="bg-card"]:hover {
-  border-color: #00d2b4 !important;
-  box-shadow: 0 12px 30px -6px rgba(0, 210, 180, 0.25) !important;
+  border-color: #00cca8 !important;
+  box-shadow: 0 12px 30px -6px rgba(0, 204, 168, 0.25) !important;
 }
 
 /* Buttons & Links Pop-Out */
@@ -186,15 +197,15 @@ a:hover,
 
 html:not(.dark) button:hover,
 html:not(.dark) a:hover {
-  border-color: #78bdd0 !important;
-  box-shadow: 0 0 16px rgba(120, 189, 208, 0.4), 
-              0 6px 16px -2px rgba(255, 175, 204, 0.25) !important;
+  border-color: #00a896 !important;
+  box-shadow: 0 0 16px rgba(0, 168, 150, 0.35), 
+              0 6px 16px -2px rgba(19, 42, 47, 0.08) !important;
 }
 
 html.dark button:hover,
 html.dark a:hover {
-  border-color: #00d2b4 !important;
-  box-shadow: 0 0 16px rgba(0, 210, 180, 0.35), 
+  border-color: #00cca8 !important;
+  box-shadow: 0 0 16px rgba(0, 204, 168, 0.35), 
               0 8px 20px -4px rgba(0, 0, 0, 0.5) !important;
 }
 
@@ -204,7 +215,7 @@ a:active,
   transform: scale(0.98) !important;
 }
 
-/* Custom Minimal Scrollbar */
+/* Clean Seafoam Scrollbars */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
@@ -213,21 +224,21 @@ a:active,
   background: transparent;
 }
 html:not(.dark) ::-webkit-scrollbar-thumb {
-  background: #cdb4db;
+  background: #b5dcd6;
   border-radius: 9999px;
 }
 html:not(.dark) ::-webkit-scrollbar-thumb:hover {
-  background: #78bdd0;
+  background: #00a896;
 }
 html.dark ::-webkit-scrollbar-thumb {
   background: #2b394e;
   border-radius: 9999px;
 }
 html.dark ::-webkit-scrollbar-thumb:hover {
-  background: #00d2b4;
+  background: #00cca8;
 }
 
-/* Cleanups */
+/* Utilities Cleanup */
 #lovable-badge,
 [data-lovable-badge],
 .lovable-badge,
