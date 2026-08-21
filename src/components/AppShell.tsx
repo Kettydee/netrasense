@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import {
   ShieldAlert,
   Menu,
@@ -33,13 +33,15 @@ const NAV_ITEMS = [
 
 export function AppShell({ title, description, children, actions }: AppShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const location = useLocation();
-  const navigate = useNavigate();
   const { signOut } = useAuth();
 
   const handleSignOut = async () => {
-    if (signOut) await signOut();
-    navigate({ to: "/" });
+    try {
+      if (signOut) await signOut();
+    } catch {
+      // safe fallback
+    }
+    window.location.href = "/";
   };
 
   return (
@@ -86,26 +88,25 @@ export function AppShell({ title, description, children, actions }: AppShellProp
 
           {/* Navigation Items */}
           <nav className="mt-6 flex flex-col gap-2 w-full" aria-label="Sidebar Navigation">
-            {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
-              const isActive = location.pathname === to || location.pathname.startsWith(`${to}/`);
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  className={`flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                    isSidebarOpen ? "gap-3 justify-start" : "justify-center"
-                  } ${
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-sm font-semibold"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                  title={!isSidebarOpen ? label : undefined}
-                >
-                  <Icon className="size-5 shrink-0" />
-                  {isSidebarOpen && <span className="truncate">{label}</span>}
-                </Link>
-              );
-            })}
+            {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                activeProps={{
+                  className: "bg-primary text-primary-foreground shadow-sm font-semibold",
+                }}
+                inactiveProps={{
+                  className: "text-muted-foreground hover:bg-muted hover:text-foreground",
+                }}
+                className={`flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                  isSidebarOpen ? "gap-3 justify-start" : "justify-center"
+                }`}
+                title={!isSidebarOpen ? label : undefined}
+              >
+                <Icon className="size-5 shrink-0" />
+                {isSidebarOpen && <span className="truncate">{label}</span>}
+              </Link>
+            ))}
           </nav>
         </div>
 
