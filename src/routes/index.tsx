@@ -62,7 +62,7 @@ function Index() {
 
       <main id="main-content" className="mx-auto max-w-6xl px-4 pb-24 lg:px-8">
         <section className="py-12 lg:py-20">
-          <p className="inline-flex items-center gap-2 rounded-full bg-normal/15 px-3 py-1 text-sm font-semibold text-normal">
+          <p className="inline-flex items-center gap-2 rounded-full border border-live-border bg-live-surface px-3 py-1 text-sm font-bold text-live">
             WCAG-focused assistive telemetry
           </p>
           <h1 className="mt-6 max-w-3xl text-4xl font-extrabold lg:text-6xl">
