@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 import { useState, useEffect, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-=======
-import { useState, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
->>>>>>> b4d414aeecd8b2bd9c0327ca446dc9e9690a27c3
 import {
   ShieldAlert,
   Menu,
@@ -43,6 +38,7 @@ type ThemeMode = "light" | "dark" | "system";
 
 export function AppShell({ title, description, children, actions }: AppShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [theme, setTheme] = useState<ThemeMode>("system");
   const { signOut } = useAuth();
 
   useEffect(() => {
