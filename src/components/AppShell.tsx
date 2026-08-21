@@ -53,7 +53,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
               <Link
                 to={to}
                 onClick={onNavigate}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground data-[status=active]:bg-primary data-[status=active]:font-bold data-[status=active]:text-primary-foreground"
                 activeProps={{ "aria-current": "page" }}
               >
                 <Icon aria-hidden="true" className="size-5 shrink-0" />
