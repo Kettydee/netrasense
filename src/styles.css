@@ -107,3 +107,15 @@ a:active,
   opacity: 0 !important;
   pointer-events: none !important;
 }
+/* Hide 'Skip to main content' link */
+a[href="#main"],
+a[href="#content"],
+a[href="#main-content"],
+.skip-link,
+.sr-only:focus,
+[data-skip-link] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
