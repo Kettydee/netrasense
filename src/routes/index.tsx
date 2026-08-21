@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ShieldAlert, Radar, HeartPulse, Siren } from "lucide-react";
+import { ShieldAlert, Radar, HeartPulse, Siren, Mail, Heart, Github } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
@@ -45,22 +45,43 @@ function Index() {
   const { session, loading } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
+      {/* --- Top Navigation Header --- */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6 lg:px-8">
         <div className="flex items-center gap-2">
           <ShieldAlert aria-hidden="true" className="size-7 text-primary" />
           <span className="text-xl font-extrabold tracking-tight">NetraSense</span>
         </div>
-        {!loading && (
-          <Button asChild>
-            <Link to={session ? "/dashboard" : "/auth"}>
-              {session ? "Open dashboard" : "Sign in"}
-            </Link>
-          </Button>
-        )}
+
+        <div className="flex items-center gap-4 md:gap-6">
+          <nav className="flex items-center gap-4 text-sm font-medium text-muted-foreground" aria-label="Main Navigation">
+            <a
+              href="#contact"
+              className="transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary rounded-md px-2 py-1"
+            >
+              Contact Us
+            </a>
+            <a
+              href="#support"
+              className="transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary rounded-md px-2 py-1"
+            >
+              Support Us
+            </a>
+          </nav>
+
+          {!loading && (
+            <Button asChild>
+              <Link to={session ? "/dashboard" : "/auth"}>
+                {session ? "Open dashboard" : "Sign in"}
+              </Link>
+            </Button>
+          )}
+        </div>
       </header>
 
+      {/* --- Main Content --- */}
       <main id="main-content" className="mx-auto max-w-6xl px-4 pb-24 lg:px-8">
+        {/* Hero Section */}
         <section className="py-12 lg:py-20">
           <p className="inline-flex items-center gap-2 rounded-full border border-live-border bg-live-surface px-3 py-1 text-sm font-bold text-live">
             WCAG-focused assistive telemetry
@@ -84,6 +105,7 @@ function Index() {
           </div>
         </section>
 
+        {/* Feature Cards Grid */}
         <section aria-labelledby="features-heading" className="grid gap-4 md:grid-cols-3">
           <h2 id="features-heading" className="sr-only">
             Features
@@ -95,6 +117,60 @@ function Index() {
               <p className="mt-2 text-sm text-muted-foreground">{body}</p>
             </article>
           ))}
+        </section>
+
+        {/* Contact & Support Section */}
+        <section aria-labelledby="contact-support-heading" className="mt-16 pt-12 border-t border-border">
+          <h2 id="contact-support-heading" className="text-2xl font-bold tracking-tight mb-8">
+            Connect & Support the Mission
+          </h2>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Contact Us Card */}
+            <article id="contact" className="surface-card p-6 flex flex-col justify-between scroll-mt-24">
+              <div>
+                <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-4">
+                  <Mail className="size-5" />
+                </div>
+                <h3 className="text-xl font-bold">Contact Us</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Have questions regarding the NetraSense ultrasonic sensor setup, caregiver pairing, or web accessibility features? Reach out directly.
+                </p>
+              </div>
+              <div className="mt-6">
+                <Button asChild variant="outline" className="w-full">
+                  <a href="mailto:contact@netrasense.org">
+                    Send an Email
+                  </a>
+                </Button>
+              </div>
+            </article>
+
+            {/* Support Us Card */}
+            <article id="support" className="surface-card p-6 flex flex-col justify-between scroll-mt-24">
+              <div>
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
+                  <Heart className="size-5" />
+                </div>
+                <h3 className="text-xl font-bold">Support Us</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  NetraSense is an open initiative dedicated to assistive telemetry and safer navigation. Help us improve hardware compatibility and test features.
+                </p>
+              </div>
+              <div className="mt-6">
+                <Button asChild className="w-full gap-2">
+                  <a
+                    href="https://github.com/Kettydee/netrasense"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Github className="size-4" />
+                    Star on GitHub & Contribute
+                  </a>
+                </Button>
+              </div>
+            </article>
+          </div>
         </section>
       </main>
     </div>
