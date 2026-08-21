@@ -222,3 +222,12 @@
     transform: scale(1.03);
   }
 }
+/* Hide any residual Lovable badge or floating elements */
+#lovable-badge,
+[data-lovable-badge],
+.lovable-badge {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
