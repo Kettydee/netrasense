@@ -13,10 +13,10 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sign in — AegisNav" },
-      { name: "description", content: "Sign in or create an AegisNav account to access your navigation telemetry." },
-      { property: "og:title", content: "Sign in — AegisNav" },
-      { property: "og:description", content: "Access your AegisNav assistive navigation dashboard." },
+      { title: "Sign in — NetraSense" },
+      { name: "description", content: "Sign in or create an NetraSense account to access your navigation telemetry." },
+      { property: "og:title", content: "Sign in — NetraSense" },
+      { property: "og:description", content: "Access your NetraSense assistive navigation dashboard." },
     ],
   }),
   component: AuthPage,
@@ -53,7 +53,7 @@ function AuthPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        toast.success("Welcome back to AegisNav.");
+        toast.success("Welcome back to NetraSense.");
       }
       navigate({ to: "/dashboard", replace: true });
     } catch (error) {
@@ -68,11 +68,11 @@ function AuthPage() {
       <main id="main-content" className="w-full max-w-md">
         <div className="mb-6 flex items-center justify-center gap-2">
           <ShieldAlert aria-hidden="true" className="size-8 text-primary" />
-          <span className="text-2xl font-extrabold tracking-tight">AegisNav</span>
+          <span className="text-2xl font-extrabold tracking-tight">NetraSense</span>
         </div>
         <section className="surface-card p-6 lg:p-8" aria-labelledby="auth-heading">
           <h1 id="auth-heading" className="text-2xl font-extrabold">
-            {mode === "signin" ? "Sign in to your dashboard" : "Create your AegisNav account"}
+            {mode === "signin" ? "Sign in to your dashboard" : "Create your NetraSense account"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === "signin"
@@ -124,7 +124,7 @@ function AuthPage() {
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            {mode === "signin" ? "New to AegisNav?" : "Already have an account?"}{" "}
+            {mode === "signin" ? "New to NetraSense?" : "Already have an account?"}{" "}
             <button
               type="button"
               className="font-semibold text-primary underline"

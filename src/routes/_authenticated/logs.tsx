@@ -11,14 +11,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import { fetchTelemetry } from "@/lib/queries";
-import { THREAT_LEVELS, threatStyles, toCsv } from "@/lib/aegis";
+import { THREAT_LEVELS, threatStyles, toCsv } from "@/lib/netrasense";
 
 export const Route = createFileRoute("/_authenticated/logs")({
   head: () => ({
     meta: [
-      { title: "Incident & Telemetry Logs — AegisNav" },
+      { title: "Incident & Telemetry Logs — NetraSense" },
       { name: "description", content: "Search, filter and export every obstacle detection recorded by your assistive sensor." },
-      { property: "og:title", content: "Incident & Telemetry Logs — AegisNav" },
+      { property: "og:title", content: "Incident & Telemetry Logs — NetraSense" },
       { property: "og:description", content: "Full history of obstacle detections with CSV export." },
     ],
   }),
@@ -51,7 +51,7 @@ function LogsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `aegisnav-telemetry-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `netrasense-telemetry-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }

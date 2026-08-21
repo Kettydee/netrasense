@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { BLOOD_GROUPS, IMPAIRMENT_LEVELS, type ImpairmentLevel } from "@/lib/aegis";
+import { BLOOD_GROUPS, IMPAIRMENT_LEVELS, type ImpairmentLevel } from "@/lib/netrasense";
 
 export function OnboardingDialog({ open }: { open: boolean }) {
   const { user } = useAuth();
@@ -51,7 +51,7 @@ export function OnboardingDialog({ open }: { open: boolean }) {
       if (contactError) throw contactError;
 
       await queryClient.invalidateQueries();
-      toast.success("Profile ready. Welcome to AegisNav.");
+      toast.success("Profile ready. Welcome to NetraSense.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save your profile.");
     } finally {

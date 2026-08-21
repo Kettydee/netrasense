@@ -14,14 +14,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { fetchContacts } from "@/lib/queries";
-import { speak, type Contact } from "@/lib/aegis";
+import { speak, type Contact } from "@/lib/netrasense";
 
 export const Route = createFileRoute("/_authenticated/contacts")({
   head: () => ({
     meta: [
-      { title: "Emergency Contacts Hub — AegisNav" },
+      { title: "Emergency Contacts Hub — NetraSense" },
       { name: "description", content: "Add, edit and test the caregivers who are alerted when a collision is detected." },
-      { property: "og:title", content: "Emergency Contacts Hub — AegisNav" },
+      { property: "og:title", content: "Emergency Contacts Hub — NetraSense" },
       { property: "og:description", content: "Manage caregivers notified during emergencies." },
     ],
   }),
@@ -125,7 +125,7 @@ function ContactsPage() {
         <div className="surface-card p-8 text-center">
           <h2 className="text-lg font-bold">No emergency contacts yet</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            Add at least one primary caregiver so AegisNav can raise an alert on your behalf.
+            Add at least one primary caregiver so NetraSense can raise an alert on your behalf.
           </p>
           <Button className="mt-5" onClick={openAdd}>
             <Plus aria-hidden="true" className="size-4" />
@@ -164,7 +164,7 @@ function ContactsPage() {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    speak(`Test alert. This is AegisNav calling ${c.contact_name}.`);
+                    speak(`Test alert. This is NetraSense calling ${c.contact_name}.`);
                     toast.success(`Test alert simulated for ${c.contact_name}.`);
                   }}
                 >
