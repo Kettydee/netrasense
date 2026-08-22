@@ -18,6 +18,56 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
+// --- Embedded NetraSense Eye Logo Graphic ---
+function NetraSenseEyeLogo({ className = "h-8 w-auto" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 140 90"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`${className} shrink-0`}
+      aria-label="NetraSense Logo"
+    >
+      {/* Outer Sweeping Brow Lines */}
+      <path
+        d="M 12 42 C 28 16, 75 14, 102 34"
+        stroke="#104f86"
+        strokeWidth="6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M 22 38 C 36 24, 70 22, 92 37"
+        stroke="#104f86"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+
+      {/* Lower Eye Contour */}
+      <path
+        d="M 28 44 C 44 64, 80 62, 96 44"
+        stroke="#104f86"
+        strokeWidth="5.5"
+        strokeLinecap="round"
+      />
+
+      {/* Center Iris & Pupil */}
+      <circle cx="62" cy="40" r="16" stroke="#104f86" strokeWidth="5" fill="none" />
+      <circle cx="62" cy="40" r="8" fill="#104f86" />
+      <circle cx="65" cy="37" r="2.5" fill="#ffffff" />
+
+      {/* Teardrop Vision Loop */}
+      <path
+        d="M 94 36 C 102 24, 118 26, 118 40 C 118 58, 94 72, 94 56 C 94 45, 108 38, 113 44"
+        stroke="#104f86"
+        strokeWidth="5.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
 interface AppShellProps {
   title: string;
   description?: string;
@@ -89,15 +139,11 @@ export function AppShell({ title, description, children, actions }: AppShellProp
         }`}
       >
         <div className="w-full">
-          {/* Top Branding with Your Exact Eye Logo Image */}
+          {/* Top Branding with Embedded Blue Eye Logo */}
           <div className={`flex items-center ${isSidebarOpen ? "justify-between" : "justify-center"}`}>
             {isSidebarOpen && (
               <Link to="/dashboard" className="flex items-center gap-2.5 overflow-hidden group">
-                <img
-                  src="/logo.png"
-                  alt="NetraSense Logo"
-                  className="h-9 w-auto max-w-[42px] object-contain shrink-0 group-hover:scale-105 transition-transform duration-200"
-                />
+                <NetraSenseEyeLogo className="h-8 w-auto max-w-[44px]" />
                 <span className="text-lg font-black tracking-tight truncate text-foreground">
                   NetraSense
                 </span>
