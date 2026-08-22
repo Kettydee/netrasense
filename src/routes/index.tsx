@@ -65,73 +65,72 @@ function Index() {
         {/* NetraSense Brand Mark Logo & Typography */}
         <Link
           to="/"
-          className="group flex items-center gap-3.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-transform active:scale-95"
+          className="group flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-transform active:scale-95"
         >
-          {/* Exact Logo: 4 Gold Corner Brackets, Blue Eye, Gold Iris Ring */}
           <svg
-            className="size-11 sm:size-12 drop-shadow-[0_2px_10px_rgba(59,130,246,0.3)] transition-transform duration-200 group-hover:scale-105"
+            className="size-9 sm:size-10 transition-transform duration-200 group-hover:scale-105"
             viewBox="0 0 100 100"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
             {/* Top-Left Bracket */}
             <path
-              d="M 22 40 V 24 A 6 6 0 0 1 28 18 H 44"
+              d="M 18 36 V 22 A 6 6 0 0 1 24 16 H 38"
               stroke="#F5B027"
-              strokeWidth="9"
+              strokeWidth="7.5"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
             {/* Top-Right Bracket */}
             <path
-              d="M 78 40 V 24 A 6 6 0 0 0 72 18 H 56"
+              d="M 82 36 V 22 A 6 6 0 0 0 76 16 H 62"
               stroke="#F5B027"
-              strokeWidth="9"
+              strokeWidth="7.5"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
             {/* Bottom-Left Bracket */}
             <path
-              d="M 22 60 V 76 A 6 6 0 0 0 28 82 H 44"
+              d="M 18 64 V 78 A 6 6 0 0 0 24 84 H 38"
               stroke="#F5B027"
-              strokeWidth="9"
+              strokeWidth="7.5"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
             {/* Bottom-Right Bracket */}
             <path
-              d="M 78 60 V 76 A 6 6 0 0 1 72 82 H 56"
+              d="M 82 64 V 78 A 6 6 0 0 1 76 84 H 62"
               stroke="#F5B027"
-              strokeWidth="9"
+              strokeWidth="7.5"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
 
-            {/* Blue Eye Almond Shape */}
+            {/* Blue Eye Wing Shape */}
             <path
-              d="M 12 50 C 26 28, 74 28, 88 50 C 74 72, 26 72, 12 50 Z"
-              fill="#0F67DE"
+              d="M 6 50 C 20 25, 80 25, 94 50 C 80 75, 20 75, 6 50 Z"
+              fill="#1665D8"
             />
 
-            {/* Solid Gold Concentric Iris Ring */}
+            {/* Gold Circular Iris Ring */}
             <circle
               cx="50"
               cy="50"
-              r="22"
+              r="21"
               fill="none"
               stroke="#F5B027"
-              strokeWidth="7"
+              strokeWidth="6.5"
             />
 
-            {/* Deep Blue Pupil Core */}
+            {/* Deep Blue Pupil */}
             <circle
               cx="50"
               cy="50"
-              r="15"
-              fill="#084EAA"
+              r="14.5"
+              fill="#0B4294"
             />
 
-            {/* White Specular Catchlight */}
+            {/* Catchlight Reflection */}
             <circle
               cx="56"
               cy="44"
@@ -140,7 +139,7 @@ function Index() {
             />
           </svg>
 
-          <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+          <span className="text-2xl sm:text-[1.75rem] font-extrabold tracking-tight text-foreground">
             NetraSense
           </span>
         </Link>
