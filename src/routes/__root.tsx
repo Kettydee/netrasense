@@ -79,6 +79,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      {
+        name: "google-site-verification",
+        content: "2aOEiArQLzeaMfnPbz5t92mYZZpSYqaeTK0twjvdHJc",
+      },
       { title: "NetraSense — Smart Assistive Navigation & Proximity Telemetry" },
       {
         name: "description",
@@ -95,7 +99,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "NetraSense — Assistive Navigation & Telemetry" },
       {
         property: "og:description",
-        content: "Real-time obstacle radar, haptic alerts, emergency medical contacts, and smart navigation stats.",
+        content:
+          "Real-time obstacle radar, haptic alerts, emergency medical contacts, and smart navigation stats.",
       },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "NetraSense" },
