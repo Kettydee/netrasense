@@ -320,12 +320,14 @@ function DashboardPage() {
           </p>
 
           <div className="mt-5">
-            {telemetryQuery.isLoading ? (
-              <Skeleton className="h-48 rounded-xl" />
-            ) : (
-              <DistanceMeter distance={latest ? Math.round(Number(latest.distance_cm)) : MAX_DISTANCE_CM} level={level} />
-            )}
+        {telemetryQuery.isLoading ? (
+          <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-border bg-card p-6">
+            <CuteLeafLoader text="Connecting to sensor stream..." size="md" />
           </div>
+        ) : (
+          <DistanceMeter distance={latest ? Math.round(Number(latest.distance_cm)) : MAX_DISTANCE_CM} level={level} />
+        )}
+      </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex items-center gap-3">
