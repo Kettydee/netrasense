@@ -1,71 +1,58 @@
 interface BlueBubbleLoaderProps {
   text?: string;
-  size?: "sm" | "md" | "lg";
   className?: string;
 }
 
 export function CuteLeafLoader({
   text = "Loading...",
-  size = "md",
   className = "",
 }: BlueBubbleLoaderProps) {
-  const containerSizes = {
-    sm: "size-14",
-    md: "size-24",
-    lg: "size-32",
-  };
-
   return (
     <div
       role="status"
       aria-label={text}
-      className={`flex flex-col items-center justify-center gap-3 p-6 text-center ${className}`}
+      className={`flex flex-col items-center justify-center gap-3 text-center ${className}`}
     >
-      {/* Revolving Orbit Ring */}
-      <div className={`relative ${containerSizes[size]} animate-spin [animation-duration:1.8s]`}>
-        {/* Bubble 1: Tiny (0° - Top) */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 flex items-center justify-center">
-          <span className="size-1.5 rounded-full bg-sky-300 opacity-60 shadow-[0_0_6px_rgba(56,189,248,0.8)]" />
-        </div>
+      {/* 10-Bubble Smooth Gradual Ring (All light sky-blue) */}
+      <svg
+        viewBox="0 0 100 100"
+        className="size-16 animate-spin [animation-duration:1.4s] drop-shadow-[0_0_8px_rgba(56,189,248,0.45)]"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* 1. (0° - Top) - Radius: 2px */}
+        <circle cx="50" cy="12" r="2.0" fill="#38BDF8" opacity="0.45" />
 
-        {/* Bubble 2: Small (45° - Top-Right) */}
-        <div className="absolute top-[14%] right-[14%] translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-          <span className="size-2 rounded-full bg-sky-400 opacity-70 shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
-        </div>
+        {/* 2. (36°) - Radius: 2.5px */}
+        <circle cx="72.3" cy="19.3" r="2.5" fill="#38BDF8" opacity="0.5" />
 
-        {/* Bubble 3: Medium-Small (90° - Right) */}
-        <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-          <span className="size-2.5 rounded-full bg-sky-400/90 shadow-[0_0_8px_rgba(14,165,233,0.9)]" />
-        </div>
+        {/* 3. (72°) - Radius: 3.0px */}
+        <circle cx="86.1" cy="38.3" r="3.0" fill="#38BDF8" opacity="0.55" />
 
-        {/* Bubble 4: Medium (135° - Bottom-Right) */}
-        <div className="absolute bottom-[14%] right-[14%] translate-x-1/2 translate-y-1/2 flex items-center justify-center">
-          <span className="size-3.5 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.9)]" />
-        </div>
+        {/* 4. (108°) - Radius: 3.5px */}
+        <circle cx="86.1" cy="61.7" r="3.5" fill="#38BDF8" opacity="0.65" />
 
-        {/* Bubble 5: Medium-Large (180° - Bottom) */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center">
-          <span className="size-4 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(37,99,235,0.9)]" />
-        </div>
+        {/* 5. (144°) - Radius: 4.0px */}
+        <circle cx="72.3" cy="80.7" r="4.0" fill="#38BDF8" opacity="0.75" />
 
-        {/* Bubble 6: Large (225° - Bottom-Left) */}
-        <div className="absolute bottom-[14%] left-[14%] -translate-x-1/2 translate-y-1/2 flex items-center justify-center">
-          <span className="size-4.5 rounded-full bg-blue-600 shadow-[0_0_14px_rgba(37,99,235,1)]" />
-        </div>
+        {/* 6. (180° - Bottom) - Radius: 4.5px */}
+        <circle cx="50" cy="88" r="4.5" fill="#38BDF8" opacity="0.85" />
 
-        {/* Bubble 7: Extra-Large (270° - Left) */}
-        <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-          <span className="size-5 rounded-full bg-indigo-600 shadow-[0_0_16px_rgba(79,70,229,1)]" />
-        </div>
+        {/* 7. (216°) - Radius: 5.0px */}
+        <circle cx="27.7" cy="80.7" r="5.0" fill="#38BDF8" opacity="0.9" />
 
-        {/* Bubble 8: Jumbo (315° - Top-Left) */}
-        <div className="absolute top-[14%] left-[14%] -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-          <span className="size-5.5 rounded-full bg-gradient-to-tr from-blue-700 via-sky-500 to-cyan-300 shadow-[0_0_18px_rgba(14,165,233,1)]" />
-        </div>
-      </div>
+        {/* 8. (252°) - Radius: 5.5px */}
+        <circle cx="13.9" cy="61.7" r="5.5" fill="#38BDF8" opacity="0.95" />
 
-      {/* Pulsing Loading Caption */}
-      <span className="text-sm font-bold tracking-wider text-sky-600 dark:text-sky-400 animate-pulse">
+        {/* 9. (288°) - Radius: 6.0px */}
+        <circle cx="13.9" cy="38.3" r="6.0" fill="#38BDF8" opacity="1.0" />
+
+        {/* 10. (324°) - Radius: 6.5px */}
+        <circle cx="27.7" cy="19.3" r="6.5" fill="#38BDF8" opacity="1.0" />
+      </svg>
+
+      {/* Gentle Pulsing Text */}
+      <span className="text-xs font-semibold tracking-wider text-sky-400 animate-pulse">
         {text}
       </span>
     </div>
