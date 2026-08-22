@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   Footprints,
-  Gauge,
   PartyPopper,
   PhoneCall,
   Radar,
@@ -208,13 +207,6 @@ function DashboardPage() {
     (s) => s.date === new Date(Date.now() - 86_400_000).toISOString().slice(0, 10),
   );
 
-  const reliability = useMemo(() => {
-    const rows = telemetryQuery.data ?? [];
-    if (rows.length === 0) return 98.3;
-    const valid = rows.filter((r) => Number(r.distance_cm) > 0 && Number(r.distance_cm) <= MAX_DISTANCE_CM).length;
-    return Math.round((valid / rows.length) * 1000) / 10;
-  }, [telemetryQuery.data]);
-
   const simulate = useCallback(async () => {
     if (!userId) return;
     const distance = Math.round(Math.random() * MAX_DISTANCE_CM);
@@ -262,18 +254,19 @@ function DashboardPage() {
     >
       <OnboardingDialog open={needsOnboarding} />
 
+      {/* --- TOP METRICS CARDS ROW (EVEN 3-COLUMN GRID) --- */}
       <section aria-labelledby="stats-heading" className="mb-6">
         <h2 id="stats-heading" className="sr-only">
           Daily navigation statistics
         </h2>
         {statsQuery.isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {[0, 1, 2, 3].map((i) => (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+            {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-32 rounded-xl" />
             ))}
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             <StatCard
               icon={PartyPopper}
               label="Obstacles dodged today"
@@ -296,12 +289,6 @@ function DashboardPage() {
               label="Active assistance time"
               value={`${Math.floor(minutes / 60)}h ${minutes % 60}m`}
               sub="Monitored session time"
-            />
-            <StatCard
-              icon={Gauge}
-              label="System reliability"
-              value={`${reliability}%`}
-              sub="Sensor precision · 0 false triggers"
             />
           </div>
         )}
