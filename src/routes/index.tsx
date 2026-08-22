@@ -67,18 +67,24 @@ function Index() {
           to="/"
           className="group flex items-center gap-3.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-transform active:scale-95"
         >
-          <img
-            src="/favicon.ico"
-            alt="NetraSense Logo"
-            className="size-11 sm:size-12 rounded-full object-cover shadow-sm transition-transform duration-200 group-hover:scale-105"
-          />
+          <div className="relative flex size-11 sm:size-12 items-center justify-center overflow-hidden">
+            <img
+              src="/favicon.ico"
+              alt="NetraSense Logo"
+              className="size-14 max-w-none scale-[1.32] object-contain transition-transform duration-200 group-hover:scale-[1.38]"
+              style={{
+                maskImage: "radial-gradient(circle at center, black 58%, transparent 72%)",
+                WebkitMaskImage: "radial-gradient(circle at center, black 58%, transparent 72%)",
+              }}
+            />
+          </div>
           <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             NetraSense
           </span>
         </Link>
 
         <div className="flex items-center gap-3 sm:gap-6">
-          {/* Theme Toggle Button (Left of Contact Us) */}
+          {/* Theme Toggle Button (Positioned left of Contact Us) */}
           <button
             onClick={toggleTheme}
             aria-label="Toggle light/dark theme"
