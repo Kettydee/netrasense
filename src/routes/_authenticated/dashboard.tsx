@@ -247,6 +247,18 @@ function DashboardPage() {
   const distanceKm = (Number(todayStats?.safe_distance_walked_m ?? 0) / 1000).toFixed(2);
   const minutes = todayStats?.active_session_minutes ?? 0;
   const level = latest ? latest.threat_level : "Normal";
+  if (telemetryQuery.isLoading || statsQuery.isLoading) {
+    return (
+      <AppShell
+        title="Realtime Dashboard"
+        description={`Live assistive telemetry${profileQuery.data?.full_name ? ` for ${profileQuery.data.full_name}` : ""}`}
+      >
+        <div className="flex min-h-[65vh] w-full flex-col items-center justify-center">
+          <CuteLeafLoader text="Connecting to sensor stream..." />
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell
