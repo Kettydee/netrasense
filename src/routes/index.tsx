@@ -67,73 +67,103 @@ function Index() {
           to="/"
           className="group flex items-center gap-3.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-transform active:scale-95"
         >
-          {/* Exact Logo: Realistic Eye & Brackets with 100% Background Transparency */}
+          {/* Exact Logo: 3D Gold Framing Brackets & Dual-Tone Blue Eye */}
           <svg
-            className="size-11 sm:size-12 drop-shadow-[0_2px_12px_rgba(59,130,246,0.3)] transition-transform duration-200 group-hover:scale-105"
+            className="size-11 sm:size-12 drop-shadow-[0_4px_16px_rgba(11,77,140,0.35)] transition-transform duration-200 group-hover:scale-105"
             viewBox="0 0 100 100"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
             <defs>
-              <linearGradient id="ns-gold" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#DFAD58" />
-                <stop offset="50%" stopColor="#C48E33" />
-                <stop offset="100%" stopColor="#9C6B1B" />
+              <linearGradient id="gold-metal" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#E5C07B" />
+                <stop offset="45%" stopColor="#C8963E" />
+                <stop offset="100%" stopColor="#8A5A18" />
               </linearGradient>
-              <linearGradient id="ns-blue-outer" x1="0%" y1="0%" x2="100%" y2="100%">
+              <linearGradient id="blue-sclera" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#0B4D8C" />
-                <stop offset="50%" stopColor="#1264A6" />
-                <stop offset="100%" stopColor="#083B6F" />
+                <stop offset="50%" stopColor="#0E64B0" />
+                <stop offset="100%" stopColor="#06325C" />
               </linearGradient>
-              <linearGradient id="ns-blue-pupil" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#14609E" />
-                <stop offset="100%" stopColor="#083763" />
+              <linearGradient id="blue-iris" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#105E9E" />
+                <stop offset="100%" stopColor="#05284B" />
               </linearGradient>
             </defs>
 
-            {/* Gold Camera Framing Brackets */}
-            <path d="M 12 32 V 18 A 6 6 0 0 1 18 12 H 32" stroke="url(#ns-gold)" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M 88 32 V 18 A 6 6 0 0 0 82 12 H 68" stroke="url(#ns-gold)" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M 12 68 V 82 A 6 6 0 0 0 18 88 H 32" stroke="url(#ns-gold)" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M 88 68 V 82 A 6 6 0 0 1 82 88 H 68" stroke="url(#ns-gold)" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
-
-            {/* Sclera / Outer Eye Silhouette (Midnight Blue with Gold Highlights) */}
+            {/* Corner Framing Brackets */}
             <path
-              d="M 12 50 C 22 24, 78 24, 88 50 C 78 76, 22 76, 12 50 Z"
-              fill="url(#ns-blue-outer)"
+              d="M 12 32 V 18 A 6 6 0 0 1 18 12 H 32"
+              stroke="url(#gold-metal)"
+              strokeWidth="6.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M 88 32 V 18 A 6 6 0 0 0 82 12 H 68"
+              stroke="url(#gold-metal)"
+              strokeWidth="6.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M 12 68 V 82 A 6 6 0 0 0 18 88 H 32"
+              stroke="url(#gold-metal)"
+              strokeWidth="6.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M 88 68 V 82 A 6 6 0 0 1 82 88 H 68"
+              stroke="url(#gold-metal)"
+              strokeWidth="6.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
 
-            {/* Lower & Upper Gold Arch Accents */}
+            {/* Outer Gold Arch Ribbons */}
             <path
-              d="M 19 50 C 27 68, 73 68, 81 50"
-              stroke="url(#ns-gold)"
+              d="M 16 48 C 24 22, 76 22, 84 48"
+              stroke="url(#gold-metal)"
               strokeWidth="3.5"
               fill="none"
               strokeLinecap="round"
             />
             <path
-              d="M 23 45 C 30 33, 70 33, 77 45"
-              stroke="url(#ns-gold)"
-              strokeWidth="2.5"
+              d="M 16 52 C 24 78, 76 78, 84 52"
+              stroke="url(#gold-metal)"
+              strokeWidth="3.5"
               fill="none"
               strokeLinecap="round"
-              opacity="0.8"
             />
 
-            {/* Iris Gold Rim */}
-            <circle cx="50" cy="50" r="18" fill="url(#ns-blue-pupil)" stroke="url(#ns-gold)" strokeWidth="4.5" />
-
-            {/* Inner Gold Precision Notch */}
+            {/* Main Blue Embossed Eye Contour */}
             <path
-              d="M 44 38 A 14 14 0 1 1 38 56"
+              d="M 10 50 C 22 22, 78 22, 90 50 C 78 78, 22 78, 10 50 Z"
+              fill="url(#blue-sclera)"
+            />
+
+            {/* Inner Gold Concentric Ring */}
+            <circle
+              cx="50"
+              cy="50"
+              r="20"
+              fill="url(#blue-iris)"
+              stroke="url(#gold-metal)"
+              strokeWidth="4.5"
+            />
+
+            {/* Internal Iris Contour */}
+            <path
+              d="M 43 36 A 15 15 0 1 1 36 58"
               fill="none"
-              stroke="url(#ns-gold)"
+              stroke="url(#gold-metal)"
               strokeWidth="2.5"
               strokeLinecap="round"
             />
 
             {/* Specular Light Reflection Catchlight */}
-            <circle cx="55" cy="45" r="4.5" fill="#FFFFFF" />
+            <circle cx="56" cy="44" r="4.5" fill="#FFFFFF" />
           </svg>
 
           <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
@@ -142,7 +172,7 @@ function Index() {
         </Link>
 
         <div className="flex items-center gap-3 sm:gap-6">
-          {/* Theme Toggle Button (Positioned left of Contact Us) */}
+          {/* Theme Toggle Button (Left of Contact Us) */}
           <button
             onClick={toggleTheme}
             aria-label="Toggle light/dark theme"
