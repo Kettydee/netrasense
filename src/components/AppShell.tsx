@@ -1,7 +1,6 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import {
-  ShieldAlert,
   Menu,
   X,
   LayoutDashboard,
@@ -18,6 +17,55 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
+
+// --- Custom NetraSense Stylized Eye & Teardrop Logo ---
+function NetraSenseEyeLogo({ className = "size-7" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 100 65"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`${className} shrink-0`}
+      aria-label="NetraSense Logo"
+    >
+      {/* Upper Eye Lid Arcs */}
+      <path
+        d="M 12 33 C 25 10, 60 8, 80 25"
+        stroke="currentColor"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M 18 30 C 30 16, 55 14, 72 27"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      
+      {/* Lower Eye Lid Arc */}
+      <path
+        d="M 22 34 C 34 50, 62 48, 74 34"
+        stroke="currentColor"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+      />
+
+      {/* Iris & Pupil */}
+      <circle cx="48" cy="31" r="12" stroke="currentColor" strokeWidth="4" />
+      <circle cx="48" cy="31" r="5.5" fill="currentColor" />
+      <circle cx="50" cy="29" r="1.8" fill="var(--background, #fff)" />
+
+      {/* Vision Accent Loop / Teardrop */}
+      <path
+        d="M 72 26 C 77 18, 88 20, 88 30 C 88 44, 70 54, 70 42 C 70 34, 80 28, 84 32"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 interface AppShellProps {
   title: string;
@@ -90,12 +138,16 @@ export function AppShell({ title, description, children, actions }: AppShellProp
         }`}
       >
         <div className="w-full">
-          {/* Top Branding & Hamburger Toggle */}
+          {/* Top Branding with Blue Eye Logo & Collapse Toggle */}
           <div className={`flex items-center ${isSidebarOpen ? "justify-between" : "justify-center"}`}>
             {isSidebarOpen && (
-              <Link to="/dashboard" className="flex items-center gap-2 overflow-hidden">
-                <ShieldAlert aria-hidden="true" className="size-6 shrink-0 text-primary" />
-                <span className="text-lg font-extrabold tracking-tight truncate">NetraSense</span>
+              <Link to="/dashboard" className="flex items-center gap-2.5 overflow-hidden group">
+                <div className="text-primary group-hover:scale-105 transition-transform duration-200">
+                  <NetraSenseEyeLogo className="size-7" />
+                </div>
+                <span className="text-lg font-black tracking-tight truncate text-foreground">
+                  NetraSense
+                </span>
               </Link>
             )}
 
@@ -110,7 +162,7 @@ export function AppShell({ title, description, children, actions }: AppShellProp
             </button>
           </div>
 
-          {/* Theme Switcher: Light / Dark / Auto */}
+          {/* Theme Switcher */}
           <div className="mt-4 flex w-full items-center justify-center rounded-xl border border-border bg-muted/40 p-1">
             {isSidebarOpen ? (
               <div className="grid w-full grid-cols-3 gap-1">
@@ -204,7 +256,7 @@ export function AppShell({ title, description, children, actions }: AppShellProp
           </nav>
         </div>
 
-        {/* --- LOGOUT IN LEFT PANEL FOOTER --- */}
+        {/* Logout Footer */}
         <div className="mt-auto flex flex-col gap-2 pt-4 border-t border-border w-full">
           <Button
             type="button"
@@ -221,9 +273,9 @@ export function AppShell({ title, description, children, actions }: AppShellProp
         </div>
       </aside>
 
-      {/* --- MAIN CONTENT VIEWPORT --- */}
+      {/* --- MAIN VIEWPORT --- */}
       <main className="flex-1 overflow-y-auto px-6 py-8 transition-all duration-300 ease-in-out max-w-full">
-        {/* --- HEADER WITH EXPANDED FULL RED SOS ON TOP-RIGHT --- */}
+        {/* Top Header with Enlarged SOS */}
         <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-border/50 pb-4">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
@@ -233,7 +285,6 @@ export function AppShell({ title, description, children, actions }: AppShellProp
           <div className="flex items-center gap-3">
             {actions}
 
-            {/* EXPANDED FULL-RED BROADCAST SOS BUTTON */}
             <button
               type="button"
               onClick={handleSos}
