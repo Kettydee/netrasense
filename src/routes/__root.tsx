@@ -79,19 +79,32 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "NetraSense — Assistive Navigation Telemetry" },
+      { title: "NetraSense — Smart Assistive Navigation & Proximity Telemetry" },
       {
         name: "description",
         content:
-          "NetraSense is an accessible navigation and telemetry dashboard for visually impaired users and their caregivers.",
+          "NetraSense is an intelligent assistive navigation and proximity telemetry dashboard designed for visually impaired users and caregivers.",
       },
-      { property: "og:title", content: "NetraSense — Assistive Navigation Telemetry" },
+      {
+        name: "keywords",
+        content:
+          "NetraSense, netrasense, assistive navigation, smart obstacle detection, proximity telemetry, IoT navigation, caregiver alerts",
+      },
+      { name: "robots", content: "index, follow" },
+      { name: "author", content: "NetraSense" },
+      { property: "og:title", content: "NetraSense — Assistive Navigation & Telemetry" },
       {
         property: "og:description",
-        content: "Live obstacle telemetry, medical ID and emergency contacts in one accessible dashboard.",
+        content: "Real-time obstacle radar, haptic alerts, emergency medical contacts, and smart navigation stats.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "NetraSense" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "NetraSense — Assistive Navigation & Telemetry" },
+      {
+        name: "twitter:description",
+        content: "Smart assistive navigation and live telemetry dashboard.",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -132,15 +145,12 @@ function RootComponent() {
     if (stored) document.documentElement.classList.toggle("dark", stored === "dark");
   }, []);
 
-
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
         <Toaster />
       </AuthProvider>
