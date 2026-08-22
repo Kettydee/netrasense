@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ShieldAlert, Radar, HeartPulse, Siren, Mail, Heart, Github } from "lucide-react";
+import { Radar, HeartPulse, Siren, Mail, Heart, Github, Sun, Moon } from "lucide-react";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
@@ -43,31 +44,104 @@ const FEATURES = [
 
 function Index() {
   const { session, loading } = useAuth();
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains("dark");
+    setTheme(isDark ? "dark" : "light");
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.classList.toggle("dark", next === "dark");
+    window.localStorage.setItem("netrasense:theme", next);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* --- Top Navigation Header --- */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6 lg:px-8">
-        <div className="flex items-center gap-2">
-          <ShieldAlert aria-hidden="true" className="size-7 text-primary" />
+        {/* NetraSense Brand Mark Logo */}
+        <Link to="/" className="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-primary rounded-lg p-1">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 shadow-sm">
+            <svg
+              className="h-6 w-6"
+              viewBox="0 0 48 48"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 16V9a3 3 0 0 1 3-3h7"
+                stroke="#EAB308"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M42 16V9a3 3 0 0 0-3-3h-7"
+                stroke="#EAB308"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M6 32v7a3 3 0 0 0 3 3h7"
+                stroke="#EAB308"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M42 32v7a3 3 0 0 1-3 3h-7"
+                stroke="#EAB308"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M9 24C13.5 17 18.5 13.5 24 13.5C29.5 13.5 34.5 17 39 24C34.5 31 29.5 34.5 24 34.5C18.5 34.5 13.5 31 9 24Z"
+                fill="#1D4ED8"
+                stroke="#3B82F6"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+              <circle cx="24" cy="24" r="6.5" fill="#EAB308" />
+              <circle cx="24" cy="24" r="4.2" fill="#0F172A" />
+              <circle cx="25.8" cy="22.2" r="1.4" fill="#FFFFFF" />
+            </svg>
+          </div>
           <span className="text-xl font-extrabold tracking-tight">NetraSense</span>
-        </div>
+        </Link>
 
-        <div className="flex items-center gap-4 md:gap-6">
+        <div className="flex items-center gap-3 sm:gap-6">
           <nav className="flex items-center gap-4 text-sm font-medium text-muted-foreground" aria-label="Main Navigation">
             <a
               href="#contact"
-              className="transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary rounded-md px-2 py-1"
+              className="transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary rounded-md px-2 py-1 hidden sm:inline-block"
             >
               Contact Us
             </a>
             <a
               href="#support"
-              className="transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary rounded-md px-2 py-1"
+              className="transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary rounded-md px-2 py-1 hidden sm:inline-block"
             >
               Support Us
             </a>
           </nav>
+
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle light/dark theme"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card/60 text-foreground transition-all hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4 text-amber-400 transition-transform duration-200 rotate-0 hover:rotate-45" />
+            ) : (
+              <Moon className="h-4 w-4 text-slate-700 transition-transform duration-200" />
+            )}
+          </button>
 
           {!loading && (
             <Button asChild>
