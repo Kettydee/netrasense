@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
+import { CuteLeafLoader } from "@/components/CuteLeafLoader";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
