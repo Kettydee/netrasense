@@ -1,6 +1,4 @@
-import { Leaf, Sparkles } from "lucide-react";
-
-interface CuteLeafLoaderProps {
+interface BlueBubbleLoaderProps {
   text?: string;
   size?: "sm" | "md" | "lg";
   className?: string;
@@ -10,17 +8,11 @@ export function CuteLeafLoader({
   text = "Loading...",
   size = "md",
   className = "",
-}: CuteLeafLoaderProps) {
-  const sizeClasses = {
-    sm: "size-12",
-    md: "size-20",
-    lg: "size-28",
-  };
-
-  const leafSizes = {
-    sm: "size-3.5",
-    md: "size-5",
-    lg: "size-7",
+}: BlueBubbleLoaderProps) {
+  const containerSizes = {
+    sm: "size-14",
+    md: "size-24",
+    lg: "size-32",
   };
 
   return (
@@ -29,56 +21,51 @@ export function CuteLeafLoader({
       aria-label={text}
       className={`flex flex-col items-center justify-center gap-3 p-6 text-center ${className}`}
     >
-      {/* 8-Leaf Spinning Orbit */}
-      <div className={`relative ${sizeClasses[size]} animate-spin [animation-duration:3s]`}>
-        {/* Leaf 1 (0° - North) */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1">
-          <Leaf className={`${leafSizes[size]} text-emerald-500 fill-emerald-400 rotate-12 drop-shadow-sm`} />
+      {/* Revolving Orbit Ring */}
+      <div className={`relative ${containerSizes[size]} animate-spin [animation-duration:1.8s]`}>
+        {/* Bubble 1: Tiny (0° - Top) */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 flex items-center justify-center">
+          <span className="size-1.5 rounded-full bg-sky-300 opacity-60 shadow-[0_0_6px_rgba(56,189,248,0.8)]" />
         </div>
 
-        {/* Leaf 2 (45° - North-East) */}
-        <div className="absolute top-[14%] right-[14%] translate-x-1 -translate-y-1">
-          <Leaf className={`${leafSizes[size]} text-lime-500 fill-lime-400 rotate-45 drop-shadow-sm`} />
+        {/* Bubble 2: Small (45° - Top-Right) */}
+        <div className="absolute top-[14%] right-[14%] translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+          <span className="size-2 rounded-full bg-sky-400 opacity-70 shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
         </div>
 
-        {/* Leaf 3 (90° - East) */}
-        <div className="absolute top-1/2 right-0 translate-x-1 -translate-y-1/2">
-          <Leaf className={`${leafSizes[size]} text-green-500 fill-green-400 rotate-90 drop-shadow-sm`} />
+        {/* Bubble 3: Medium-Small (90° - Right) */}
+        <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+          <span className="size-2.5 rounded-full bg-sky-400/90 shadow-[0_0_8px_rgba(14,165,233,0.9)]" />
         </div>
 
-        {/* Leaf 4 (135° - South-East) */}
-        <div className="absolute bottom-[14%] right-[14%] translate-x-1 translate-y-1">
-          <Leaf className={`${leafSizes[size]} text-emerald-600 fill-emerald-500 rotate-[135deg] drop-shadow-sm`} />
+        {/* Bubble 4: Medium (135° - Bottom-Right) */}
+        <div className="absolute bottom-[14%] right-[14%] translate-x-1/2 translate-y-1/2 flex items-center justify-center">
+          <span className="size-3.5 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.9)]" />
         </div>
 
-        {/* Leaf 5 (180° - South) */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1">
-          <Leaf className={`${leafSizes[size]} text-teal-500 fill-teal-400 rotate-180 drop-shadow-sm`} />
+        {/* Bubble 5: Medium-Large (180° - Bottom) */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center">
+          <span className="size-4 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(37,99,235,0.9)]" />
         </div>
 
-        {/* Leaf 6 (225° - South-West) */}
-        <div className="absolute bottom-[14%] left-[14%] -translate-x-1 translate-y-1">
-          <Leaf className={`${leafSizes[size]} text-green-600 fill-green-500 rotate-[225deg] drop-shadow-sm`} />
+        {/* Bubble 6: Large (225° - Bottom-Left) */}
+        <div className="absolute bottom-[14%] left-[14%] -translate-x-1/2 translate-y-1/2 flex items-center justify-center">
+          <span className="size-4.5 rounded-full bg-blue-600 shadow-[0_0_14px_rgba(37,99,235,1)]" />
         </div>
 
-        {/* Leaf 7 (270° - West) */}
-        <div className="absolute top-1/2 left-0 -translate-x-1 -translate-y-1/2">
-          <Leaf className={`${leafSizes[size]} text-emerald-500 fill-emerald-400 rotate-[270deg] drop-shadow-sm`} />
+        {/* Bubble 7: Extra-Large (270° - Left) */}
+        <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+          <span className="size-5 rounded-full bg-indigo-600 shadow-[0_0_16px_rgba(79,70,229,1)]" />
         </div>
 
-        {/* Leaf 8 (315° - North-West) */}
-        <div className="absolute top-[14%] left-[14%] -translate-x-1 -translate-y-1">
-          <Leaf className={`${leafSizes[size]} text-lime-600 fill-lime-500 rotate-[315deg] drop-shadow-sm`} />
-        </div>
-
-        {/* Center Sparkle Accent */}
-        <div className="absolute inset-0 m-auto flex items-center justify-center">
-          <Sparkles className="size-4 text-emerald-400 animate-pulse" />
+        {/* Bubble 8: Jumbo (315° - Top-Left) */}
+        <div className="absolute top-[14%] left-[14%] -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+          <span className="size-5.5 rounded-full bg-gradient-to-tr from-blue-700 via-sky-500 to-cyan-300 shadow-[0_0_18px_rgba(14,165,233,1)]" />
         </div>
       </div>
 
-      {/* Pulsing Loading Text */}
-      <span className="text-sm font-bold tracking-wide text-emerald-600 dark:text-emerald-400 animate-pulse">
+      {/* Pulsing Loading Caption */}
+      <span className="text-sm font-bold tracking-wider text-sky-600 dark:text-sky-400 animate-pulse">
         {text}
       </span>
     </div>
