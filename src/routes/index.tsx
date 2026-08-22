@@ -67,24 +67,86 @@ function Index() {
           to="/"
           className="group flex items-center gap-3.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-transform active:scale-95"
         >
-          <div className="relative flex size-11 sm:size-12 items-center justify-center overflow-hidden">
-            <img
-              src="/favicon.ico"
-              alt="NetraSense Logo"
-              className="size-14 max-w-none scale-[1.32] object-contain transition-transform duration-200 group-hover:scale-[1.38]"
-              style={{
-                maskImage: "radial-gradient(circle at center, black 58%, transparent 72%)",
-                WebkitMaskImage: "radial-gradient(circle at center, black 58%, transparent 72%)",
-              }}
+          {/* Exact Logo: 4 Gold Corner Brackets, Blue Eye, Gold Iris Ring */}
+          <svg
+            className="size-11 sm:size-12 drop-shadow-[0_2px_10px_rgba(59,130,246,0.3)] transition-transform duration-200 group-hover:scale-105"
+            viewBox="0 0 100 100"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {/* Top-Left Bracket */}
+            <path
+              d="M 22 40 V 24 A 6 6 0 0 1 28 18 H 44"
+              stroke="#F5B027"
+              strokeWidth="9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-          </div>
+            {/* Top-Right Bracket */}
+            <path
+              d="M 78 40 V 24 A 6 6 0 0 0 72 18 H 56"
+              stroke="#F5B027"
+              strokeWidth="9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {/* Bottom-Left Bracket */}
+            <path
+              d="M 22 60 V 76 A 6 6 0 0 0 28 82 H 44"
+              stroke="#F5B027"
+              strokeWidth="9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {/* Bottom-Right Bracket */}
+            <path
+              d="M 78 60 V 76 A 6 6 0 0 1 72 82 H 56"
+              stroke="#F5B027"
+              strokeWidth="9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+
+            {/* Blue Eye Almond Shape */}
+            <path
+              d="M 12 50 C 26 28, 74 28, 88 50 C 74 72, 26 72, 12 50 Z"
+              fill="#0F67DE"
+            />
+
+            {/* Solid Gold Concentric Iris Ring */}
+            <circle
+              cx="50"
+              cy="50"
+              r="22"
+              fill="none"
+              stroke="#F5B027"
+              strokeWidth="7"
+            />
+
+            {/* Deep Blue Pupil Core */}
+            <circle
+              cx="50"
+              cy="50"
+              r="15"
+              fill="#084EAA"
+            />
+
+            {/* White Specular Catchlight */}
+            <circle
+              cx="56"
+              cy="44"
+              r="4.5"
+              fill="#FFFFFF"
+            />
+          </svg>
+
           <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             NetraSense
           </span>
         </Link>
 
         <div className="flex items-center gap-3 sm:gap-6">
-          {/* Theme Toggle Button (Positioned left of Contact Us) */}
+          {/* Theme Toggle Button (Left of Contact Us) */}
           <button
             onClick={toggleTheme}
             aria-label="Toggle light/dark theme"
