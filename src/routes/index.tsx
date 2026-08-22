@@ -62,56 +62,59 @@ function Index() {
     <div className="min-h-screen bg-background text-foreground">
       {/* --- Top Navigation Header --- */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6 lg:px-8">
-        {/* NetraSense Brand Mark Logo */}
-        <Link to="/" className="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-primary rounded-lg p-1">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 shadow-sm">
-            <svg
-              className="h-6 w-6"
-              viewBox="0 0 48 48"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M6 16V9a3 3 0 0 1 3-3h7"
-                stroke="#EAB308"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M42 16V9a3 3 0 0 0-3-3h-7"
-                stroke="#EAB308"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M6 32v7a3 3 0 0 0 3 3h7"
-                stroke="#EAB308"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M42 32v7a3 3 0 0 1-3 3h-7"
-                stroke="#EAB308"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M9 24C13.5 17 18.5 13.5 24 13.5C29.5 13.5 34.5 17 39 24C34.5 31 29.5 34.5 24 34.5C18.5 34.5 13.5 31 9 24Z"
-                fill="#1D4ED8"
-                stroke="#3B82F6"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-              />
-              <circle cx="24" cy="24" r="6.5" fill="#EAB308" />
-              <circle cx="24" cy="24" r="4.2" fill="#0F172A" />
-              <circle cx="25.8" cy="22.2" r="1.4" fill="#FFFFFF" />
-            </svg>
-          </div>
-          <span className="text-xl font-extrabold tracking-tight">NetraSense</span>
+        {/* NetraSense Brand Mark Logo (Boundary-free & Enlarged) */}
+        <Link
+          to="/"
+          className="group flex items-center gap-3.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-transform active:scale-95"
+        >
+          <svg
+            className="size-11 sm:size-12 drop-shadow-[0_2px_12px_rgba(59,130,246,0.3)] transition-transform duration-200 group-hover:scale-105"
+            viewBox="0 0 48 48"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M6 16V9a3 3 0 0 1 3-3h7"
+              stroke="#EAB308"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M42 16V9a3 3 0 0 0-3-3h-7"
+              stroke="#EAB308"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M6 32v7a3 3 0 0 0 3 3h7"
+              stroke="#EAB308"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M42 32v7a3 3 0 0 1-3 3h-7"
+              stroke="#EAB308"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M9 24C13.5 17 18.5 13.5 24 13.5C29.5 13.5 34.5 17 39 24C34.5 31 29.5 34.5 24 34.5C18.5 34.5 13.5 31 9 24Z"
+              fill="#1D4ED8"
+              stroke="#3B82F6"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+            />
+            <circle cx="24" cy="24" r="6.5" fill="#EAB308" />
+            <circle cx="24" cy="24" r="4.2" fill="#0F172A" />
+            <circle cx="25.8" cy="22.2" r="1.4" fill="#FFFFFF" />
+          </svg>
+          <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+            NetraSense
+          </span>
         </Link>
 
         <div className="flex items-center gap-3 sm:gap-6">
