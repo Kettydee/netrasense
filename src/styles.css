@@ -15,7 +15,7 @@
     --popover-foreground: 215 45% 15%;
 
     /* Ruddy Blue Primary #76ABDF */
-    --primary: 209 61% 67%;             /* #76ABDF */
+    --primary: 209 61% 67%;
     --primary-foreground: 0 0% 100%;
 
     /* Soft Ruddy & Slate Neutrals */
@@ -60,7 +60,7 @@
 
     --live: 173 100% 45%;
     --live-surface: 173 100% 8%;
-    --live-border: 173 80% 25%;
+    --live-border: 173 80% 22%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -70,9 +70,10 @@
     min-height: 100vh;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     transition: background-color 0.3s ease, color 0.3s ease;
+    overflow-x: hidden;
   }
 
-  /* --- Ruddy Blue Ambient Mesh Background --- */
+  /* --- Light Canvas Gradient --- */
   html:not(.dark) body {
     background-color: #e8f2fa !important;
     background-image: 
@@ -84,7 +85,7 @@
     color: #132235 !important;
   }
 
-  /* --- Dark Theme Canvas Gradient --- */
+  /* --- Dark Canvas Gradient --- */
   html.dark body {
     background-color: #0b1315 !important;
     background-image: 
@@ -96,25 +97,15 @@
 }
 
 /* =========================================================
-   SIDEBAR & CARD COLOR STYLING
+   SIDEBAR & CARDS: COMPLETELY STATIC (NO SCALING/POPPING)
    ========================================================= */
 
-/* Light Mode: Ruddy Blue Sidebar & Cards */
+/* Light Mode */
 html:not(.dark) aside {
   background-color: #deecf7 !important;
   border-right: 1px solid #bed8ee !important;
   color: #132235 !important;
-}
-
-html:not(.dark) aside a,
-html:not(.dark) aside button {
-  color: #405872 !important;
-}
-
-html:not(.dark) aside a:hover,
-html:not(.dark) aside button:hover {
-  color: #3174b5 !important;
-  background-color: rgba(118, 171, 223, 0.16) !important;
+  transform: none !important;
 }
 
 html:not(.dark) .surface-card,
@@ -126,24 +117,15 @@ html:not(.dark) [class*="bg-gray-900"] {
   border: 1px solid #c5dcf0 !important;
   color: #132235 !important;
   box-shadow: 0 4px 18px -2px rgba(19, 34, 53, 0.05) !important;
+  transform: none !important; /* Prevents cards/background from popping */
 }
 
-/* Dark Mode: Sidebar & Cards */
+/* Dark Mode */
 html.dark aside {
   background-color: #0e1a1d !important;
   border-right: 1px solid #1d383f !important;
   color: #f0faf8 !important;
-}
-
-html.dark aside a,
-html.dark aside button {
-  color: #91b1b7 !important;
-}
-
-html.dark aside a:hover,
-html.dark aside button:hover {
-  color: #00e5c9 !important;
-  background-color: rgba(0, 229, 201, 0.1) !important;
+  transform: none !important;
 }
 
 html.dark .surface-card,
@@ -155,41 +137,27 @@ html.dark [class*="bg-gray-900"] {
   border: 1px solid #1d383f !important;
   color: #f0faf8 !important;
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5) !important;
+  transform: none !important; /* Prevents cards/background from popping */
 }
 
-/* =========================================================
-   HOVER & POP-OUT INTERACTION (1.06x Zoom & Glowing Borders)
-   ========================================================= */
+/* Keep card border subtle on hover with ZERO scaling */
 .surface-card,
 [class*="bg-card"] {
   border-radius: var(--radius);
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), 
-              border-color 0.2s ease, 
-              box-shadow 0.22s ease;
+  transform: none !important;
 }
 
-.surface-card:hover,
-[class*="bg-card"]:hover {
-  transform: translateY(-2px) scale(1.015);
-}
-
-html:not(.dark) .surface-card:hover,
-html:not(.dark) [class*="bg-card"]:hover {
-  border-color: #76abdf !important;
-  box-shadow: 0 12px 28px -6px rgba(118, 171, 223, 0.35) !important;
-}
-
-html.dark .surface-card:hover,
-html.dark [class*="bg-card"]:hover {
-  border-color: #00e5c9 !important;
-  box-shadow: 0 12px 30px -6px rgba(0, 229, 201, 0.3) !important;
-}
-
-/* Buttons & Links Pop-Out */
+/* =========================================================
+   STRICT POP-OUT & GLOW ON BUTTONS AND LINKS ONLY
+   ========================================================= */
 button,
 a,
 [role="button"],
-.btn {
+.btn,
+nav a,
+nav button,
+aside a,
+aside button {
   position: relative;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), 
               box-shadow 0.2s ease, 
@@ -198,35 +166,45 @@ a,
   will-change: transform, box-shadow;
 }
 
+/* Hover: Pops outward (1.06x scale) + Glow highlight */
 button:hover,
 a:hover,
 [role="button"]:hover,
-.btn:hover {
+.btn:hover,
+nav a:hover,
+nav button:hover,
+aside a:hover,
+aside button:hover {
   transform: scale(1.06) translateY(-1px) !important;
   z-index: 20;
 }
 
+/* Light Theme Button Glow */
 html:not(.dark) button:hover,
-html:not(.dark) a:hover {
+html:not(.dark) a:hover,
+html:not(.dark) [role="button"]:hover {
   border-color: #76abdf !important;
-  box-shadow: 0 0 16px rgba(118, 171, 223, 0.45), 
-              0 6px 16px -2px rgba(19, 34, 53, 0.08) !important;
+  box-shadow: 0 0 16px rgba(118, 171, 223, 0.5), 
+              0 6px 16px -2px rgba(19, 34, 53, 0.1) !important;
 }
 
+/* Dark Theme Button Glow */
 html.dark button:hover,
-html.dark a:hover {
+html.dark a:hover,
+html.dark [role="button"]:hover {
   border-color: #00e5c9 !important;
-  box-shadow: 0 0 16px rgba(0, 229, 201, 0.45), 
+  box-shadow: 0 0 16px rgba(0, 229, 201, 0.5), 
               0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
 }
 
+/* Active Click Feedback */
 button:active,
 a:active,
 [role="button"]:active {
   transform: scale(0.98) !important;
 }
 
-/* Custom Scrollbars */
+/* Scrollbars */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
