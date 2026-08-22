@@ -18,56 +18,42 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
-// --- Dual-Tone Interlocking Eye Logo with Enhanced Height ---
-function NetraSenseEyeLogo({ className = "h-11 w-auto" }: { className?: string }) {
+// --- Precision Framed Eye Logo Component ---
+function NetraSenseFramedEye({ className = "h-8.5 w-auto" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 100 64"
+      viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={`${className} shrink-0`}
       aria-label="NetraSense Eye Logo"
     >
-      {/* Outer Top Cyan Arc */}
+      {/* Outer Golden Target Reticle Frame */}
       <path
-        d="M 48 16 C 66 16, 86 26, 92 32 C 86 39, 68 50, 48 50"
-        stroke="#33A5DD"
-        strokeWidth="4"
+        d="M 22 10 L 10 10 L 10 22 M 78 10 L 90 10 L 90 22 M 10 78 L 10 90 L 22 90 M 90 78 L 90 90 L 78 90"
+        stroke="#D4AF37"
+        strokeWidth="6.5"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
 
-      {/* Outer Bottom Deep Navy Arc */}
+      {/* Main Eye Contour (Cyan / Deep Teal) */}
       <path
-        d="M 52 50 C 34 50, 14 39, 8 32 C 14 25, 32 16, 52 16"
-        stroke="#273C90"
-        strokeWidth="4"
+        d="M 14 50 C 28 26, 72 26, 86 50 C 72 74, 28 74, 14 50 Z"
+        stroke="#0F52BA"
+        strokeWidth="6"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
 
-      {/* Inner Concentric Upper Arc */}
-      <path
-        d="M 40 22 C 58 22, 76 28, 82 32"
-        stroke="#33A5DD"
-        strokeWidth="3.2"
-        strokeLinecap="round"
-      />
+      {/* Outer Golden Concentric Ring */}
+      <circle cx="50" cy="50" r="22" stroke="#D4AF37" strokeWidth="5.5" fill="none" />
 
-      {/* Inner Concentric Lower Arc */}
-      <path
-        d="M 60 44 C 42 44, 24 38, 18 32"
-        stroke="#273C90"
-        strokeWidth="3.2"
-        strokeLinecap="round"
-      />
+      {/* Inner Deep Blue Pupil */}
+      <circle cx="50" cy="50" r="14" fill="#0F52BA" />
 
-      {/* Outer Iris Ring */}
-      <circle cx="50" cy="32" r="13.5" stroke="#33A5DD" strokeWidth="3.5" fill="none" />
-
-      {/* Inner Pupil Circle */}
-      <circle cx="50" cy="32" r="9" fill="#273C90" />
-
-      {/* Highlight Glint Reflection */}
-      <circle cx="53" cy="29" r="2.4" fill="#FFFFFF" />
+      {/* White Optical Reflection Spot */}
+      <circle cx="55" cy="45" r="4" fill="#FFFFFF" />
     </svg>
   );
 }
@@ -143,11 +129,11 @@ export function AppShell({ title, description, children, actions }: AppShellProp
         }`}
       >
         <div className="w-full">
-          {/* Top Branding with Enlarged Eye Logo */}
+          {/* Top Branding Section */}
           <div className={`flex items-center ${isSidebarOpen ? "justify-between" : "justify-center"}`}>
             {isSidebarOpen && (
-              <Link to="/dashboard" className="flex items-center gap-2.5 overflow-hidden group">
-                <NetraSenseEyeLogo className="h-11 w-auto max-w-[56px] group-hover:scale-105 transition-transform duration-200" />
+              <Link to="/dashboard" className="flex items-center gap-3 overflow-hidden group">
+                <NetraSenseFramedEye className="h-8.5 w-auto max-w-[46px] group-hover:scale-105 transition-transform duration-200" />
                 <span className="text-xl font-black tracking-tight truncate text-foreground">
                   NetraSense
                 </span>
