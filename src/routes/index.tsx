@@ -67,105 +67,11 @@ function Index() {
           to="/"
           className="group flex items-center gap-3.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-transform active:scale-95"
         >
-          {/* Exact Logo: 3D Gold Framing Brackets & Dual-Tone Blue Eye */}
-          <svg
-            className="size-11 sm:size-12 drop-shadow-[0_4px_16px_rgba(11,77,140,0.35)] transition-transform duration-200 group-hover:scale-105"
-            viewBox="0 0 100 100"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-              <linearGradient id="gold-metal" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#E5C07B" />
-                <stop offset="45%" stopColor="#C8963E" />
-                <stop offset="100%" stopColor="#8A5A18" />
-              </linearGradient>
-              <linearGradient id="blue-sclera" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#0B4D8C" />
-                <stop offset="50%" stopColor="#0E64B0" />
-                <stop offset="100%" stopColor="#06325C" />
-              </linearGradient>
-              <linearGradient id="blue-iris" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#105E9E" />
-                <stop offset="100%" stopColor="#05284B" />
-              </linearGradient>
-            </defs>
-
-            {/* Corner Framing Brackets */}
-            <path
-              d="M 12 32 V 18 A 6 6 0 0 1 18 12 H 32"
-              stroke="url(#gold-metal)"
-              strokeWidth="6.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M 88 32 V 18 A 6 6 0 0 0 82 12 H 68"
-              stroke="url(#gold-metal)"
-              strokeWidth="6.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M 12 68 V 82 A 6 6 0 0 0 18 88 H 32"
-              stroke="url(#gold-metal)"
-              strokeWidth="6.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M 88 68 V 82 A 6 6 0 0 1 82 88 H 68"
-              stroke="url(#gold-metal)"
-              strokeWidth="6.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-
-            {/* Outer Gold Arch Ribbons */}
-            <path
-              d="M 16 48 C 24 22, 76 22, 84 48"
-              stroke="url(#gold-metal)"
-              strokeWidth="3.5"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <path
-              d="M 16 52 C 24 78, 76 78, 84 52"
-              stroke="url(#gold-metal)"
-              strokeWidth="3.5"
-              fill="none"
-              strokeLinecap="round"
-            />
-
-            {/* Main Blue Embossed Eye Contour */}
-            <path
-              d="M 10 50 C 22 22, 78 22, 90 50 C 78 78, 22 78, 10 50 Z"
-              fill="url(#blue-sclera)"
-            />
-
-            {/* Inner Gold Concentric Ring */}
-            <circle
-              cx="50"
-              cy="50"
-              r="20"
-              fill="url(#blue-iris)"
-              stroke="url(#gold-metal)"
-              strokeWidth="4.5"
-            />
-
-            {/* Internal Iris Contour */}
-            <path
-              d="M 43 36 A 15 15 0 1 1 36 58"
-              fill="none"
-              stroke="url(#gold-metal)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-
-            {/* Specular Light Reflection Catchlight */}
-            <circle cx="56" cy="44" r="4.5" fill="#FFFFFF" />
-          </svg>
-
+          <img
+            src="/favicon.ico"
+            alt="NetraSense Logo"
+            className="size-11 sm:size-12 rounded-full object-cover shadow-sm transition-transform duration-200 group-hover:scale-105"
+          />
           <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             NetraSense
           </span>
