@@ -67,17 +67,70 @@ function Index() {
           to="/"
           className="group flex items-center gap-3.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-transform active:scale-95"
         >
-          <img
-            src="/logo.png"
-            alt="NetraSense Logo"
-            className="size-12 sm:size-14 object-contain drop-shadow-[0_2px_12px_rgba(59,130,246,0.25)] transition-transform duration-200 group-hover:scale-105"
-          />
+          <svg
+            className="size-11 sm:size-12 drop-shadow-[0_2px_12px_rgba(59,130,246,0.3)] transition-transform duration-200 group-hover:scale-105"
+            viewBox="0 0 100 100"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#F6D365" />
+                <stop offset="100%" stopColor="#C58A27" />
+              </linearGradient>
+              <linearGradient id="blue-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#0284C7" />
+                <stop offset="50%" stopColor="#0369A1" />
+                <stop offset="100%" stopColor="#075985" />
+              </linearGradient>
+            </defs>
+
+            {/* Gold Corner Brackets */}
+            <path d="M 12 30 V 16 A 4 4 0 0 1 16 12 H 30" stroke="url(#gold-grad)" strokeWidth="6.5" strokeLinecap="round" />
+            <path d="M 88 30 V 16 A 4 4 0 0 0 84 12 H 70" stroke="url(#gold-grad)" strokeWidth="6.5" strokeLinecap="round" />
+            <path d="M 12 70 V 84 A 4 4 0 0 0 16 88 H 30" stroke="url(#gold-grad)" strokeWidth="6.5" strokeLinecap="round" />
+            <path d="M 88 70 V 84 A 4 4 0 0 1 84 88 H 70" stroke="url(#gold-grad)" strokeWidth="6.5" strokeLinecap="round" />
+
+            {/* Outer Gold Arch Ring */}
+            <ellipse cx="50" cy="50" rx="42" ry="29" stroke="url(#gold-grad)" strokeWidth="3" fill="none" opacity="0.85" />
+
+            {/* Main Blue Eye Contour */}
+            <path
+              d="M 14 50 Q 50 18 86 50 Q 50 82 14 50 Z"
+              fill="url(#blue-grad)"
+              stroke="#0284C7"
+              strokeWidth="2"
+            />
+
+            {/* Inner Gold Concentric Ring */}
+            <circle cx="50" cy="50" r="18" fill="none" stroke="url(#gold-grad)" strokeWidth="3" />
+
+            {/* Deep Pupil Core */}
+            <circle cx="50" cy="50" r="13" fill="#032B44" />
+
+            {/* Catchlight Reflection */}
+            <circle cx="55" cy="45" r="4.5" fill="#FFFFFF" />
+          </svg>
+
           <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             NetraSense
           </span>
         </Link>
 
         <div className="flex items-center gap-3 sm:gap-6">
+          {/* Theme Toggle Button (Positioned left of Contact Us) */}
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle light/dark theme"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card/60 text-foreground transition-all hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4 text-amber-400 transition-transform duration-200 rotate-0 hover:rotate-45" />
+            ) : (
+              <Moon className="h-4 w-4 text-slate-700 transition-transform duration-200" />
+            )}
+          </button>
+
           <nav className="flex items-center gap-4 text-sm font-medium text-muted-foreground" aria-label="Main Navigation">
             <a
               href="#contact"
@@ -92,19 +145,6 @@ function Index() {
               Support Us
             </a>
           </nav>
-
-          {/* Theme Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle light/dark theme"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card/60 text-foreground transition-all hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            {theme === "dark" ? (
-              <Sun className="h-4 w-4 text-amber-400 transition-transform duration-200 rotate-0 hover:rotate-45" />
-            ) : (
-              <Moon className="h-4 w-4 text-slate-700 transition-transform duration-200" />
-            )}
-          </button>
 
           {!loading && (
             <Button asChild>
