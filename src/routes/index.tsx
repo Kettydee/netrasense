@@ -67,18 +67,82 @@ function Index() {
           to="/"
           className="group flex items-center gap-3.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-transform active:scale-95"
         >
-          <img
-            src="/favicon.ico"
-            alt="NetraSense Logo"
-            className="size-11 sm:size-12 rounded-xl object-contain drop-shadow-[0_2px_12px_rgba(59,130,246,0.3)] transition-transform duration-200 group-hover:scale-105"
-          />
+          {/* Exact Logo: Realistic Eye & Brackets with 100% Background Transparency */}
+          <svg
+            className="size-11 sm:size-12 drop-shadow-[0_2px_12px_rgba(59,130,246,0.3)] transition-transform duration-200 group-hover:scale-105"
+            viewBox="0 0 100 100"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <linearGradient id="ns-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#DFAD58" />
+                <stop offset="50%" stopColor="#C48E33" />
+                <stop offset="100%" stopColor="#9C6B1B" />
+              </linearGradient>
+              <linearGradient id="ns-blue-outer" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#0B4D8C" />
+                <stop offset="50%" stopColor="#1264A6" />
+                <stop offset="100%" stopColor="#083B6F" />
+              </linearGradient>
+              <linearGradient id="ns-blue-pupil" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#14609E" />
+                <stop offset="100%" stopColor="#083763" />
+              </linearGradient>
+            </defs>
+
+            {/* Gold Camera Framing Brackets */}
+            <path d="M 12 32 V 18 A 6 6 0 0 1 18 12 H 32" stroke="url(#ns-gold)" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 88 32 V 18 A 6 6 0 0 0 82 12 H 68" stroke="url(#ns-gold)" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 12 68 V 82 A 6 6 0 0 0 18 88 H 32" stroke="url(#ns-gold)" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 88 68 V 82 A 6 6 0 0 1 82 88 H 68" stroke="url(#ns-gold)" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
+
+            {/* Sclera / Outer Eye Silhouette (Midnight Blue with Gold Highlights) */}
+            <path
+              d="M 12 50 C 22 24, 78 24, 88 50 C 78 76, 22 76, 12 50 Z"
+              fill="url(#ns-blue-outer)"
+            />
+
+            {/* Lower & Upper Gold Arch Accents */}
+            <path
+              d="M 19 50 C 27 68, 73 68, 81 50"
+              stroke="url(#ns-gold)"
+              strokeWidth="3.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 23 45 C 30 33, 70 33, 77 45"
+              stroke="url(#ns-gold)"
+              strokeWidth="2.5"
+              fill="none"
+              strokeLinecap="round"
+              opacity="0.8"
+            />
+
+            {/* Iris Gold Rim */}
+            <circle cx="50" cy="50" r="18" fill="url(#ns-blue-pupil)" stroke="url(#ns-gold)" strokeWidth="4.5" />
+
+            {/* Inner Gold Precision Notch */}
+            <path
+              d="M 44 38 A 14 14 0 1 1 38 56"
+              fill="none"
+              stroke="url(#ns-gold)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+
+            {/* Specular Light Reflection Catchlight */}
+            <circle cx="55" cy="45" r="4.5" fill="#FFFFFF" />
+          </svg>
+
           <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             NetraSense
           </span>
         </Link>
 
         <div className="flex items-center gap-3 sm:gap-6">
-          {/* Theme Toggle Button (Placed left of Contact Us) */}
+          {/* Theme Toggle Button (Positioned left of Contact Us) */}
           <button
             onClick={toggleTheme}
             aria-label="Toggle light/dark theme"
