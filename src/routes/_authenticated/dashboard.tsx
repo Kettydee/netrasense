@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
+import { CameraFeed } from "@/components/CameraFeed";
 import { CuteLeafLoader } from "@/components/CuteLeafLoader";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -38,9 +39,15 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Realtime Dashboard — NetraSense" },
-      { name: "description", content: "Live proximity telemetry, daily navigation stats and caregiver quick actions." },
+      {
+        name: "description",
+        content: "Live proximity telemetry, daily navigation stats and caregiver quick actions.",
+      },
       { property: "og:title", content: "Realtime Dashboard — NetraSense" },
-      { property: "og:description", content: "Live obstacle telemetry and caregiver quick-glance panel." },
+      {
+        property: "og:description",
+        content: "Live obstacle telemetry and caregiver quick-glance panel.",
+      },
     ],
   }),
   component: DashboardPage,
@@ -79,14 +86,26 @@ function StatCard({
   );
 }
 
-function DistanceMeter({ distance, level }: { distance: number; level: keyof typeof threatStyles }) {
+function DistanceMeter({
+  distance,
+  level,
+}: {
+  distance: number;
+  level: keyof typeof threatStyles;
+}) {
   const pct = Math.max(0, Math.min(1, distance / MAX_DISTANCE_CM));
   const radius = 76;
   const circumference = 2 * Math.PI * radius;
 
   return (
     <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-8">
-      <svg width="180" height="180" viewBox="0 0 180 180" role="img" aria-label={`${distance} centimetres to obstacle`}>
+      <svg
+        width="180"
+        height="180"
+        viewBox="0 0 180 180"
+        role="img"
+        aria-label={`${distance} centimetres to obstacle`}
+      >
         <circle cx="90" cy="90" r={radius} fill="none" strokeWidth="14" className="stroke-muted" />
         <circle
           cx="90"
@@ -109,7 +128,9 @@ function DistanceMeter({ distance, level }: { distance: number; level: keyof typ
         </text>
       </svg>
       <div className="w-full">
-        <p className="text-sm font-semibold text-muted-foreground">Proximity range 0 – {MAX_DISTANCE_CM} cm</p>
+        <p className="text-sm font-semibold text-muted-foreground">
+          Proximity range 0 – {MAX_DISTANCE_CM} cm
+        </p>
         <div className="mt-2 h-5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
           <div
             className={`h-full rounded-full transition-all duration-500 ${threatStyles[level].bar}`}
@@ -161,7 +182,11 @@ function DashboardPage() {
     enabled: !!userId,
     queryFn: () => fetchProfile(userId),
   });
-  const contactsQuery = useQuery({ queryKey: ["contacts", userId], enabled: !!userId, queryFn: fetchContacts });
+  const contactsQuery = useQuery({
+    queryKey: ["contacts", userId],
+    enabled: !!userId,
+    queryFn: fetchContacts,
+  });
   const telemetryQuery = useQuery({
     queryKey: ["telemetry", userId],
     enabled: !!userId,
@@ -179,7 +204,12 @@ function DashboardPage() {
       .channel("telemetry_stream")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "telemetry_stream", filter: `user_id=eq.${userId}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "telemetry_stream",
+          filter: `user_id=eq.${userId}`,
+        },
         () => {
           void queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
           void queryClient.invalidateQueries({ queryKey: ["daily-stats", userId] });
@@ -198,7 +228,9 @@ function DashboardPage() {
     if (lastSpokenId.current === latest.id) return;
     lastSpokenId.current = latest.id;
     if (latest.threat_level === "Alarming" || latest.threat_level === "Collision") {
-      speak(`Warning: ${latest.detected_object} at ${Math.round(Number(latest.distance_cm))} centimeters`);
+      speak(
+        `Warning: ${latest.detected_object} at ${Math.round(Number(latest.distance_cm))} centimeters`,
+      );
     }
   }, [latest, voiceOn]);
 
@@ -212,7 +244,8 @@ function DashboardPage() {
     if (!userId) return;
     const distance = Math.round(Math.random() * MAX_DISTANCE_CM);
     const level = classifyDistance(distance);
-    const object = DETECTED_OBJECTS[Math.floor(Math.random() * DETECTED_OBJECTS.length)] ?? "Obstacle";
+    const object =
+      DETECTED_OBJECTS[Math.floor(Math.random() * DETECTED_OBJECTS.length)] ?? "Obstacle";
     const { error } = await supabase.from("telemetry_stream").insert({
       user_id: userId,
       detected_object: object,
@@ -332,14 +365,19 @@ function DashboardPage() {
           </p>
 
           <div className="mt-5">
-        {telemetryQuery.isLoading ? (
-          <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-border bg-card p-6">
-            <CuteLeafLoader text="Connecting to sensor stream..." size="md" />
+            {telemetryQuery.isLoading ? (
+              <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-border bg-card p-6">
+                <CuteLeafLoader text="Connecting to sensor stream..." size="md" />
+              </div>
+            ) : (
+              <DistanceMeter
+                distance={latest ? Math.round(Number(latest.distance_cm)) : MAX_DISTANCE_CM}
+                level={level}
+              />
+            )}
           </div>
-        ) : (
-          <DistanceMeter distance={latest ? Math.round(Number(latest.distance_cm)) : MAX_DISTANCE_CM} level={level} />
-        )}
-      </div>
+
+          <CameraFeed />
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex items-center gap-3">
@@ -381,7 +419,10 @@ function DashboardPage() {
                 <li className="text-sm text-muted-foreground">No emergency contacts saved yet.</li>
               )}
               {(contactsQuery.data ?? []).slice(0, 3).map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+                <li
+                  key={c.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+                >
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{c.contact_name}</p>
                     <p className="truncate text-sm text-muted-foreground">
@@ -414,7 +455,9 @@ function DashboardPage() {
                 <li key={t.id} className="rounded-lg border border-border p-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate font-semibold">{t.detected_object}</p>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${threatStyles[t.threat_level].badge}`}>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-bold ${threatStyles[t.threat_level].badge}`}
+                    >
                       {t.threat_level}
                     </span>
                   </div>
