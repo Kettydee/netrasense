@@ -9,6 +9,16 @@ type FeedStatus = "idle" | "connecting" | "live" | "error";
 /** localStorage key shared with the Settings page. */
 export const CAMERA_STREAM_URL_KEY = "netrasense:cameraStreamUrl";
 
+/**
+ * This project does not wire its CSS custom properties into Tailwind (no `@theme`),
+ * so semantic color utilities like `bg-muted` / `text-primary` render nothing.
+ * The camera "screen" is always a dark viewport, so its surface + inner text are
+ * given explicit values here and stay correct in both light and dark themes.
+ */
+const SCREEN_BG = "#0b1315";
+const SCREEN_BORDER = "1px solid rgba(255,255,255,0.12)";
+const SCREEN_TEXT = "rgba(255,255,255,0.82)";
+
 function resolveConfiguredStreamUrl(): string {
   if (typeof window !== "undefined") {
     const stored = window.localStorage.getItem(CAMERA_STREAM_URL_KEY)?.trim();
@@ -65,7 +75,9 @@ export function CameraFeed() {
   const startDeviceCamera = useCallback(async () => {
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       setStatus("error");
-      setMessage("This browser cannot open a camera.");
+      setMessage(
+        "This browser can't open a camera here. It needs an HTTPS page (or localhost) and camera permission.",
+      );
       return;
     }
     setUseDeviceCamera(true);
@@ -98,11 +110,13 @@ export function CameraFeed() {
       setStatus("error");
       const name = err instanceof DOMException ? err.name : "";
       setMessage(
-        name === "NotAllowedError"
-          ? "Camera permission was denied. Allow it in your browser to see the feed."
+        name === "NotAllowedError" || name === "SecurityError"
+          ? "Camera permission was denied. Allow camera access for this site, then try again."
           : name === "NotFoundError"
             ? "No camera was found on this device."
-            : "Could not start the camera.",
+            : name === "NotReadableError"
+              ? "The camera is already in use by another app. Close it and try again."
+              : "Could not start the camera.",
       );
     }
   }, [stopDeviceCamera]);
@@ -127,36 +141,35 @@ export function CameraFeed() {
 
   const showNetworkStream = !!streamUrl && !useDeviceCamera;
   const showDeviceVideo = useDeviceCamera;
+  const showPlaceholder = !showNetworkStream && !showDeviceVideo && status !== "error";
+
+  const dotColor =
+    status === "live" ? "#22c55e" : status === "error" ? "#f87171" : "rgba(148,163,184,0.9)";
+  const badgeLabel = status === "live" ? "Live" : status === "error" ? "Offline" : "Idle";
 
   return (
-    <section
-      aria-labelledby="camera-heading"
-      className="mt-6 rounded-xl border border-border bg-surface p-4"
-    >
+    <section aria-labelledby="camera-heading" className="surface-card mt-6 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 id="camera-heading" className="flex items-center gap-2 text-base font-bold">
-          <Camera aria-hidden="true" className="size-5 text-primary" />
+          <Camera aria-hidden="true" className="size-5 shrink-0" />
           Live camera feed
         </h3>
         <span
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-wide",
-            status === "live"
-              ? "border-live-border bg-live-surface text-live"
-              : "border-border bg-muted text-muted-foreground",
-          )}
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide"
+          style={{ border: "1px solid rgba(148,163,184,0.35)" }}
         >
           <span
-            className={cn(
-              "size-2 rounded-full",
-              status === "live" ? "animate-pulse bg-live" : "bg-muted-foreground",
-            )}
+            className={cn("size-2 rounded-full", status === "live" && "animate-pulse")}
+            style={{ backgroundColor: dotColor }}
           />
-          {status === "live" ? "Live" : status === "error" ? "Offline" : "Idle"}
+          {badgeLabel}
         </span>
       </div>
 
-      <div className="relative mt-4 aspect-video w-full overflow-hidden rounded-lg border border-border bg-muted">
+      <div
+        className="relative mt-4 aspect-video w-full overflow-hidden rounded-lg"
+        style={{ backgroundColor: SCREEN_BG, border: SCREEN_BORDER, color: SCREEN_TEXT }}
+      >
         {showNetworkStream && (
           <img
             key={`${streamUrl}:${reloadKey}`}
@@ -184,25 +197,31 @@ export function CameraFeed() {
           className={cn("size-full object-cover", showDeviceVideo ? "block" : "hidden")}
         />
 
-        {!showNetworkStream && !showDeviceVideo && (
+        {showPlaceholder && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-            <VideoOff aria-hidden="true" className="size-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
+            <VideoOff aria-hidden="true" className="size-8 opacity-70" />
+            <p className="text-sm opacity-80">
               No camera connected. Start this device&apos;s camera, or set a stream URL in Settings.
             </p>
           </div>
         )}
 
         {status === "connecting" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/60">
-            <Loader2 aria-hidden="true" className="size-6 animate-spin text-primary" />
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+          >
+            <Loader2 aria-hidden="true" className="size-6 animate-spin" />
           </div>
         )}
 
         {status === "error" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/80 p-6 text-center">
-            <CircleAlert aria-hidden="true" className="size-8 text-destructive" />
-            <p className="text-sm font-semibold text-foreground">{message}</p>
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center"
+            style={{ backgroundColor: "rgba(0,0,0,0.72)" }}
+          >
+            <CircleAlert aria-hidden="true" className="size-8" style={{ color: "#f87171" }} />
+            <p className="text-sm font-semibold">{message}</p>
           </div>
         )}
       </div>
@@ -232,7 +251,7 @@ export function CameraFeed() {
         )}
 
         {streamUrl && !showDeviceVideo && (
-          <span className="inline-flex items-center gap-1.5 self-center text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 self-center text-xs opacity-70">
             <Wifi aria-hidden="true" className="size-3.5" />
             {safeHost(streamUrl)}
           </span>
