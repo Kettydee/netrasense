@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Moon, Sun, Video, Volume2 } from "lucide-react";
+import { Moon, Radio, Sun, Video, Volume2 } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { CAMERA_STREAM_URL_KEY } from "@/components/CameraFeed";
 import { speak } from "@/lib/netrasense";
+import { SENSOR_SERVER_URL_KEY } from "@/lib/sensor";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -33,6 +34,7 @@ function SettingsPage() {
   const [threshold, setThreshold] = useState(100);
   const [dark, setDark] = useState(true);
   const [cameraUrl, setCameraUrl] = useState("");
+  const [sensorServerUrl, setSensorServerUrl] = useState("");
 
   useEffect(() => {
     setVoiceOn(window.localStorage.getItem("netrasense:voice") === "on");
@@ -40,6 +42,9 @@ function SettingsPage() {
     setThreshold(Number(window.localStorage.getItem("netrasense:threshold") ?? 100));
     setDark(document.documentElement.classList.contains("dark"));
     setCameraUrl(window.localStorage.getItem(CAMERA_STREAM_URL_KEY) ?? "");
+    setSensorServerUrl(
+      window.localStorage.getItem(SENSOR_SERVER_URL_KEY) ?? "http://localhost:5000",
+    );
   }, []);
 
   function persist(key: string, value: string) {
@@ -176,8 +181,11 @@ function SettingsPage() {
               </Label>
               <p className="mb-3 text-sm text-muted-foreground">
                 MJPEG stream from the local YOLO Vision server (e.g.{" "}
-                <code className="rounded bg-muted px-1 py-0.5">http://localhost:5000/video_feed</code>)
-                or an external camera service. Leave blank to use the default localhost YOLO stream or device camera.
+                <code className="rounded bg-muted px-1 py-0.5">
+                  http://localhost:5000/video_feed
+                </code>
+                ) or an external camera service. Leave blank to use the default localhost YOLO
+                stream or device camera.
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
@@ -204,6 +212,45 @@ function SettingsPage() {
             <p className="text-sm text-muted-foreground">
               Changes take effect the next time the dashboard loads.
             </p>
+          </div>
+        </section>
+
+        <section aria-labelledby="sensor-heading" className="surface-card p-5">
+          <h2 id="sensor-heading" className="flex items-center gap-2 text-lg font-bold">
+            <Radio aria-hidden="true" className="size-5 text-primary" />
+            Arduino ultrasonic sensor
+          </h2>
+          <div className="mt-4 rounded-lg border border-border p-4">
+            <Label htmlFor="s-sensor-url" className="text-base font-semibold">
+              Sensor server URL
+            </Label>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Address of the Python vision and serial service. The dashboard reads its latest
+              Arduino measurement from{" "}
+              <code className="rounded bg-muted px-1 py-0.5">/api/latest</code>.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                id="s-sensor-url"
+                type="url"
+                inputMode="url"
+                placeholder="http://localhost:5000"
+                value={sensorServerUrl}
+                onChange={(e) => setSensorServerUrl(e.target.value)}
+              />
+              <Button
+                variant="outline"
+                className="shrink-0"
+                onClick={() => {
+                  const next = sensorServerUrl.trim().replace(/\/$/, "");
+                  window.localStorage.setItem(SENSOR_SERVER_URL_KEY, next);
+                  setSensorServerUrl(next);
+                  speak(next ? "Sensor server URL saved." : "Sensor server URL cleared.");
+                }}
+              >
+                Save
+              </Button>
+            </div>
           </div>
         </section>
       </div>

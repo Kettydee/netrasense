@@ -22,6 +22,7 @@ from engine import HardwareProbe, ModelLoader
 from tts_module import TTSEngine
 from vision import VisionPipeline, AnnouncementTracker, Detection
 from camera import CameraStream
+from serial_sensor import ArduinoSerialReader
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -46,8 +47,16 @@ state = {
     "audio_enabled": True,
     "threat_level": "Normal",
     "closest_obstacle": None,
+    "sensor_data": None,
+    "sensor_status": {"connected": False, "port": None, "last_error": None},
 }
 state_lock = threading.Lock()
+
+
+def update_sensor_data(record):
+    """Store the latest validated Arduino measurement for API clients."""
+    with state_lock:
+        state["sensor_data"] = record
 
 
 def init_vision_engine(args):
@@ -90,7 +99,7 @@ def init_vision_engine(args):
     )
 
     cam_src = int(args.camera) if args.camera.isdigit() else args.camera
-    camera = CameraStream(cam_src)
+    camera = CameraStream(cam_src, args.capture_dir)
     time.sleep(1.0)
 
     if not camera.isOpened():
@@ -104,6 +113,19 @@ def init_vision_engine(args):
         state["mode"] = args.mode
         state["confidence"] = args.confidence
         state["audio_enabled"] = not args.mute
+
+    if args.serial_port:
+        sensor_reader = ArduinoSerialReader(
+            on_reading=update_sensor_data,
+            port=args.serial_port,
+            baudrate=args.serial_baudrate,
+            device_id=args.sensor_device_id,
+            min_distance_cm=args.sensor_min_distance_cm,
+            max_distance_cm=args.sensor_max_distance_cm,
+        )
+        sensor_reader.start()
+        with state_lock:
+            state["sensor_reader"] = sensor_reader
 
     tts.speak("NetraSense Vision Server is ready.")
     print("[INIT] Vision server initialized successfully.")
@@ -201,6 +223,7 @@ def index():
             "video_feed": "/video_feed",
             "api_latest": "/api/latest",
             "api_config": "/api/config",
+            "api_capture": "/api/capture",
         },
     })
 
@@ -221,11 +244,32 @@ def api_latest():
         return jsonify({
             "timestamp": time.time(),
             "fps": state["fps"],
+            "camera_status": state["camera"].status() if state["camera"] else None,
             "mode": state["mode"],
             "threat_level": state["threat_level"],
             "closest_obstacle": state["closest_obstacle"],
             "detections": state["latest_detections"],
+            "sensor_data": state["sensor_data"],
+            "sensor_status": {
+                "connected": bool(state.get("sensor_reader") and state["sensor_reader"].connected_port),
+                "port": state.get("sensor_reader").connected_port if state.get("sensor_reader") else None,
+                "last_error": state.get("sensor_reader").last_error if state.get("sensor_reader") else None,
+            },
         })
+
+
+@app.route('/api/capture', methods=['POST'])
+def capture_webcam_frame():
+    """Save the newest webcam frame as a JPEG without requiring AI inference."""
+    with state_lock:
+        camera = state["camera"]
+    if camera is None:
+        return jsonify({"error": "Camera is not initialized"}), 503
+
+    captured = camera.capture_frame()
+    if captured is None:
+        return jsonify({"error": "No camera frame is available", "camera_status": camera.status()}), 503
+    return jsonify({"status": "captured", "path": str(captured), "camera_status": camera.status()})
 
 
 @app.route('/api/config', methods=['GET', 'POST'])
@@ -260,6 +304,7 @@ def main():
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host address (default: 0.0.0.0)")
     parser.add_argument("--port", type=int, default=5000, help="Port to listen on (default: 5000)")
     parser.add_argument("--camera", type=str, default="0", help="Camera index or stream URL")
+    parser.add_argument("--capture-dir", type=str, default="captures", help="Directory for webcam JPEG captures")
     parser.add_argument("--confidence", type=float, default=0.45, help="Confidence threshold")
     parser.add_argument("--frame-width", type=int, default=640, help="Frame width for processing")
     parser.add_argument("--mode", type=str, choices=["all", "indoor", "outdoor"], default="all")
@@ -270,6 +315,11 @@ def main():
     parser.add_argument("--speak-interval", type=float, default=2.0, help="Interval between speech announcements")
     parser.add_argument("--absence-reset", type=float, default=1.5, help="Absence reset time")
     parser.add_argument("--min-duration", type=float, default=0.4, help="Min continuous detection time")
+    parser.add_argument("--serial-port", type=str, default=None, help="Arduino serial path, or auto; disabled when omitted")
+    parser.add_argument("--serial-baudrate", type=int, default=9600, help="Arduino serial baud rate")
+    parser.add_argument("--sensor-device-id", type=str, default="NETRA-001", help="ID added to sensor records")
+    parser.add_argument("--sensor-min-distance-cm", type=float, default=2.0, help="Reject sensor readings below this value")
+    parser.add_argument("--sensor-max-distance-cm", type=float, default=400.0, help="Reject sensor readings above this value")
 
     args = parser.parse_args()
     init_vision_engine(args)

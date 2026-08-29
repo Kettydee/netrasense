@@ -5,10 +5,10 @@
      LIGHT THEME: Ruddy Blue (#76ABDF) Clinical Palette
      ========================================================= */
   :root {
-    --background: 209 60% 95%;          /* Soft Ruddy Ice Canvas #E8F2FA */
-    --foreground: 215 45% 15%;          /* Deep Navy-Slate #132235 */
+    --background: 209 60% 95%; /* Soft Ruddy Ice Canvas #E8F2FA */
+    --foreground: 215 45% 15%; /* Deep Navy-Slate #132235 */
 
-    --card: 0 0% 100%;                  /* Pure White #FFFFFF */
+    --card: 0 0% 100%; /* Pure White #FFFFFF */
     --card-foreground: 215 45% 15%;
 
     --popover: 0 0% 100%;
@@ -19,9 +19,9 @@
     --primary-foreground: 0 0% 100%;
 
     /* Soft Ruddy & Slate Neutrals */
-    --muted: 209 50% 90%;               /* #D4E6F6 */
-    --muted-foreground: 212 25% 45%;    /* #566D85 */
-    --border: 209 45% 84%;              /* #BED8EE */
+    --muted: 209 50% 90%; /* #D4E6F6 */
+    --muted-foreground: 212 25% 45%; /* #566D85 */
+    --border: 209 45% 84%; /* #BED8EE */
     --input: 209 45% 84%;
     --ring: 209 61% 67%;
 
@@ -40,16 +40,16 @@
      DARK THEME: TW.1 Titanium Obsidian & Luminous Bio-Cyan
      ========================================================= */
   .dark {
-    --background: 190 31% 6%;           /* Deep Titanium Obsidian #0B1315 */
-    --foreground: 175 30% 96%;          /* Ice Mint White #F0FAF8 */
+    --background: 190 31% 6%; /* Deep Titanium Obsidian #0B1315 */
+    --foreground: 175 30% 96%; /* Ice Mint White #F0FAF8 */
 
-    --card: 190 35% 11%;                /* Dark Seafoam Slate #122226 */
+    --card: 190 35% 11%; /* Dark Seafoam Slate #122226 */
     --card-foreground: 175 30% 96%;
 
     --popover: 190 35% 11%;
     --popover-foreground: 175 30% 96%;
 
-    --primary: 173 100% 45%;            /* #00E5C9 */
+    --primary: 173 100% 45%; /* #00E5C9 */
     --primary-foreground: 190 31% 6%;
 
     --muted: 190 30% 16%;
@@ -66,17 +66,21 @@
     --destructive-foreground: 0 0% 100%;
   }
 
-  html, body, #root {
+  html,
+  body,
+  #root {
     min-height: 100vh;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
     overflow-x: hidden;
   }
 
   /* --- Light Canvas Gradient --- */
   html:not(.dark) body {
     background-color: #e8f2fa !important;
-    background-image: 
+    background-image:
       radial-gradient(at 0% 0%, rgba(118, 171, 223, 0.35) 0px, transparent 55%),
       radial-gradient(at 100% 0%, rgba(118, 171, 223, 0.25) 0px, transparent 50%),
       radial-gradient(at 50% 100%, rgba(212, 230, 246, 0.6) 0px, transparent 60%),
@@ -88,7 +92,7 @@
   /* --- Dark Canvas Gradient --- */
   html.dark body {
     background-color: #0b1315 !important;
-    background-image: 
+    background-image:
       radial-gradient(at 0% 0%, rgba(0, 229, 201, 0.12) 0px, transparent 55%),
       radial-gradient(at 100% 100%, rgba(7, 18, 20, 0.95) 0px, transparent 50%) !important;
     background-attachment: fixed !important;
@@ -99,6 +103,24 @@
 /* =========================================================
    SIDEBAR & CARDS: COMPLETELY STATIC (NO SCALING/POPPING)
    ========================================================= */
+
+/* Auth must remain comfortably usable even if utility CSS is delayed. */
+.auth-page {
+  display: flex;
+  min-height: 100svh;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+}
+
+.auth-panel {
+  width: min(100%, 28rem);
+  margin-inline: auto;
+}
+
+.auth-panel .surface-card {
+  width: 100%;
+}
 
 /* Light Mode */
 html:not(.dark) aside {
@@ -159,10 +181,11 @@ nav button,
 aside a,
 aside button {
   position: relative;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), 
-              box-shadow 0.2s ease, 
-              border-color 0.2s ease,
-              background-color 0.2s ease !important;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease !important;
   will-change: transform, box-shadow;
 }
 
@@ -184,8 +207,9 @@ html:not(.dark) button:hover,
 html:not(.dark) a:hover,
 html:not(.dark) [role="button"]:hover {
   border-color: #76abdf !important;
-  box-shadow: 0 0 16px rgba(118, 171, 223, 0.5), 
-              0 6px 16px -2px rgba(19, 34, 53, 0.1) !important;
+  box-shadow:
+    0 0 16px rgba(118, 171, 223, 0.5),
+    0 6px 16px -2px rgba(19, 34, 53, 0.1) !important;
 }
 
 /* Dark Theme Button Glow */
@@ -193,8 +217,9 @@ html.dark button:hover,
 html.dark a:hover,
 html.dark [role="button"]:hover {
   border-color: #00e5c9 !important;
-  box-shadow: 0 0 16px rgba(0, 229, 201, 0.5), 
-              0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
+  box-shadow:
+    0 0 16px rgba(0, 229, 201, 0.5),
+    0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
 }
 
 /* Active Click Feedback */
@@ -233,12 +258,30 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 .lovable-badge,
 a[href="#main"],
 a[href="#content"],
-a[href="#main-content"],
-.skip-link,
-.sr-only:focus,
 [data-skip-link] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
+}
+
+/* Screen-reader and keyboard users need a visible shortcut past navigation. */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  transform: translateY(-200%);
+  border-radius: 0.5rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  transition: transform 0.2s ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 3px;
 }
