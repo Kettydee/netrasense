@@ -30,3 +30,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python & AI weights
+__pycache__/
+*.pyc
+*.pt
+*.onnx
+*.engine
+.venv/

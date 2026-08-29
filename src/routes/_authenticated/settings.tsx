@@ -172,21 +172,19 @@ function SettingsPage() {
           <div className="mt-4 space-y-4">
             <div className="rounded-lg border border-border p-4">
               <Label htmlFor="s-camera-url" className="text-base font-semibold">
-                Network camera stream URL
+                Network camera stream URL / YOLO Vision Server
               </Label>
               <p className="mb-3 text-sm text-muted-foreground">
-                MJPEG stream from an ESP32-CAM or a vision service, e.g.{" "}
-                <code className="rounded bg-muted px-1 py-0.5">http://192.168.1.50:81/stream</code>.
-                Leave this blank to use the current device&apos;s camera from the dashboard instead.
-                A dashboard served over https cannot load an http camera — run it locally or put the
-                camera behind an https tunnel.
+                MJPEG stream from the local YOLO Vision server (e.g.{" "}
+                <code className="rounded bg-muted px-1 py-0.5">http://localhost:5000/video_feed</code>)
+                or an external camera service. Leave blank to use the default localhost YOLO stream or device camera.
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   id="s-camera-url"
                   type="url"
                   inputMode="url"
-                  placeholder="http://192.168.1.50:81/stream"
+                  placeholder="http://localhost:5000/video_feed"
                   value={cameraUrl}
                   onChange={(e) => setCameraUrl(e.target.value)}
                 />
