@@ -1,3 +1,4 @@
+import { BlindsEyeLens } from "@/components/BlindsEyeLens";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,7 +17,7 @@ import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
-import { CameraFeed } from "@/components/CameraFeed";
+import { BlindsEyeLens } from "@/components/BlindsEyeLens";
 import { CuteLeafLoader } from "@/components/CuteLeafLoader";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -280,6 +281,7 @@ function DashboardPage() {
   const distanceKm = (Number(todayStats?.safe_distance_walked_m ?? 0) / 1000).toFixed(2);
   const minutes = todayStats?.active_session_minutes ?? 0;
   const level = latest ? latest.threat_level : "Normal";
+
   if (telemetryQuery.isLoading || statsQuery.isLoading) {
     return (
       <AppShell
@@ -300,7 +302,7 @@ function DashboardPage() {
     >
       <OnboardingDialog open={needsOnboarding} />
 
-      {/* --- TOP METRICS CARDS ROW (EVEN 3-COLUMN GRID) --- */}
+      {/* --- TOP METRICS CARDS ROW --- */}
       <section aria-labelledby="stats-heading" className="mb-6">
         <h2 id="stats-heading" className="sr-only">
           Daily navigation statistics
@@ -341,73 +343,83 @@ function DashboardPage() {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <section aria-labelledby="live-heading" className="surface-card p-5 xl:col-span-2">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 id="live-heading" className="flex items-center gap-2 text-lg font-bold">
-              <Radar aria-hidden="true" className="size-5 text-primary" />
-              Live proximity radar
-            </h2>
-            <span
-              className={`rounded-full px-3 py-1 text-sm font-extrabold uppercase tracking-wide ${threatStyles[level].badge} ${
-                level === "Collision" || level === "Alarming" ? "pulse-threat" : ""
-              }`}
-            >
-              {level}
-            </span>
-          </div>
-
-          <p aria-live="polite" className="mt-3 text-base font-semibold">
-            {telemetryQuery.isLoading
-              ? "Connecting to the sensor stream…"
-              : latest
-                ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${latest.threat_level}`
-                : "No obstacles detected yet. Your sensor stream is idle."}
-          </p>
-
-          <div className="mt-5">
-            {telemetryQuery.isLoading ? (
-              <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-border bg-card p-6">
-                <CuteLeafLoader text="Connecting to sensor stream..." size="md" />
-              </div>
-            ) : (
-              <DistanceMeter
-                distance={latest ? Math.round(Number(latest.distance_cm)) : MAX_DISTANCE_CM}
-                level={level}
-              />
-            )}
-          </div>
-
-          <CameraFeed />
-
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4">
-            <div className="flex items-center gap-3">
-              <Volume2 aria-hidden="true" className="size-5 text-primary" />
-              <div>
-                <Label htmlFor="voice-alerts" className="text-base font-semibold">
-                  Browser voice alerts
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Speaks a warning whenever a reading is Alarming or Collision.
-                </p>
-              </div>
+        <div className="space-y-6 xl:col-span-2">
+          {/* --- RADAR SECTION --- */}
+          <section aria-labelledby="live-heading" className="surface-card p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 id="live-heading" className="flex items-center gap-2 text-lg font-bold">
+                <Radar aria-hidden="true" className="size-5 text-primary" />
+                Live proximity radar
+              </h2>
+              <span
+                className={`rounded-full px-3 py-1 text-sm font-extrabold uppercase tracking-wide ${threatStyles[level].badge} ${
+                  level === "Collision" || level === "Alarming" ? "pulse-threat" : ""
+                }`}
+              >
+                {level}
+              </span>
             </div>
-            <Switch
-              id="voice-alerts"
-              checked={voiceOn}
-              onCheckedChange={(v) => {
-                setVoiceOn(v);
-                window.localStorage.setItem("netrasense:voice", v ? "on" : "off");
-                if (v) speak("Voice alerts enabled.");
-              }}
-            />
-          </div>
 
-          <Button variant="outline" className="mt-4 w-full" onClick={() => void simulate()}>
-            <Zap aria-hidden="true" className="size-4" />
-            Simulate a sensor reading
-          </Button>
-        </section>
+            <p aria-live="polite" className="mt-3 text-base font-semibold">
+              {telemetryQuery.isLoading
+                ? "Connecting to the sensor stream…"
+                : latest
+                  ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${latest.threat_level}`
+                  : "No obstacles detected yet. Your sensor stream is idle."}
+            </p>
 
+            <div className="mt-5">
+              {telemetryQuery.isLoading ? (
+                <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-border bg-card p-6">
+                  <CuteLeafLoader text="Connecting to sensor stream..." size="md" />
+                </div>
+              ) : (
+                <DistanceMeter
+                  distance={latest ? Math.round(Number(latest.distance_cm)) : MAX_DISTANCE_CM}
+                  level={level}
+                />
+              )}
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-center gap-3">
+                <Volume2 aria-hidden="true" className="size-5 text-primary" />
+                <div>
+                  <Label htmlFor="voice-alerts" className="text-base font-semibold">
+                    Browser voice alerts
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Speaks a warning whenever a reading is Alarming or Collision.
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="voice-alerts"
+                checked={voiceOn}
+                onCheckedChange={(v) => {
+                  setVoiceOn(v);
+                  window.localStorage.setItem("netrasense:voice", v ? "on" : "off");
+                  if (v) speak("Voice alerts enabled.");
+                }}
+              />
+            </div>
+
+            <Button variant="outline" className="mt-4 w-full" onClick={() => void simulate()}>
+              <Zap aria-hidden="true" className="size-4" />
+              Simulate a sensor reading
+            </Button>
+          </section>
+
+          {/* --- BLIND'S EYE AI VISION LENS SECTION --- */}
+          <section aria-labelledby="vision-heading">
+            <h2 id="vision-heading" className="sr-only">
+              Blind's Eye Visual Recognition
+            </h2>
+            <BlindsEyeLens />
+          </section>
+        </div>
+
+        {/* --- RIGHT SIDEBAR: CONTACTS & RECENT INCIDENTS --- */}
         <div className="space-y-6">
           <section aria-labelledby="contacts-heading" className="surface-card p-5">
             <h2 id="contacts-heading" className="text-lg font-bold">
