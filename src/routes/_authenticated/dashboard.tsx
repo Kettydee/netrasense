@@ -7,6 +7,7 @@ import {
   PartyPopper,
   PhoneCall,
   Radar,
+  Radio,
   TrendingDown,
   TrendingUp,
   Volume2,
@@ -34,6 +35,7 @@ import {
   threatStyles,
   type Telemetry,
 } from "@/lib/netrasense";
+import { fetchSensorTelemetry, hardwareThreatToUiLevel } from "@/lib/sensor";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -139,20 +141,20 @@ function DistanceMeter({
         </div>
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div>
-            <dt className="text-muted-foreground">Collision zone</dt>
-            <dd className="font-semibold text-collision">0 – 40 cm</dd>
+            <dt className="text-muted-foreground">Critical zone</dt>
+            <dd className="font-semibold text-collision">Below 50 cm</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Alarming zone</dt>
-            <dd className="font-semibold text-alarming">41 – 100 cm</dd>
+            <dt className="text-muted-foreground">Alarm zone</dt>
+            <dd className="font-semibold text-alarming">50 – 99 cm</dd>
           </div>
           <div>
             <dt className="text-muted-foreground">Warning zone</dt>
-            <dd className="font-semibold text-warning">101 – 200 cm</dd>
+            <dd className="font-semibold text-warning">100 – 300 cm</dd>
           </div>
           <div>
             <dt className="text-muted-foreground">Normal zone</dt>
-            <dd className="font-semibold text-normal">201 – 400 cm</dd>
+            <dd className="font-semibold text-normal">Above 300 cm</dd>
           </div>
         </dl>
       </div>
@@ -197,6 +199,12 @@ function DashboardPage() {
     enabled: !!userId,
     queryFn: () => fetchDailyStats(userId),
   });
+  const sensorQuery = useQuery({
+    queryKey: ["arduino-sensor"],
+    queryFn: fetchSensorTelemetry,
+    refetchInterval: 500,
+    retry: false,
+  });
 
   useEffect(() => {
     if (!userId) return;
@@ -222,17 +230,27 @@ function DashboardPage() {
   }, [userId, queryClient]);
 
   const latest: Telemetry | undefined = telemetryQuery.data?.[0];
+  const sensorReading = sensorQuery.data?.sensor_data ?? null;
+  const sensorLevel = sensorReading ? hardwareThreatToUiLevel(sensorReading.threat_level) : null;
+  const liveDistance = sensorReading
+    ? Math.round(sensorReading.distance_cm)
+    : latest
+      ? Math.round(Number(latest.distance_cm))
+      : MAX_DISTANCE_CM;
+  const level = sensorLevel ?? (latest ? latest.threat_level : "Normal");
+  const liveThreatLabel = sensorReading?.threat_level ?? latest?.threat_level ?? "NORMAL";
 
   useEffect(() => {
-    if (!voiceOn || !latest) return;
-    if (lastSpokenId.current === latest.id) return;
-    lastSpokenId.current = latest.id;
-    if (latest.threat_level === "Alarming" || latest.threat_level === "Collision") {
-      speak(
-        `Warning: ${latest.detected_object} at ${Math.round(Number(latest.distance_cm))} centimeters`,
-      );
+    if (!voiceOn) return;
+    if (level !== "Alarming" && level !== "Collision") {
+      lastSpokenId.current = null;
+      return;
     }
-  }, [latest, voiceOn]);
+    if (lastSpokenId.current === level) return;
+    lastSpokenId.current = level;
+    const source = sensorReading ? "Obstacle" : (latest?.detected_object ?? "Obstacle");
+    speak(`Warning: ${source} at ${liveDistance} centimeters`);
+  }, [latest?.detected_object, level, liveDistance, sensorReading, voiceOn]);
 
   const today = new Date().toISOString().slice(0, 10);
   const todayStats = statsQuery.data?.find((s) => s.date === today);
@@ -279,8 +297,6 @@ function DashboardPage() {
   const obstacleTrend = obstacles - (yesterdayStats?.obstacles_avoided ?? 0);
   const distanceKm = (Number(todayStats?.safe_distance_walked_m ?? 0) / 1000).toFixed(2);
   const minutes = todayStats?.active_session_minutes ?? 0;
-  const level = latest ? latest.threat_level : "Normal";
-
   if (telemetryQuery.isLoading || statsQuery.isLoading) {
     return (
       <AppShell
@@ -350,22 +366,52 @@ function DashboardPage() {
                 <Radar aria-hidden="true" className="size-5 text-primary" />
                 Live proximity radar
               </h2>
-              <span
-                className={`rounded-full px-3 py-1 text-sm font-extrabold uppercase tracking-wide ${threatStyles[level].badge} ${
-                  level === "Collision" || level === "Alarming" ? "pulse-threat" : ""
-                }`}
-              >
-                {level}
-              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${
+                    sensorQuery.data?.sensor_status.connected
+                      ? "bg-normal text-normal-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                  title={sensorQuery.data?.sensor_status.port ?? "Arduino serial sensor"}
+                >
+                  <Radio aria-hidden="true" className="size-3.5" />
+                  {sensorQuery.data?.sensor_status.connected ? "Sensor live" : "Sensor offline"}
+                </span>
+                <span
+                  className={`rounded-full px-3 py-1 text-sm font-extrabold uppercase tracking-wide ${threatStyles[level].badge} ${
+                    level === "Collision" || level === "Alarming" ? "pulse-threat" : ""
+                  }`}
+                >
+                  {liveThreatLabel}
+                </span>
+              </div>
             </div>
 
             <p aria-live="polite" className="mt-3 text-base font-semibold">
               {telemetryQuery.isLoading
                 ? "Connecting to the sensor stream…"
-                : latest
-                  ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${latest.threat_level}`
-                  : "No obstacles detected yet. Your sensor stream is idle."}
+                : sensorReading
+                  ? `${sensorReading.device_id} reports ${liveDistance} cm — ${sensorReading.threat_level}`
+                  : latest
+                    ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${latest.threat_level}`
+                    : "No obstacles detected yet. Your sensor stream is idle."}
             </p>
+
+            {sensorReading && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Received {relativeTime(sensorReading.timestamp)}
+                {typeof sensorReading.processing_latency_ms === "number"
+                  ? ` · ${sensorReading.processing_latency_ms} ms processing latency`
+                  : ""}
+              </p>
+            )}
+            {sensorQuery.data?.sensor_status.last_error &&
+              !sensorQuery.data.sensor_status.connected && (
+                <p className="mt-1 text-sm text-muted-foreground" role="status">
+                  {sensorQuery.data.sensor_status.last_error}
+                </p>
+              )}
 
             <div className="mt-5">
               {telemetryQuery.isLoading ? (
@@ -373,10 +419,7 @@ function DashboardPage() {
                   <CuteLeafLoader text="Connecting to sensor stream..." size="md" />
                 </div>
               ) : (
-                <DistanceMeter
-                  distance={latest ? Math.round(Number(latest.distance_cm)) : MAX_DISTANCE_CM}
-                  level={level}
-                />
+                <DistanceMeter distance={liveDistance} level={level} />
               )}
             </div>
 

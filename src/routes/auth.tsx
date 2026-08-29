@@ -13,9 +13,15 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — NetraSense" },
-      { name: "description", content: "Sign in or create an NetraSense account to access your navigation telemetry." },
+      {
+        name: "description",
+        content: "Sign in or create an NetraSense account to access your navigation telemetry.",
+      },
       { property: "og:title", content: "Sign in — NetraSense" },
-      { property: "og:description", content: "Access your NetraSense assistive navigation dashboard." },
+      {
+        property: "og:description",
+        content: "Access your NetraSense assistive navigation dashboard.",
+      },
     ],
   }),
   component: AuthPage,
@@ -49,7 +55,9 @@ function AuthPage() {
         });
         if (error) throw error;
         if (!data.session) {
-          toast.info("Account registered! If confirmation is required, check your email or use Instant Demo mode.");
+          toast.info(
+            "Account registered! If confirmation is required, check your email or use Instant Demo mode.",
+          );
           return;
         }
         toast.success("Account created. Welcome to NetraSense!");
@@ -67,8 +75,8 @@ function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
-      <main id="main-content" className="w-full max-w-md">
+    <div className="auth-page bg-background">
+      <main id="main-content" className="auth-panel">
         <div className="mb-6 flex items-center justify-center gap-2">
           <ShieldAlert aria-hidden="true" className="size-8 text-primary" />
           <span className="text-2xl font-extrabold tracking-tight">NetraSense</span>
