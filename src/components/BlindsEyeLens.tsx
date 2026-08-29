@@ -77,19 +77,32 @@ export function BlindsEyeLens() {
     let isSubscribed = true;
 
     async function checkServer() {
-      try {
-        const res = await fetch(`${serverUrl}/api/latest`, { cache: "no-store" });
-        if (res.ok) {
-          const data: YoloStatus = await res.json();
-          if (isSubscribed) {
-            setServerStatus(data);
-            setIsServerLive(true);
+      const candidates = [
+        serverUrl,
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+        typeof window !== "undefined" ? `${window.location.protocol}//${window.location.hostname}:5000` : "",
+      ].filter(Boolean);
+
+      for (const url of candidates) {
+        try {
+          const res = await fetch(`${url}/api/latest`, { cache: "no-store", mode: "cors" });
+          if (res.ok) {
+            const data: YoloStatus = await res.json();
+            if (isSubscribed) {
+              if (url !== serverUrl) setServerUrl(url);
+              setServerStatus(data);
+              setIsServerLive(true);
+            }
+            return;
           }
-        } else {
-          if (isSubscribed) setIsServerLive(false);
+        } catch {
+          // try next candidate
         }
-      } catch {
-        if (isSubscribed) setIsServerLive(false);
+      }
+
+      if (isSubscribed) {
+        setIsServerLive(false);
       }
     }
 
