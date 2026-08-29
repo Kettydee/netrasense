@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ShieldAlert, Loader2 } from "lucide-react";
+import { ShieldAlert, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -27,19 +27,19 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
-  const { session } = useAuth();
+  const { session, user, signInAsDemo } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (session) navigate({ to: "/dashboard", replace: true });
-  }, [session, navigate]);
+    if (session || user) navigate({ to: "/dashboard", replace: true });
+  }, [session, user, navigate]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -48,7 +48,11 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Account created. Let's set up your safety profile.");
+        if (!data.session) {
+          toast.info("Account registered! If confirmation is required, check your email or use Instant Demo mode.");
+          return;
+        }
+        toast.success("Account created. Welcome to NetraSense!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -121,6 +125,22 @@ function AuthPage() {
               {mode === "signin" ? "Sign in" : "Create account"}
             </Button>
           </form>
+
+          {/* Instant Demo Access Button */}
+          <div className="mt-4 pt-4 border-t border-border">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="w-full text-sm font-semibold border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary"
+              onClick={signInAsDemo}
+            >
+              <Sparkles className="mr-2 size-4" /> Instant Demo / Guest Mode
+            </Button>
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Jump straight to the dashboard & test YOLO Vision without logging in.
+            </p>
+          </div>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {mode === "signin" ? "New to NetraSense?" : "Already have an account?"}{" "}
