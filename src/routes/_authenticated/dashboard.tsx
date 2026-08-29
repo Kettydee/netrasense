@@ -1,4 +1,3 @@
-import { BlindsEyeLens } from "@/components/BlindsEyeLens";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

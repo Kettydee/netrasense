@@ -1,85 +1,178 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import * as tf from "@tensorflow/tfjs";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
-import { Camera, CameraOff, Volume2, VolumeX, Eye } from "lucide-react";
+import {
+  Camera,
+  CameraOff,
+  Volume2,
+  VolumeX,
+  Eye,
+  Cpu,
+  Radio,
+  Compass,
+  AlertTriangle,
+  RefreshCw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { CAMERA_STREAM_URL_KEY } from "@/components/CameraFeed";
+
+interface YoloDetection {
+  label: string;
+  confidence: number;
+  direction: "left" | "center" | "right";
+  depth_meters?: number;
+  distance_cm?: number;
+  threat_level: "Normal" | "Warning" | "Alarming" | "Collision";
+  bbox: number[];
+}
+
+interface YoloStatus {
+  fps: number;
+  mode: string;
+  threat_level: string;
+  closest_obstacle: {
+    object: string;
+    distance_cm: number;
+    threat_level: string;
+  } | null;
+  detections: YoloDetection[];
+}
 
 export function BlindsEyeLens() {
+  const [engineMode, setEngineMode] = useState<"yolo" | "browser">("yolo");
+  const [serverUrl, setServerUrl] = useState<string>("http://localhost:5000");
+  const [isServerLive, setIsServerLive] = useState<boolean>(false);
+  const [serverStatus, setServerStatus] = useState<YoloStatus | null>(null);
+  const [serverCheckKey, setServerCheckKey] = useState<number>(0);
+
+  // In-browser Camera state
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  const [model, setModel] = useState<cocoSsd.ObjectDetection | null>(null);
-  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [browserModel, setBrowserModel] = useState<cocoSsd.ObjectDetection | null>(null);
+  const [isBrowserCameraActive, setIsBrowserCameraActive] = useState<boolean>(false);
   const [voiceAlerts, setVoiceAlerts] = useState<boolean>(true);
-  const [detectedItem, setDetectedItem] = useState<string>("Scanning...");
-  const [isLoadingModel, setIsLoadingModel] = useState<boolean>(true);
+  const [browserDetectedItem, setBrowserDetectedItem] = useState<string>("Scanning...");
+  const [isLoadingBrowserModel, setIsLoadingBrowserModel] = useState<boolean>(true);
   const [lastSpoken, setLastSpoken] = useState<string>("");
 
-  // Load the COCO-SSD object recognition model
+  // Resolve configured server URL from localStorage if any
   useEffect(() => {
-    async function initModel() {
-      try {
-        await tf.ready();
-        const loadedModel = await cocoSsd.load();
-        setModel(loadedModel);
-      } catch (err) {
-        console.error("Failed to load object detection model:", err);
-      } finally {
-        setIsLoadingModel(false);
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem(CAMERA_STREAM_URL_KEY)?.trim();
+      if (stored) {
+        try {
+          const u = new URL(stored);
+          setServerUrl(`${u.protocol}//${u.host}`);
+        } catch {
+          // ignore
+        }
       }
     }
-    initModel();
   }, []);
 
-  // Text-To-Speech function
-  const speak = (text: string) => {
-    if (!voiceAlerts || !("speechSynthesis" in window)) return;
-    if (text === lastSpoken) return;
+  // Poll YOLO Vision Server status
+  useEffect(() => {
+    let timer: number;
+    let isSubscribed = true;
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    window.speechSynthesis.speak(utterance);
-    setLastSpoken(text);
-  };
+    async function checkServer() {
+      try {
+        const res = await fetch(`${serverUrl}/api/latest`, { cache: "no-store" });
+        if (res.ok) {
+          const data: YoloStatus = await res.json();
+          if (isSubscribed) {
+            setServerStatus(data);
+            setIsServerLive(true);
+          }
+        } else {
+          if (isSubscribed) setIsServerLive(false);
+        }
+      } catch {
+        if (isSubscribed) setIsServerLive(false);
+      }
+    }
 
-  // Start Camera Stream
-  const startCamera = async () => {
+    if (engineMode === "yolo") {
+      checkServer();
+      timer = window.setInterval(checkServer, 1000);
+    }
+
+    return () => {
+      isSubscribed = false;
+      window.clearInterval(timer);
+    };
+  }, [engineMode, serverUrl, serverCheckKey]);
+
+  // Load In-browser model lazily if browser mode selected
+  useEffect(() => {
+    if (engineMode === "browser" && !browserModel) {
+      async function initModel() {
+        try {
+          setIsLoadingBrowserModel(true);
+          await tf.ready();
+          const loadedModel = await cocoSsd.load();
+          setBrowserModel(loadedModel);
+        } catch (err) {
+          console.error("Failed to load browser detection model:", err);
+        } finally {
+          setIsLoadingBrowserModel(false);
+        }
+      }
+      initModel();
+    }
+  }, [engineMode, browserModel]);
+
+  // Browser TTS Speak function
+  const speakBrowser = useCallback(
+    (text: string) => {
+      if (!voiceAlerts || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+      if (text === lastSpoken) return;
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+      setLastSpoken(text);
+    },
+    [voiceAlerts, lastSpoken],
+  );
+
+  // Browser Camera Start/Stop
+  const startBrowserCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
         audio: false,
       });
-
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
-        setIsCameraActive(true);
+        setIsBrowserCameraActive(true);
       }
     } catch (err) {
       console.error("Error accessing camera:", err);
     }
   };
 
-  // Stop Camera Stream
-  const stopCamera = () => {
+  const stopBrowserCamera = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach((track) => track.stop());
       videoRef.current.srcObject = null;
-      setIsCameraActive(false);
-      setDetectedItem("Lens Inactive");
+      setIsBrowserCameraActive(false);
+      setBrowserDetectedItem("Lens Inactive");
     }
   };
 
-  // Continuous Detection Loop
+  // Continuous Browser Detection Loop
   useEffect(() => {
     let animationFrameId: number;
 
     const detectFrame = async () => {
       if (
-        model &&
+        browserModel &&
         videoRef.current &&
         videoRef.current.readyState === 4 &&
         canvasRef.current
@@ -91,139 +184,348 @@ export function BlindsEyeLens() {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
-        const predictions = await model.detect(video);
+        const predictions = await browserModel.detect(video);
 
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
           predictions.forEach((prediction) => {
             const [x, y, width, height] = prediction.bbox;
+            const cx = x + width / 2;
+            const dir =
+              cx < canvas.width / 3 ? "Left" : cx < (2 * canvas.width) / 3 ? "Center" : "Right";
 
             // Draw bounding box
-            ctx.strokeStyle = "#38bdf8";
+            ctx.strokeStyle = "#f59e0b";
             ctx.lineWidth = 3;
             ctx.strokeRect(x, y, width, height);
 
             // Draw label container
-            ctx.fillStyle = "#38bdf8";
-            const label = `${prediction.class} (${Math.round(prediction.score * 100)}%)`;
+            ctx.fillStyle = "#f59e0b";
+            const label = `${prediction.class} (${dir}) ${Math.round(prediction.score * 100)}%`;
             const textWidth = ctx.measureText(label).width;
             ctx.fillRect(x, y > 24 ? y - 24 : y, textWidth + 12, 22);
 
             // Draw label text
             ctx.fillStyle = "#0f172a";
-            ctx.font = "bold 13px Inter, sans-serif";
+            ctx.font = "bold 12px Inter, sans-serif";
             ctx.fillText(label, x + 6, y > 24 ? y - 8 : y + 16);
           });
 
-          // Primary high-confidence object announcement
           if (predictions.length > 0 && predictions[0].score > 0.6) {
-            const topObject = predictions[0].class;
-            setDetectedItem(`${topObject} (${Math.round(predictions[0].score * 100)}%)`);
-            speak(`${topObject} detected ahead`);
+            const top = predictions[0];
+            const cx = top.bbox[0] + top.bbox[2] / 2;
+            const dir =
+              cx < canvas.width / 3 ? "left" : cx < (2 * canvas.width) / 3 ? "center" : "right";
+            setBrowserDetectedItem(`${top.class} (${Math.round(top.score * 100)}%) on ${dir}`);
+            speakBrowser(`${top.class} on the ${dir}`);
           } else {
-            setDetectedItem("Path clear");
+            setBrowserDetectedItem("Path clear");
           }
         }
       }
 
-      if (isCameraActive) {
+      if (isBrowserCameraActive && engineMode === "browser") {
         animationFrameId = requestAnimationFrame(detectFrame);
       }
     };
 
-    if (isCameraActive) {
+    if (isBrowserCameraActive && engineMode === "browser") {
       detectFrame();
     }
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isCameraActive, model, voiceAlerts, lastSpoken]);
+  }, [isBrowserCameraActive, browserModel, engineMode, speakBrowser]);
+
+  const threatColor = (level?: string) => {
+    switch (level) {
+      case "Collision":
+        return "bg-rose-500/20 text-rose-400 border-rose-500/30";
+      case "Alarming":
+        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+      case "Warning":
+        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
+      default:
+        return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+    }
+  };
+
+  const detections = serverStatus?.detections ?? [];
+  const leftDets = detections.filter((d) => d.direction === "left");
+  const centerDets = detections.filter((d) => d.direction === "center");
+  const rightDets = detections.filter((d) => d.direction === "right");
 
   return (
-    <div className="rounded-xl border border-slate-800/80 bg-slate-900/50 p-6 backdrop-blur-sm">
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4">
+    <div className="surface-card overflow-hidden p-5 sm:p-6">
+      {/* Header with Title & Mode Switch */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-lg border border-sky-500/20 bg-sky-500/10 text-sky-400">
+          <div className="flex size-10 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
             <Eye className="size-5" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">Blind's Eye — Object Vision</h3>
-            <p className="text-xs text-slate-400">
-              AI Object Identification & Spoken Warnings
+            <h3 className="flex items-center gap-2 text-lg font-bold text-foreground">
+              Blind&apos;s Eye — YOLO Spatial Vision
+              {isServerLive && engineMode === "yolo" && (
+                <span className="flex size-2 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Real-time YOLO11 Detection, Depth Distance & Directional Voice Alerts
             </p>
           </div>
         </div>
 
+        {/* Engine Toggle Buttons */}
         <div className="flex items-center gap-2">
-          {/* Mute / Unmute Voice */}
+          <div className="flex rounded-lg border border-border bg-muted/30 p-1">
+            <Button
+              size="sm"
+              variant={engineMode === "yolo" ? "default" : "ghost"}
+              className="h-7 text-xs px-2.5"
+              onClick={() => setEngineMode("yolo")}
+            >
+              <Cpu className="mr-1.5 size-3.5" /> YOLO Server
+            </Button>
+            <Button
+              size="sm"
+              variant={engineMode === "browser" ? "default" : "ghost"}
+              className="h-7 text-xs px-2.5"
+              onClick={() => setEngineMode("browser")}
+            >
+              <Camera className="mr-1.5 size-3.5" /> Browser Lens
+            </Button>
+          </div>
+
           <Button
             size="sm"
             variant="outline"
             onClick={() => setVoiceAlerts(!voiceAlerts)}
-            className="border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+            className="h-9 px-2.5"
+            aria-label={voiceAlerts ? "Mute Voice Alerts" : "Unmute Voice Alerts"}
           >
             {voiceAlerts ? (
               <Volume2 className="size-4 text-emerald-400" />
             ) : (
-              <VolumeX className="size-4 text-slate-500" />
-            )}
-          </Button>
-
-          {/* Toggle Camera Button */}
-          <Button
-            size="sm"
-            disabled={isLoadingModel}
-            onClick={isCameraActive ? stopCamera : startCamera}
-            className={
-              isCameraActive
-                ? "bg-red-600 text-white hover:bg-red-700"
-                : "bg-sky-600 text-white hover:bg-sky-700"
-            }
-          >
-            {isLoadingModel ? (
-              "Loading AI..."
-            ) : isCameraActive ? (
-              <>
-                <CameraOff className="mr-1.5 size-4" /> Stop Lens
-              </>
-            ) : (
-              <>
-                <Camera className="mr-1.5 size-4" /> Open Camera
-              </>
+              <VolumeX className="size-4 text-muted-foreground" />
             )}
           </Button>
         </div>
       </div>
 
-      {/* Camera Live Viewport */}
-      <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-slate-800 bg-slate-950 flex items-center justify-center">
-        {!isCameraActive && (
-          <div className="text-center">
-            <p className="text-sm font-medium text-slate-400">Camera feed is off</p>
-            <p className="text-xs text-slate-600 mt-1">Click "Open Camera" to activate live object detection</p>
-          </div>
+      {/* Main Viewport Container */}
+      <div className="relative mt-4 aspect-video w-full overflow-hidden rounded-xl border border-border bg-black flex items-center justify-center">
+        {/* MODE 1: YOLO STREAM */}
+        {engineMode === "yolo" && (
+          <>
+            {isServerLive ? (
+              <img
+                key={`yolo-stream-${serverCheckKey}`}
+                src={`${serverUrl}/video_feed`}
+                alt="YOLO Object Detection & Distance Stream"
+                className="size-full object-cover"
+                onError={() => setIsServerLive(false)}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
+                <Radio className="size-10 text-muted-foreground/60 animate-pulse" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    YOLO Vision Server Not Connected
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground max-w-sm">
+                    Start the local AI engine with{" "}
+                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-primary">
+                      python server/vision_server.py
+                    </code>{" "}
+                    or switch to <strong>Browser Lens</strong> above.
+                  </p>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setServerCheckKey((k) => k + 1)}
+                  >
+                    <RefreshCw className="mr-1.5 size-3.5" /> Retry Connection
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setEngineMode("browser")}
+                  >
+                    Use Browser Camera
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
-        <video
-          ref={videoRef}
-          className={`absolute inset-0 size-full object-cover ${!isCameraActive ? "hidden" : ""}`}
-          muted
-          playsInline
-        />
-        <canvas
-          ref={canvasRef}
-          className={`absolute inset-0 size-full object-cover pointer-events-none ${!isCameraActive ? "hidden" : ""}`}
-        />
+
+        {/* MODE 2: BROWSER WEBCAM */}
+        {engineMode === "browser" && (
+          <>
+            {!isBrowserCameraActive && (
+              <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
+                <Camera className="size-10 text-muted-foreground/60" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Browser Camera is Off</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Click &ldquo;Open Camera&rdquo; below to run in-browser object detection.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  disabled={isLoadingBrowserModel}
+                  onClick={startBrowserCamera}
+                  className="mt-2"
+                >
+                  {isLoadingBrowserModel ? "Loading AI..." : "Open Camera"}
+                </Button>
+              </div>
+            )}
+            <video
+              ref={videoRef}
+              className={`absolute inset-0 size-full object-cover ${
+                !isBrowserCameraActive ? "hidden" : ""
+              }`}
+              muted
+              playsInline
+            />
+            <canvas
+              ref={canvasRef}
+              className={`absolute inset-0 size-full object-cover pointer-events-none ${
+                !isBrowserCameraActive ? "hidden" : ""
+              }`}
+            />
+          </>
+        )}
       </div>
 
-      {/* Detection Status Banner */}
-      {isCameraActive && (
-        <div className="mt-4 flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/60 px-4 py-2.5">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+      {/* Controls Bar for Browser Mode */}
+      {engineMode === "browser" && isBrowserCameraActive && (
+        <div className="mt-3 flex justify-end">
+          <Button size="sm" variant="destructive" onClick={stopBrowserCamera}>
+            <CameraOff className="mr-1.5 size-4" /> Stop Camera
+          </Button>
+        </div>
+      )}
+
+      {/* Spatial Direction Breakdown Cards (Left / Center / Right) */}
+      {engineMode === "yolo" && isServerLive && (
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {/* LEFT ZONE */}
+          <div className="rounded-lg border border-border/80 bg-surface/50 p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Compass className="size-3.5 text-primary" /> Left Zone
+              </span>
+              <span className="text-xs font-semibold text-foreground">
+                {leftDets.length} object{leftDets.length === 1 ? "" : "s"}
+              </span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {leftDets.length === 0 ? (
+                <span className="text-xs text-muted-foreground italic">Clear</span>
+              ) : (
+                leftDets.map((d, i) => (
+                  <span
+                    key={i}
+                    className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-bold ${threatColor(
+                      d.threat_level,
+                    )}`}
+                  >
+                    {d.label} {d.depth_meters ? `(${d.depth_meters}m)` : ""}
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* CENTER ZONE */}
+          <div className="rounded-lg border border-border/80 bg-surface/50 p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <AlertTriangle className="size-3.5 text-primary" /> Center (Path)
+              </span>
+              <span className="text-xs font-semibold text-foreground">
+                {centerDets.length} object{centerDets.length === 1 ? "" : "s"}
+              </span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {centerDets.length === 0 ? (
+                <span className="text-xs text-muted-foreground italic">Path Clear</span>
+              ) : (
+                centerDets.map((d, i) => (
+                  <span
+                    key={i}
+                    className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-bold ${threatColor(
+                      d.threat_level,
+                    )}`}
+                  >
+                    {d.label} {d.depth_meters ? `(${d.depth_meters}m)` : ""}
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT ZONE */}
+          <div className="rounded-lg border border-border/80 bg-surface/50 p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Compass className="size-3.5 text-primary" /> Right Zone
+              </span>
+              <span className="text-xs font-semibold text-foreground">
+                {rightDets.length} object{rightDets.length === 1 ? "" : "s"}
+              </span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {rightDets.length === 0 ? (
+                <span className="text-xs text-muted-foreground italic">Clear</span>
+              ) : (
+                rightDets.map((d, i) => (
+                  <span
+                    key={i}
+                    className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-bold ${threatColor(
+                      d.threat_level,
+                    )}`}
+                  >
+                    {d.label} {d.depth_meters ? `(${d.depth_meters}m)` : ""}
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-Browser Mode Status Banner */}
+      {engineMode === "browser" && isBrowserCameraActive && (
+        <div className="mt-4 flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-2.5">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Detected Object
           </span>
-          <span className="text-sm font-bold text-sky-400">
-            {detectedItem}
-          </span>
+          <span className="text-sm font-bold text-primary">{browserDetectedItem}</span>
+        </div>
+      )}
+
+      {/* Footer Metrics (YOLO Mode) */}
+      {engineMode === "yolo" && isServerLive && serverStatus && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span>FPS: <strong>{serverStatus.fps}</strong></span>
+            <span>·</span>
+            <span>Mode: <strong className="capitalize">{serverStatus.mode}</strong></span>
+            <span>·</span>
+            <span>Threat: <strong className={serverStatus.threat_level === "Collision" ? "text-collision" : serverStatus.threat_level === "Alarming" ? "text-alarming" : "text-normal"}>{serverStatus.threat_level}</strong></span>
+          </div>
+          {serverStatus.closest_obstacle && (
+            <div>
+              Closest: <strong>{serverStatus.closest_obstacle.object}</strong> (
+              {serverStatus.closest_obstacle.distance_cm} cm)
+            </div>
+          )}
         </div>
       )}
     </div>
