@@ -1,0 +1,77 @@
+{
+  "evaluation_date": "2026-08-30",
+  "model_tested": "YOLO11n + Spatial Distance Classifier",
+  "metrics": {
+    "Normal": {
+      "precision": 0.9908,
+      "recall": 0.9818,
+      "f1_score": 0.9863,
+      "support": 110
+    },
+    "Warning": {
+      "precision": 1.0,
+      "recall": 0.9846,
+      "f1_score": 0.9922,
+      "support": 65
+    },
+    "Alarming": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 49
+    },
+    "Collision": {
+      "precision": 0.9286,
+      "recall": 1.0,
+      "f1_score": 0.963,
+      "support": 26
+    },
+    "accuracy": 0.988,
+    "total_samples": 250
+  },
+  "mean_auc": 0.9995,
+  "mAP_50": 0.892,
+  "mAP_50_95": 0.684,
+  "confusion_matrix": [
+    [
+      108,
+      0,
+      0,
+      2
+    ],
+    [
+      1,
+      64,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      49,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      26
+    ]
+  ],
+  "confusion_matrix_classes": [
+    "Normal",
+    "Warning",
+    "Alarming",
+    "Collision"
+  ],
+  "roc_summary": {
+    "Normal": 0.999,
+    "Warning": 0.9995,
+    "Alarming": 0.9995,
+    "Collision": 0.9998
+  },
+  "generated_plots": {
+    "confusion_matrix": "server\\evaluation_results\\confusion_matrix.png",
+    "roc_curves": "server\\evaluation_results\\roc_curves.png"
+  }
+}
