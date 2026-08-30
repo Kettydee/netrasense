@@ -228,6 +228,67 @@ def api_latest():
         })
 
 
+from dataset_collector import DatasetCollector
+from ensemble_model import MultiModalEnsembleModel
+
+dataset_collector = DatasetCollector(base_dir="dataset")
+ensemble_model = MultiModalEnsembleModel()
+
+
+@app.route('/api/capture', methods=['GET', 'POST'])
+def api_capture():
+    """Capture current live frame and log to structured dataset with metadata."""
+    with state_lock:
+        raw_frame = state.get("raw_frame")
+        if raw_frame is None:
+            return jsonify({"success": False, "error": "No camera frame available"}), 400
+
+        data = request.get_json(silent=True) or {}
+        ultrasonic_cm = float(data.get("ultrasonic_cm")) if "ultrasonic_cm" in data else None
+        custom_class = data.get("class_name")
+
+        # Extract latest detections and threat
+        detections = state.get("latest_detections", [])
+        threat_level = state.get("threat_level", "Normal")
+
+        # Save to structured dataset
+        res = dataset_collector.save_sample(
+            frame=raw_frame,
+            detections=detections,
+            ultrasonic_cm=ultrasonic_cm,
+            threat_level=threat_level,
+            custom_class=custom_class
+        )
+        return jsonify(res)
+
+
+@app.route('/api/fuse', methods=['POST', 'GET'])
+def api_fuse():
+    """Execute multi-modal sensor fusion across Ultrasonic, YOLO, and Depth signals."""
+    with state_lock:
+        data = request.get_json(silent=True) or {}
+        ultrasonic_cm = float(data.get("ultrasonic_cm")) if "ultrasonic_cm" in data else None
+        depth_m = float(data.get("depth_m")) if "depth_m" in data else None
+
+        detections = state.get("latest_detections", [])
+
+        fusion_res = ensemble_model.fuse(
+            ultrasonic_distance_cm=ultrasonic_cm,
+            yolo_detections=detections,
+            depth_meters=depth_m
+        )
+
+        return jsonify({
+            "threat_level": fusion_res.threat_level,
+            "threat_score": fusion_res.threat_score,
+            "fused_distance_cm": fusion_res.fused_distance_cm,
+            "dominant_modality": fusion_res.dominant_modality,
+            "confidence": fusion_res.confidence,
+            "recommended_action": fusion_res.recommended_action,
+            "modality_breakdown": fusion_res.modality_breakdown
+        })
+
+
 @app.route('/api/config', methods=['GET', 'POST'])
 def api_config():
     """Get or update vision engine configuration."""
