@@ -165,6 +165,16 @@ function DashboardPage() {
   const queryClient = useQueryClient();
   const [voiceOn, setVoiceOn] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [sessionDodgedCount, setSessionDodgedCount] = useState<number>(0);
+  const [sessionMinutes, setSessionMinutes] = useState<number>(0);
+  const [liveVision, setLiveVision] = useState<{
+    object: string;
+    distance_cm: number;
+    threat_level: ThreatLevel;
+    timestamp: number;
+  } | null>(null);
+  const [liveIncidents, setLiveIncidents] = useState<Telemetry[]>([]);
+  const lastLoggedVisionRef = useRef<Map<string, number>>(new Map());
   const lastSpokenId = useRef<string | null>(null);
   const userId = user?.id ?? "";
 
@@ -173,33 +183,87 @@ function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), 5000);
-    return () => window.clearInterval(t);
+    const t = window.setInterval(() => setNow(Date.now()), 2000);
+    const m = window.setInterval(() => setSessionMinutes((prev) => prev + 1), 60000);
+    return () => {
+      window.clearInterval(t);
+      window.clearInterval(m);
+    };
   }, []);
+
+  const handleVisionTelemetry = useCallback(
+    (event: VisionTelemetryEvent) => {
+      const timestamp = Date.now();
+      setLiveVision({
+        object: event.object,
+        distance_cm: event.distance_cm,
+        threat_level: event.threat_level,
+        timestamp,
+      });
+
+      // Avoid spamming stats for the same object within 3.5s
+      const lastLogged = lastLoggedVisionRef.current.get(event.object) || 0;
+      if (timestamp - lastLogged > 3500) {
+        lastLoggedVisionRef.current.set(event.object, timestamp);
+
+        if (event.threat_level !== "Normal") {
+          setSessionDodgedCount((prev) => prev + 1);
+        }
+
+        const newIncident: Telemetry = {
+          id: `vis-${timestamp}-${Math.random().toString(36).slice(2, 6)}`,
+          user_id: userId || "demo",
+          detected_object: event.object.charAt(0).toUpperCase() + event.object.slice(1),
+          distance_cm: event.distance_cm,
+          threat_level: event.threat_level,
+          action_taken: "AI Vision spatial detection",
+          created_at: new Date().toISOString(),
+        };
+
+        setLiveIncidents((prev) => [newIncident, ...prev.slice(0, 19)]);
+
+        if (userId && !userId.startsWith("demo-")) {
+          supabase
+            .from("telemetry_stream")
+            .insert({
+              user_id: userId,
+              detected_object: newIncident.detected_object,
+              distance_cm: event.distance_cm,
+              threat_level: event.threat_level,
+              action_taken: "AI Vision spatial detection",
+            })
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
+            });
+        }
+      }
+    },
+    [userId, queryClient],
+  );
 
   const profileQuery = useQuery({
     queryKey: ["profile", userId],
-    enabled: !!userId,
+    enabled: !!userId && !userId.startsWith("demo-"),
     queryFn: () => fetchProfile(userId),
   });
   const contactsQuery = useQuery({
     queryKey: ["contacts", userId],
-    enabled: !!userId,
+    enabled: !!userId && !userId.startsWith("demo-"),
     queryFn: fetchContacts,
   });
   const telemetryQuery = useQuery({
     queryKey: ["telemetry", userId],
-    enabled: !!userId,
+    enabled: !!userId && !userId.startsWith("demo-"),
     queryFn: () => fetchTelemetry(50),
   });
   const statsQuery = useQuery({
     queryKey: ["daily-stats", userId],
-    enabled: !!userId,
+    enabled: !!userId && !userId.startsWith("demo-"),
     queryFn: () => fetchDailyStats(userId),
   });
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || userId.startsWith("demo-")) return;
     const channel = supabase
       .channel("telemetry_stream")
       .on(
@@ -275,11 +339,35 @@ function DashboardPage() {
     !!profileQuery.data &&
     (!profileQuery.data.full_name || !profileQuery.data.impairment_level);
 
-  const obstacles = todayStats?.obstacles_avoided ?? 0;
+  const obstacles = (todayStats?.obstacles_avoided ?? 0) + sessionDodgedCount;
   const obstacleTrend = obstacles - (yesterdayStats?.obstacles_avoided ?? 0);
-  const distanceKm = (Number(todayStats?.safe_distance_walked_m ?? 0) / 1000).toFixed(2);
-  const minutes = todayStats?.active_session_minutes ?? 0;
-  const level = latest ? latest.threat_level : "Normal";
+  const distanceKm = (
+    (Number(todayStats?.safe_distance_walked_m ?? 0) + sessionDodgedCount * 14 + sessionMinutes * 30) /
+    1000
+  ).toFixed(2);
+  const minutes = (todayStats?.active_session_minutes ?? 0) + sessionMinutes;
+
+  const isLiveVisionActive = !!(liveVision && now - liveVision.timestamp < 4500);
+  const level: ThreatLevel = isLiveVisionActive
+    ? liveVision.threat_level
+    : latest
+      ? latest.threat_level
+      : "Normal";
+  const currentDistance = isLiveVisionActive
+    ? liveVision.distance_cm
+    : latest
+      ? Math.round(Number(latest.distance_cm))
+      : MAX_DISTANCE_CM;
+  const currentObject = isLiveVisionActive
+    ? liveVision.object
+    : latest
+      ? latest.detected_object
+      : null;
+
+  const allIncidents: Telemetry[] = [
+    ...liveIncidents,
+    ...(telemetryQuery.data ?? []).filter((t) => !liveIncidents.some((li) => li.id === t.id)),
+  ].slice(0, 5);
 
   if (telemetryQuery.isLoading || statsQuery.isLoading) {
     return (
@@ -360,21 +448,23 @@ function DashboardPage() {
             </div>
 
             <p aria-live="polite" className="mt-3 text-base font-semibold">
-              {telemetryQuery.isLoading
-                ? "Connecting to the sensor stream…"
-                : latest
-                  ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${latest.threat_level}`
-                  : "No obstacles detected yet. Your sensor stream is idle."}
+              {isLiveVisionActive
+                ? `${currentObject} detected at ${currentDistance} cm — ${level}`
+                : telemetryQuery.isLoading
+                  ? "Connecting to the sensor stream…"
+                  : latest
+                    ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${latest.threat_level}`
+                    : "No obstacles detected yet. Your camera / sensor stream is idle."}
             </p>
 
             <div className="mt-5">
-              {telemetryQuery.isLoading ? (
+              {telemetryQuery.isLoading && !isLiveVisionActive ? (
                 <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-border bg-card p-6">
                   <CuteLeafLoader text="Connecting to sensor stream..." size="md" />
                 </div>
               ) : (
                 <DistanceMeter
-                  distance={latest ? Math.round(Number(latest.distance_cm)) : MAX_DISTANCE_CM}
+                  distance={currentDistance}
                   level={level}
                 />
               )}
@@ -414,7 +504,7 @@ function DashboardPage() {
             <h2 id="vision-heading" className="sr-only">
               Blind's Eye Visual Recognition
             </h2>
-            <BlindsEyeLens />
+            <BlindsEyeLens onVisionTelemetry={handleVisionTelemetry} />
           </section>
         </div>
 
@@ -456,13 +546,13 @@ function DashboardPage() {
               Recent incidents
             </h2>
             <ul className="mt-4 space-y-2" aria-live="polite" data-now={now}>
-              {telemetryQuery.isLoading && <Skeleton className="h-14 rounded-lg" />}
-              {!telemetryQuery.isLoading && (telemetryQuery.data ?? []).length === 0 && (
+              {telemetryQuery.isLoading && allIncidents.length === 0 && <Skeleton className="h-14 rounded-lg" />}
+              {allIncidents.length === 0 && !telemetryQuery.isLoading && (
                 <li className="text-sm text-muted-foreground">
                   No encounters logged yet. Readings appear here the moment they arrive.
                 </li>
               )}
-              {(telemetryQuery.data ?? []).slice(0, 5).map((t) => (
+              {allIncidents.map((t) => (
                 <li key={t.id} className="rounded-lg border border-border p-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate font-semibold">{t.detected_object}</p>
