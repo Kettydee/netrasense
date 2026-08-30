@@ -12,15 +12,17 @@ interface DetectedRadarItem {
 
 interface RadarVisualizationProps {
   items: DetectedRadarItem[];
-  currentDistanceCm?: number;
-  currentThreatLevel?: ThreatLevel;
-  className?: string;
+  currentDistanceCm?: number | undefined;
+  currentThreatLevel?: ThreatLevel | undefined;
+  hasData?: boolean | undefined;
+  className?: string | undefined;
 }
 
 export function RadarVisualization({
   items,
   currentDistanceCm,
   currentThreatLevel = "Normal",
+  hasData = true,
   className = "",
 }: RadarVisualizationProps) {
   // Map directional zone to angle in degrees (center = 90° up, left = 45°, right = 135°)
@@ -94,6 +96,16 @@ export function RadarVisualization({
         <text x="282" y="184" fill="#8B98A9" fontSize="9" fontFamily="monospace">
           3m
         </text>
+
+        {/* No-data overlay */}
+        {!hasData && (
+          <g>
+            <rect x="90" y="70" width="120" height="30" rx="6" fill="#0D1117" fillOpacity="0.85" stroke="#4B5563" strokeWidth="1" className="dark:fill-[#0D1117] fill-[#F8FAFC]" />
+            <text x="150" y="89" fill="#9CA3AF" fontSize="10" fontWeight="700" fontFamily="monospace" textAnchor="middle">
+              NO SENSOR DATA
+            </text>
+          </g>
+        )}
 
         {/* 2m Arc (middle) */}
         <path
@@ -186,7 +198,7 @@ export function RadarVisualization({
         </text>
 
         {/* Render Detected Objects Polar Coordinates */}
-        {activeItems.map((item) => {
+        {hasData && activeItems.map((item) => {
           const maxDistCm = 400;
           const clampedDist = Math.max(10, Math.min(maxDistCm, item.distance_cm));
           // Radius in SVG pixels: 180 at center, max radius = 130px

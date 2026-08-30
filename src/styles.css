@@ -142,6 +142,52 @@ html:not(.dark) .surface-elevated {
   backdrop-filter: blur(6px) !important;
 }
 
+/* =========================================================
+   RADIX SELECT DROPDOWN (PORTAL) — fix dark-mode background
+   ========================================================= */
+html.dark [data-radix-select-content] {
+  background-color: #0d1117 !important;
+  border: 1px solid #202a36 !important;
+  color: #f4f7fa !important;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.7) !important;
+}
+
+html:not(.dark) [data-radix-select-content] {
+  background-color: #ffffff !important;
+  border: 1px solid #e6eaf0 !important;
+  color: #0b1220 !important;
+  box-shadow: 0 12px 32px -4px rgba(11, 18, 32, 0.12) !important;
+}
+
+/* Select items hover/active in dark mode */
+html.dark [data-radix-select-item] {
+  color: #f4f7fa !important;
+}
+html.dark [data-radix-select-item][data-highlighted] {
+  background-color: #1a2535 !important;
+  color: #5ee7ff !important;
+}
+
+html:not(.dark) [data-radix-select-item][data-highlighted] {
+  background-color: #f0f7fb !important;
+  color: #007ea7 !important;
+}
+
+/* =========================================================
+   ALL RADIX PORTALED CONTENT — dark mode fix
+   Ensures any Radix UI portaled element (select, popover,
+   dropdown-menu, context-menu) inherits dark mode styles.
+   ========================================================= */
+html.dark [data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+html.dark [role="listbox"] {
+  background-color: #0d1117 !important;
+  border: 1px solid #202a36 !important;
+  color: #f4f7fa !important;
+}
+
 html:not(.dark) [data-radix-dialog-content] {
   background-color: #ffffff !important;
   border: 1px solid #e6eaf0 !important;
@@ -237,6 +283,98 @@ html:not(.dark) ::-webkit-scrollbar-thumb {
 html.dark ::-webkit-scrollbar-thumb {
   background: #202a36;
   border-radius: 9999px;
+}
+
+/* =========================================================
+   PRINT STYLES — Medical ID Card Only
+   ========================================================= */
+@media print {
+  /* ── Hide everything that is NOT the card ── */
+  aside,                    /* Sidebar navigation */
+  main > header,            /* Page title + SOS button */
+  [data-print-hidden],      /* Back link, Print button, form */
+  [class*="print:hidden"],  /* Any element with Tailwind print:hidden */
+  #lovable-badge,
+  [data-lovable-badge],
+  .lovable-badge {
+    display: none !important;
+  }
+
+  /* Reset layout so the card fills the page */
+  html, body, #root, main, main > div {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ── The card itself — full width, no chrome ── */
+  article {
+    display: block !important;
+    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: white !important;
+    color: black !important;
+    overflow: hidden !important;
+  }
+
+  /* Red header bar */
+  article > div:first-child {
+    background: #dc2626 !important;
+    color: white !important;
+    padding: 14px 20px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Field labels */
+  article dt {
+    color: #555 !important;
+  }
+
+  /* Field values */
+  article dd {
+    color: black !important;
+  }
+
+  /* Blood group in red */
+  article dd.text-3xl {
+    color: #dc2626 !important;
+  }
+
+  /* Contact cards */
+  article li {
+    border-color: #d1d5db !important;
+    background: white !important;
+  }
+
+  /* Footer disclaimer */
+  article > div:last-child {
+    background: #f9fafb !important;
+    border-color: #d1d5db !important;
+  }
+
+  /* Call button — hide on paper */
+  article a[href^="tel:"] {
+    display: none !important;
+  }
+
+  /* Page settings */
+  @page {
+    margin: 1.5cm;
+    size: A4 portrait;
+  }
 }
 
 /* Cleanups */
