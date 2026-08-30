@@ -81,7 +81,9 @@ export function BlindsEyeLens() {
         serverUrl,
         "http://localhost:5000",
         "http://127.0.0.1:5000",
-        typeof window !== "undefined" ? `${window.location.protocol}//${window.location.hostname}:5000` : "",
+        typeof window !== "undefined"
+          ? `${window.location.protocol}//${window.location.hostname}:5000`
+          : "",
       ].filter(Boolean);
 
       for (const url of candidates) {
@@ -225,8 +227,8 @@ export function BlindsEyeLens() {
             ctx.fillText(label, x + 6, y > 24 ? y - 8 : y + 16);
           });
 
-          if (predictions.length > 0 && predictions[0].score > 0.6) {
-            const top = predictions[0];
+          const top = predictions[0];
+          if (top && top.score > 0.6) {
             const cx = top.bbox[0] + top.bbox[2] / 2;
             const dir =
               cx < canvas.width / 3 ? "left" : cx < (2 * canvas.width) / 3 ? "center" : "right";
@@ -362,11 +364,7 @@ export function BlindsEyeLens() {
                   >
                     <RefreshCw className="mr-1.5 size-3.5" /> Retry Connection
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setEngineMode("browser")}
-                  >
+                  <Button size="sm" variant="secondary" onClick={() => setEngineMode("browser")}>
                     Use Browser Camera
                   </Button>
                 </div>
@@ -527,11 +525,28 @@ export function BlindsEyeLens() {
       {engineMode === "yolo" && isServerLive && serverStatus && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <span>FPS: <strong>{serverStatus.fps}</strong></span>
+            <span>
+              FPS: <strong>{serverStatus.fps}</strong>
+            </span>
             <span>·</span>
-            <span>Mode: <strong className="capitalize">{serverStatus.mode}</strong></span>
+            <span>
+              Mode: <strong className="capitalize">{serverStatus.mode}</strong>
+            </span>
             <span>·</span>
-            <span>Threat: <strong className={serverStatus.threat_level === "Collision" ? "text-collision" : serverStatus.threat_level === "Alarming" ? "text-alarming" : "text-normal"}>{serverStatus.threat_level}</strong></span>
+            <span>
+              Threat:{" "}
+              <strong
+                className={
+                  serverStatus.threat_level === "Collision"
+                    ? "text-collision"
+                    : serverStatus.threat_level === "Alarming"
+                      ? "text-alarming"
+                      : "text-normal"
+                }
+              >
+                {serverStatus.threat_level}
+              </strong>
+            </span>
           </div>
           {serverStatus.closest_obstacle && (
             <div>

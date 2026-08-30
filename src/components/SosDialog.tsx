@@ -3,13 +3,25 @@ import { PhoneCall, Siren } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { speak, type Contact } from "@/lib/netrasense";
 
-export function SosDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+export function SosDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [logged, setLogged] = useState(false);
@@ -66,7 +78,10 @@ export function SosDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
             A critical alert has been logged. Call your emergency contacts now.
           </DialogDescription>
         </DialogHeader>
-        <div aria-live="assertive" className="rounded-lg bg-collision/15 p-4 text-sm font-semibold text-collision">
+        <div
+          aria-live="assertive"
+          className="rounded-lg bg-collision/15 p-4 text-sm font-semibold text-collision"
+        >
           SOS active — caregivers flagged for collision notification are being alerted.
         </div>
         <ul className="space-y-2">
@@ -76,11 +91,16 @@ export function SosDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
             </li>
           )}
           {contacts.map((c) => (
-            <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+            <li
+              key={c.id}
+              className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+            >
               <div className="min-w-0">
                 <p className="truncate font-semibold">
                   {c.contact_name}
-                  {c.is_primary && <span className="ml-2 text-xs font-bold text-primary">PRIMARY</span>}
+                  {c.is_primary && (
+                    <span className="ml-2 text-xs font-bold text-primary">PRIMARY</span>
+                  )}
                 </p>
                 <p className="truncate text-sm text-muted-foreground">
                   {c.relationship ?? "Contact"} · {c.phone_number}

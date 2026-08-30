@@ -16,7 +16,10 @@ export const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 export const MAX_DISTANCE_CM = 400;
 
 /** Semantic token classes per threat level (never hardcode colors in components). */
-export const threatStyles: Record<ThreatLevel, { badge: string; text: string; bar: string; ring: string }> = {
+export const threatStyles: Record<
+  ThreatLevel,
+  { badge: string; text: string; bar: string; ring: string }
+> = {
   Normal: {
     badge: "bg-normal text-normal-foreground",
     text: "text-normal",

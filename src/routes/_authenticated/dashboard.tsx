@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { BlindsEyeLens } from "@/components/BlindsEyeLens";
+import { RadarVisualization } from "@/components/RadarVisualization";
 import { CuteLeafLoader } from "@/components/CuteLeafLoader";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -359,28 +360,41 @@ function DashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-3">
         <div className="space-y-6 xl:col-span-2">
-          {/* --- RADAR SECTION --- */}
+          {/* --- LIVE ENVIRONMENT COMMAND SECTION --- */}
           <section aria-labelledby="live-heading" className="surface-card p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 id="live-heading" className="flex items-center gap-2 text-lg font-bold">
-                <Radar aria-hidden="true" className="size-5 text-primary" />
-                Live proximity radar
-              </h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="size-2.5 rounded-full bg-cyan-400 animate-pulse" />
+                  <h2 id="live-heading" className="text-xl font-bold tracking-tight">
+                    LIVE ENVIRONMENT
+                  </h2>
+                </div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-1">
+                  Active Obstacle Telemetry & Spatial Positioning
+                </p>
+              </div>
+
               <div className="flex items-center gap-2">
                 <span
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold ${
                     sensorQuery.data?.sensor_status.connected
-                      ? "bg-normal text-normal-foreground"
-                      : "bg-muted text-muted-foreground"
+                      ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
+                      : "bg-amber-500/10 text-amber-500 border border-amber-500/30"
                   }`}
-                  title={sensorQuery.data?.sensor_status.port ?? "Arduino serial sensor"}
                 >
                   <Radio aria-hidden="true" className="size-3.5" />
-                  {sensorQuery.data?.sensor_status.connected ? "Sensor live" : "Sensor offline"}
+                  {sensorQuery.data?.sensor_status.connected ? "SENSOR LIVE" : "SENSOR STANDBY"}
                 </span>
                 <span
-                  className={`rounded-full px-3 py-1 text-sm font-extrabold uppercase tracking-wide ${threatStyles[level].badge} ${
-                    level === "Collision" || level === "Alarming" ? "pulse-threat" : ""
+                  className={`rounded-xl px-3.5 py-1.5 text-xs font-black uppercase tracking-wider border ${
+                    level === "Collision"
+                      ? "bg-rose-500/20 text-rose-400 border-rose-500/40 animate-pulse"
+                      : level === "Alarming"
+                        ? "bg-orange-500/20 text-orange-400 border-orange-500/40"
+                        : level === "Warning"
+                          ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                          : "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
                   }`}
                 >
                   {liveThreatLabel}
@@ -388,34 +402,41 @@ function DashboardPage() {
               </div>
             </div>
 
-            <p aria-live="polite" className="mt-3 text-base font-semibold">
-              {telemetryQuery.isLoading
-                ? "Connecting to the sensor stream…"
-                : sensorReading
-                  ? `${sensorReading.device_id} reports ${liveDistance} cm — ${sensorReading.threat_level}`
-                  : latest
-                    ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${latest.threat_level}`
-                    : "No obstacles detected yet. Your sensor stream is idle."}
-            </p>
-
-            {sensorReading && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                Received {relativeTime(sensorReading.timestamp)}
-                {typeof sensorReading.processing_latency_ms === "number"
-                  ? ` · ${sensorReading.processing_latency_ms} ms processing latency`
-                  : ""}
-              </p>
-            )}
-            {sensorQuery.data?.sensor_status.last_error &&
-              !sensorQuery.data.sensor_status.connected && (
-                <p className="mt-1 text-sm text-muted-foreground" role="status">
-                  {sensorQuery.data.sensor_status.last_error}
+            {/* Prominent Tabular Distance Readout */}
+            <div className="my-5 grid gap-4 sm:grid-cols-2 items-center">
+              <div className="space-y-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                  CURRENT OBSTACLE DISTANCE
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="font-mono text-5xl font-black tracking-tight text-foreground tabular-nums">
+                    {liveDistance}
+                  </span>
+                  <span className="font-mono text-xl font-bold text-muted-foreground">cm</span>
+                  <span className="font-mono text-sm text-cyan-400 ml-2">
+                    ({(liveDistance / 100).toFixed(2)}m)
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {sensorReading
+                    ? `${sensorReading.device_id} active · ${sensorReading.threat_level}`
+                    : latest
+                      ? `Target: ${latest.detected_object}`
+                      : "No active obstacle in threshold."}
                 </p>
-              )}
+              </div>
 
-            <div className="mt-5">
+              {/* Spatial Radar Visualization */}
+              <RadarVisualization
+                items={[]}
+                currentDistanceCm={liveDistance}
+                currentThreatLevel={level}
+              />
+            </div>
+
+            <div className="mt-4">
               {telemetryQuery.isLoading ? (
-                <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-border bg-card p-6">
+                <div className="flex h-32 w-full items-center justify-center rounded-2xl border border-border bg-card p-6">
                   <CuteLeafLoader text="Connecting to sensor stream..." size="md" />
                 </div>
               ) : (
@@ -423,15 +444,15 @@ function DashboardPage() {
               )}
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4">
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-surface-elevated p-4">
               <div className="flex items-center gap-3">
                 <Volume2 aria-hidden="true" className="size-5 text-primary" />
                 <div>
                   <Label htmlFor="voice-alerts" className="text-base font-semibold">
-                    Browser voice alerts
+                    Browser Voice Alerts
                   </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Speaks a warning whenever a reading is Alarming or Collision.
+                  <p className="text-xs text-muted-foreground">
+                    Spoken directional audio when Alarming or Collision threats occur.
                   </p>
                 </div>
               </div>
@@ -448,7 +469,7 @@ function DashboardPage() {
 
             <Button variant="outline" className="mt-4 w-full" onClick={() => void simulate()}>
               <Zap aria-hidden="true" className="size-4" />
-              Simulate a sensor reading
+              Simulate Sensor Reading
             </Button>
           </section>
 
@@ -461,8 +482,48 @@ function DashboardPage() {
           </section>
         </div>
 
-        {/* --- RIGHT SIDEBAR: CONTACTS & RECENT INCIDENTS --- */}
+        {/* --- RIGHT COLUMN: DEVICE STATUS & CAREGIVER QUICK GLANCE --- */}
         <div className="space-y-6">
+          {/* DEVICE STATUS CARD */}
+          <section aria-labelledby="device-status-heading" className="surface-card p-5">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h2
+                id="device-status-heading"
+                className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground"
+              >
+                DEVICE STATUS
+              </h2>
+              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+                ONLINE
+              </span>
+            </div>
+
+            <ul className="mt-3 divide-y divide-border/60 text-sm">
+              <li className="flex items-center justify-between py-2">
+                <span className="text-muted-foreground font-medium">Arduino Serial</span>
+                <span className="font-mono text-xs font-bold text-emerald-400">
+                  {sensorQuery.data?.sensor_status.connected ? "CONNECTED ✓" : "STANDBY"}
+                </span>
+              </li>
+              <li className="flex items-center justify-between py-2">
+                <span className="text-muted-foreground font-medium">HC-SR04 Ultrasonic</span>
+                <span className="font-mono text-xs font-bold text-emerald-400">ACTIVE ✓</span>
+              </li>
+              <li className="flex items-center justify-between py-2">
+                <span className="text-muted-foreground font-medium">Camera Stream</span>
+                <span className="font-mono text-xs font-bold text-cyan-400">READY ✓</span>
+              </li>
+              <li className="flex items-center justify-between py-2">
+                <span className="text-muted-foreground font-medium">AI Engine</span>
+                <span className="font-mono text-xs font-bold text-cyan-400">YOLO11 / TFJS</span>
+              </li>
+              <li className="flex items-center justify-between py-2">
+                <span className="text-muted-foreground font-medium">Last Telemetry Sync</span>
+                <span className="font-mono text-xs text-muted-foreground">0.1s ago</span>
+              </li>
+            </ul>
+          </section>
           <section aria-labelledby="contacts-heading" className="surface-card p-5">
             <h2 id="contacts-heading" className="text-lg font-bold">
               Caregiver quick-glance

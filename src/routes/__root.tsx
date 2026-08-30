@@ -153,7 +153,10 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <a href="#main-content" className="skip-link">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-cyan-500 focus:text-slate-950 focus:rounded-xl focus:shadow-xl focus:font-bold focus:outline-none"
+        >
           Skip to main content
         </a>
         <GoldWaveBackground />
