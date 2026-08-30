@@ -39,7 +39,18 @@ interface YoloStatus {
   detections: YoloDetection[];
 }
 
-export function BlindsEyeLens() {
+export interface VisionTelemetryEvent {
+  object: string;
+  distance_cm: number;
+  threat_level: "Normal" | "Warning" | "Alarming" | "Collision";
+  direction?: string;
+}
+
+interface BlindsEyeLensProps {
+  onVisionTelemetry?: (event: VisionTelemetryEvent) => void;
+}
+
+export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
   const [engineMode, setEngineMode] = useState<"yolo" | "browser">("yolo");
   const [serverUrl, setServerUrl] = useState<string>("http://localhost:5000");
   const [isServerLive, setIsServerLive] = useState<boolean>(false);
@@ -95,6 +106,18 @@ export function BlindsEyeLens() {
               if (url !== serverUrl) setServerUrl(url);
               setServerStatus(data);
               setIsServerLive(true);
+
+              if (
+                data.closest_obstacle &&
+                data.closest_obstacle.object &&
+                data.closest_obstacle.object !== "Clear"
+              ) {
+                onVisionTelemetry?.({
+                  object: data.closest_obstacle.object,
+                  distance_cm: data.closest_obstacle.distance_cm || 100,
+                  threat_level: (data.closest_obstacle.threat_level as any) || "Warning",
+                });
+              }
             }
             return;
           }
@@ -269,7 +292,30 @@ export function BlindsEyeLens() {
             speakBrowser(message);
           }
 
-          if (detectedSummaries.length > 0) {
+          if (detectedSummaries.length > 0 && predictions.length > 0) {
+            const top = predictions.reduce(
+              (prev, curr) => (curr.bbox[3] > prev.bbox[3] ? curr : prev),
+              predictions[0],
+            );
+            const relH = Math.max(0.05, top.bbox[3] / canvas.height);
+            const approxDistCm = Math.round(
+              Math.max(25, Math.min(400, (1.1 / (relH + 0.1)) * 100)),
+            );
+            const threat =
+              approxDistCm <= 40
+                ? "Collision"
+                : approxDistCm <= 100
+                  ? "Alarming"
+                  : approxDistCm <= 200
+                    ? "Warning"
+                    : "Normal";
+
+            onVisionTelemetry?.({
+              object: top.class,
+              distance_cm: approxDistCm,
+              threat_level: threat,
+            });
+
             // Remove duplicates for display summary
             const uniqueSummaries = Array.from(new Set(detectedSummaries));
             setBrowserDetectedItem(uniqueSummaries.join(" · "));
@@ -289,7 +335,7 @@ export function BlindsEyeLens() {
     }
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isBrowserCameraActive, browserModel, engineMode, speakBrowser]);
+  }, [isBrowserCameraActive, browserModel, engineMode, speakBrowser, onVisionTelemetry]);
 
   const threatColor = (level?: string) => {
     switch (level) {
