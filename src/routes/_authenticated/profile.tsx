@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Printer, HeartPulse } from "lucide-react";
+import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -19,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { fetchContacts, fetchProfile } from "@/lib/queries";
+import { fetchProfile } from "@/lib/queries";
 import { BLOOD_GROUPS, IMPAIRMENT_LEVELS, type ImpairmentLevel } from "@/lib/netrasense";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -52,12 +51,6 @@ function ProfilePage() {
     enabled: !!userId,
     queryFn: () => fetchProfile(userId),
   });
-  const contactsQuery = useQuery({
-    queryKey: ["contacts", userId],
-    enabled: !!userId,
-    queryFn: fetchContacts,
-  });
-
   const [form, setForm] = useState({
     full_name: "John Doe",
     age: "28",
@@ -120,169 +113,156 @@ function ProfilePage() {
     toast.success("Profile & Medical ID updated successfully.");
   }
 
-  const primary = (contactsQuery.data ?? []).filter((c) => c.is_primary);
-
   return (
     <AppShell
-      title="User Profile & Medical ID"
-      description="Keep your medical details current for responders"
+      title="Device & Profile"
+      description="Manage your personal and medical information"
     >
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="mx-auto max-w-3xl space-y-6">
         <section
           aria-labelledby="profile-form-heading"
           className="surface-card p-5 lg:p-6 print:hidden"
+          data-print-hidden
         >
           <h2 id="profile-form-heading" className="text-lg font-bold">
             Personal & medical information
           </h2>
-          <form className="mt-4 space-y-4" onSubmit={handleSave}>
-            <div className="grid gap-4 sm:grid-cols-2">
+          <form className="mt-4 space-y-5" onSubmit={handleSave}>
+            {/* Row 1: Name + Age */}
+            <fieldset className="space-y-4 rounded-xl border border-border p-4">
+              <legend className="px-1 text-sm font-bold text-muted-foreground">Personal details</legend>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="p-name">Full name</Label>
+                  <Input
+                    id="p-name"
+                    required
+                    placeholder="e.g. John Doe"
+                    value={form.full_name}
+                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="p-age">Age</Label>
+                  <Input
+                    id="p-age"
+                    type="number"
+                    min={1}
+                    max={120}
+                    required
+                    placeholder="e.g. 28"
+                    value={form.age}
+                    onChange={(e) => setForm({ ...form, age: e.target.value })}
+                  />
+                </div>
+              </div>
+            </fieldset>
+
+            {/* Row 2: Blood group + Impairment */}
+            <fieldset className="space-y-4 rounded-xl border border-border p-4">
+              <legend className="px-1 text-sm font-bold text-muted-foreground">Medical profile</legend>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2 relative z-10">
+                  <Label htmlFor="p-blood">Blood group</Label>
+                  <Select
+                    value={form.blood_group}
+                    onValueChange={(v) => setForm({ ...form, blood_group: v })}
+                  >
+                    <SelectTrigger id="p-blood" className="w-full">
+                      <SelectValue placeholder="Select blood group" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {BLOOD_GROUPS.map((g) => (
+                        <SelectItem key={g} value={g}>
+                          {g}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 relative z-10">
+                  <Label htmlFor="p-impairment">Impairment level</Label>
+                  <Select
+                    value={form.impairment_level}
+                    onValueChange={(v) =>
+                      setForm({ ...form, impairment_level: v as ImpairmentLevel })
+                    }
+                  >
+                    <SelectTrigger id="p-impairment" className="w-full">
+                      <SelectValue placeholder="Select impairment level" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {IMPAIRMENT_LEVELS.map((l) => (
+                        <SelectItem key={l} value={l}>
+                          {l}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </fieldset>
+
+            {/* Row 3: Address */}
+            <fieldset className="space-y-4 rounded-xl border border-border p-4">
+              <legend className="px-1 text-sm font-bold text-muted-foreground">Location</legend>
               <div className="space-y-2">
-                <Label htmlFor="p-name">Full name</Label>
+                <Label htmlFor="p-address">Home address</Label>
                 <Input
-                  id="p-name"
+                  id="p-address"
                   required
-                  placeholder="e.g. John Doe"
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  placeholder="e.g. 123 Navigation Way, Innovation Hub"
+                  value={form.home_address}
+                  onChange={(e) => setForm({ ...form, home_address: e.target.value })}
                 />
               </div>
+            </fieldset>
+
+            {/* Row 4: Medical notes */}
+            <fieldset className="space-y-4 rounded-xl border border-border p-4">
+              <legend className="px-1 text-sm font-bold text-muted-foreground">Critical medical notes</legend>
+              <p className="text-xs text-muted-foreground -mt-2">
+                Important information for emergency responders — allergies, medications, conditions.
+              </p>
               <div className="space-y-2">
-                <Label htmlFor="p-age">Age</Label>
-                <Input
-                  id="p-age"
-                  type="number"
-                  min={1}
-                  max={120}
-                  placeholder="e.g. 28"
-                  value={form.age}
-                  onChange={(e) => setForm({ ...form, age: e.target.value })}
+                <Textarea
+                  id="p-notes"
+                  rows={4}
+                  placeholder="e.g. No known drug allergies. Wears audio feedback headset."
+                  value={form.emergency_medical_notes}
+                  onChange={(e) => setForm({ ...form, emergency_medical_notes: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="p-blood">Blood group</Label>
-                <Select
-                  value={form.blood_group}
-                  onValueChange={(v) => setForm({ ...form, blood_group: v })}
-                >
-                  <SelectTrigger id="p-blood">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BLOOD_GROUPS.map((g) => (
-                      <SelectItem key={g} value={g}>
-                        {g}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="p-impairment">Impairment level</Label>
-                <Select
-                  value={form.impairment_level}
-                  onValueChange={(v) =>
-                    setForm({ ...form, impairment_level: v as ImpairmentLevel })
-                  }
-                >
-                  <SelectTrigger id="p-impairment">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {IMPAIRMENT_LEVELS.map((l) => (
-                      <SelectItem key={l} value={l}>
-                        {l}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="p-address">Home address</Label>
-              <Input
-                id="p-address"
-                value={form.home_address}
-                onChange={(e) => setForm({ ...form, home_address: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="p-notes">Critical medical notes</Label>
-              <Textarea
-                id="p-notes"
-                rows={4}
-                placeholder="Allergies, medication, conditions responders should know."
-                value={form.emergency_medical_notes}
-                onChange={(e) => setForm({ ...form, emergency_medical_notes: e.target.value })}
-              />
-            </div>
-            <Button type="submit" size="lg" disabled={busy}>
+            </fieldset>
+
+            <Button type="submit" size="lg" className="w-full" disabled={busy}>
               {busy && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
               Save profile
             </Button>
           </form>
         </section>
 
-        <section aria-labelledby="medical-id-heading" className="space-y-4">
-          <div className="flex items-center justify-between gap-3 print:hidden">
-            <h2 id="medical-id-heading" className="text-lg font-bold">
-              Emergency medical ID card
-            </h2>
-            <Button variant="outline" onClick={() => window.print()}>
-              <Printer aria-hidden="true" className="size-4" />
-              Print card
-            </Button>
-          </div>
-          <article className="surface-card overflow-hidden">
-            <div className="flex items-center gap-3 bg-collision p-4 text-collision-foreground">
-              <HeartPulse aria-hidden="true" className="size-7" />
+        {/* CTA to view the printable card */}
+        <section className="surface-card p-5 lg:p-6">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-collision/20 bg-collision/10">
+                <ShieldCheck aria-hidden="true" className="size-5 text-collision" />
+              </div>
               <div>
-                <p className="text-lg font-extrabold uppercase tracking-wide">
-                  Emergency Medical ID
+                <p className="font-bold">Emergency Medical ID Card</p>
+                <p className="text-sm text-muted-foreground">
+                  View and print a read-only card for first responders.
                 </p>
-                <p className="text-sm">NetraSense assistive navigation user</p>
               </div>
             </div>
-            <dl className="grid gap-4 p-5 sm:grid-cols-2">
-              <div>
-                <dt className="text-sm text-muted-foreground">Name</dt>
-                <dd className="text-lg font-bold">{form.full_name || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Age</dt>
-                <dd className="text-lg font-bold">{form.age || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Blood group</dt>
-                <dd className="text-2xl font-extrabold text-collision">{form.blood_group}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Impairment level</dt>
-                <dd className="text-lg font-bold">{form.impairment_level}</dd>
-              </div>
-              <div className="sm:col-span-2">
-                <dt className="text-sm text-muted-foreground">Critical medical notes</dt>
-                <dd className="font-semibold">{form.emergency_medical_notes || "None recorded"}</dd>
-              </div>
-              <div className="sm:col-span-2">
-                <dt className="text-sm text-muted-foreground">Home address</dt>
-                <dd className="font-semibold">{form.home_address || "—"}</dd>
-              </div>
-              <div className="sm:col-span-2">
-                <dt className="text-sm text-muted-foreground">Primary emergency contacts</dt>
-                <dd className="font-semibold">
-                  {primary.length === 0
-                    ? "No primary contact saved"
-                    : primary
-                        .map(
-                          (c) =>
-                            `${c.contact_name} (${c.relationship ?? "contact"}) · ${c.phone_number}`,
-                        )
-                        .join(" — ")}
-                </dd>
-              </div>
-            </dl>
-          </article>
+            <Button asChild variant="outline">
+              <Link to="/medical-id">
+                View card
+                <ArrowRight aria-hidden="true" className="ml-1.5 size-4" />
+              </Link>
+            </Button>
+          </div>
         </section>
       </div>
     </AppShell>
