@@ -55,6 +55,8 @@ export function BlindsEyeLens() {
   const [browserDetectedItem, setBrowserDetectedItem] = useState<string>("Scanning...");
   const [isLoadingBrowserModel, setIsLoadingBrowserModel] = useState<boolean>(true);
   const [lastSpoken, setLastSpoken] = useState<string>("");
+  const announcedObjectsRef = useRef<Map<string, number>>(new Map());
+  const lastSeenObjectsRef = useRef<Map<string, number>>(new Map());
 
   // Resolve configured server URL from localStorage if any
   useEffect(() => {
@@ -140,7 +142,7 @@ export function BlindsEyeLens() {
   const speakBrowser = useCallback(
     (text: string) => {
       if (!voiceAlerts || typeof window === "undefined" || !("speechSynthesis" in window)) return;
-      if (text === lastSpoken) return;
+      if (!text.trim()) return;
 
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
@@ -149,7 +151,7 @@ export function BlindsEyeLens() {
       window.speechSynthesis.speak(utterance);
       setLastSpoken(text);
     },
-    [voiceAlerts, lastSpoken],
+    [voiceAlerts],
   );
 
   // Browser Camera Start/Stop
@@ -176,6 +178,8 @@ export function BlindsEyeLens() {
       videoRef.current.srcObject = null;
       setIsBrowserCameraActive(false);
       setBrowserDetectedItem("Lens Inactive");
+      announcedObjectsRef.current.clear();
+      lastSeenObjectsRef.current.clear();
     }
   };
 
@@ -202,7 +206,14 @@ export function BlindsEyeLens() {
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+          const now = Date.now();
+          const currentSeen = new Set<string>();
+          const newItemsToAnnounce: string[] = [];
+          const detectedSummaries: string[] = [];
+
           predictions.forEach((prediction) => {
+            if (prediction.score < 0.48) return;
+
             const [x, y, width, height] = prediction.bbox;
             const cx = x + width / 2;
             const dir =
@@ -223,15 +234,45 @@ export function BlindsEyeLens() {
             ctx.fillStyle = "#0f172a";
             ctx.font = "bold 12px Inter, sans-serif";
             ctx.fillText(label, x + 6, y > 24 ? y - 8 : y + 16);
+
+            const trackKey = `${prediction.class}_${dir.toLowerCase()}`;
+            currentSeen.add(trackKey);
+            lastSeenObjectsRef.current.set(trackKey, now);
+            detectedSummaries.push(`${prediction.class} (${dir})`);
+
+            // Check if this distinct object in this zone has been announced
+            const lastAnnounced = announcedObjectsRef.current.get(trackKey);
+            if (!lastAnnounced || (now - lastAnnounced) > 4000) {
+              newItemsToAnnounce.push(`${prediction.class} on the ${dir.toLowerCase()}`);
+              announcedObjectsRef.current.set(trackKey, now);
+            }
           });
 
-          if (predictions.length > 0 && predictions[0].score > 0.6) {
-            const top = predictions[0];
-            const cx = top.bbox[0] + top.bbox[2] / 2;
-            const dir =
-              cx < canvas.width / 3 ? "left" : cx < (2 * canvas.width) / 3 ? "center" : "right";
-            setBrowserDetectedItem(`${top.class} (${Math.round(top.score * 100)}%) on ${dir}`);
-            speakBrowser(`${top.class} on the ${dir}`);
+          // Clean up objects that have left the scene for > 3.5s
+          for (const [key, seenTime] of lastSeenObjectsRef.current.entries()) {
+            if (now - seenTime > 3500) {
+              lastSeenObjectsRef.current.delete(key);
+              announcedObjectsRef.current.delete(key);
+            }
+          }
+
+          // Announce every newly detected object name once
+          if (newItemsToAnnounce.length > 0) {
+            let message = "";
+            if (newItemsToAnnounce.length === 1) {
+              message = newItemsToAnnounce[0];
+            } else if (newItemsToAnnounce.length === 2) {
+              message = `${newItemsToAnnounce[0]}, and ${newItemsToAnnounce[1]}`;
+            } else {
+              message = `${newItemsToAnnounce.slice(0, 3).join(", ")}, and ${newItemsToAnnounce[3] || ""}`.replace(/,\s*and\s*$/, "");
+            }
+            speakBrowser(message);
+          }
+
+          if (detectedSummaries.length > 0) {
+            // Remove duplicates for display summary
+            const uniqueSummaries = Array.from(new Set(detectedSummaries));
+            setBrowserDetectedItem(uniqueSummaries.join(" · "));
           } else {
             setBrowserDetectedItem("Path clear");
           }
