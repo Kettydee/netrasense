@@ -39,6 +39,8 @@ interface YoloStatus {
   detections: YoloDetection[];
 }
 
+import { SmartSceneDescriber } from "@/components/SmartSceneDescriber";
+
 export interface VisionTelemetryEvent {
   object: string;
   distance_cm: number;
@@ -60,6 +62,7 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
   // In-browser Camera state
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const imgStreamRef = useRef<HTMLImageElement | null>(null);
   const [browserModel, setBrowserModel] = useState<cocoSsd.ObjectDetection | null>(null);
   const [isBrowserCameraActive, setIsBrowserCameraActive] = useState<boolean>(false);
   const [voiceAlerts, setVoiceAlerts] = useState<boolean>(true);
@@ -68,6 +71,47 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
   const [lastSpoken, setLastSpoken] = useState<string>("");
   const announcedObjectsRef = useRef<Map<string, number>>(new Map());
   const lastSeenObjectsRef = useRef<Map<string, number>>(new Map());
+
+  // Capture current camera frame as Base64 for multimodal AI scene analysis
+  const captureFrameBase64 = useCallback((): string | null => {
+    if (engineMode === "browser" && videoRef.current && videoRef.current.readyState >= 2) {
+      const v = videoRef.current;
+      const hiddenCanvas = document.createElement("canvas");
+      hiddenCanvas.width = v.videoWidth || 640;
+      hiddenCanvas.height = v.videoHeight || 480;
+      const ctx = hiddenCanvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(v, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+        return hiddenCanvas.toDataURL("image/jpeg", 0.85);
+      }
+    }
+
+    if (engineMode === "yolo" && imgStreamRef.current && imgStreamRef.current.complete) {
+      const img = imgStreamRef.current;
+      const hiddenCanvas = document.createElement("canvas");
+      hiddenCanvas.width = img.naturalWidth || 640;
+      hiddenCanvas.height = img.naturalHeight || 480;
+      const ctx = hiddenCanvas.getContext("2d");
+      if (ctx) {
+        try {
+          ctx.drawImage(img, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+          return hiddenCanvas.toDataURL("image/jpeg", 0.85);
+        } catch {
+          // Cross-origin fallback
+        }
+      }
+    }
+
+    if (canvasRef.current && canvasRef.current.width > 0) {
+      try {
+        return canvasRef.current.toDataURL("image/jpeg", 0.85);
+      } catch {
+        // ignore
+      }
+    }
+
+    return null;
+  }, [engineMode]);
 
   // Resolve configured server URL from localStorage if any
   useEffect(() => {
@@ -420,6 +464,8 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
           <>
             {isServerLive ? (
               <img
+                ref={imgStreamRef}
+                crossOrigin="anonymous"
                 key={`yolo-stream-${serverCheckKey}`}
                 src={`${serverUrl}/video_feed`}
                 alt="YOLO Object Detection & Distance Stream"
@@ -628,6 +674,21 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
           )}
         </div>
       )}
+
+      {/* Smart Assistive AI Scene Describer & Currency Reader */}
+      <SmartSceneDescriber
+        getFrameBase64={captureFrameBase64}
+        detectedObjects={
+          engineMode === "yolo"
+            ? detections.map((d) => `${d.label} on ${d.direction}`)
+            : browserDetectedItem &&
+                browserDetectedItem !== "Path clear" &&
+                browserDetectedItem !== "Scanning..." &&
+                browserDetectedItem !== "Lens Inactive"
+              ? [browserDetectedItem]
+              : []
+        }
+      />
     </div>
   );
 }
