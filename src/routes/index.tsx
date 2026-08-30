@@ -86,13 +86,42 @@ function Index() {
             </defs>
 
             {/* Gold Corner Brackets */}
-            <path d="M 12 30 V 16 A 4 4 0 0 1 16 12 H 30" stroke="url(#gold-grad)" strokeWidth="6.5" strokeLinecap="round" />
-            <path d="M 88 30 V 16 A 4 4 0 0 0 84 12 H 70" stroke="url(#gold-grad)" strokeWidth="6.5" strokeLinecap="round" />
-            <path d="M 12 70 V 84 A 4 4 0 0 0 16 88 H 30" stroke="url(#gold-grad)" strokeWidth="6.5" strokeLinecap="round" />
-            <path d="M 88 70 V 84 A 4 4 0 0 1 84 88 H 70" stroke="url(#gold-grad)" strokeWidth="6.5" strokeLinecap="round" />
+            <path
+              d="M 12 30 V 16 A 4 4 0 0 1 16 12 H 30"
+              stroke="url(#gold-grad)"
+              strokeWidth="6.5"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 88 30 V 16 A 4 4 0 0 0 84 12 H 70"
+              stroke="url(#gold-grad)"
+              strokeWidth="6.5"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 12 70 V 84 A 4 4 0 0 0 16 88 H 30"
+              stroke="url(#gold-grad)"
+              strokeWidth="6.5"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 88 70 V 84 A 4 4 0 0 1 84 88 H 70"
+              stroke="url(#gold-grad)"
+              strokeWidth="6.5"
+              strokeLinecap="round"
+            />
 
             {/* Outer Gold Arch Ring */}
-            <ellipse cx="50" cy="50" rx="42" ry="29" stroke="url(#gold-grad)" strokeWidth="3" fill="none" opacity="0.85" />
+            <ellipse
+              cx="50"
+              cy="50"
+              rx="42"
+              ry="29"
+              stroke="url(#gold-grad)"
+              strokeWidth="3"
+              fill="none"
+              opacity="0.85"
+            />
 
             {/* Main Blue Eye Contour */}
             <path
@@ -131,7 +160,10 @@ function Index() {
             )}
           </button>
 
-          <nav className="flex items-center gap-4 text-sm font-medium text-muted-foreground" aria-label="Main Navigation">
+          <nav
+            className="flex items-center gap-4 text-sm font-medium text-muted-foreground"
+            aria-label="Main Navigation"
+          >
             <a
               href="#contact"
               className="transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary rounded-md px-2 py-1 hidden sm:inline-block"
@@ -167,8 +199,8 @@ function Index() {
             Navigation confidence for visually impaired people and their caregivers.
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            NetraSense turns ultrasonic sensor telemetry into spoken warnings, caregiver visibility and a
-            complete incident history — accessible by keyboard and screen reader end to end.
+            NetraSense turns ultrasonic sensor telemetry into spoken warnings, caregiver visibility
+            and a complete incident history — accessible by keyboard and screen reader end to end.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg" className="text-base">
@@ -197,41 +229,50 @@ function Index() {
         </section>
 
         {/* Contact & Support Section */}
-        <section aria-labelledby="contact-support-heading" className="mt-16 pt-12 border-t border-border">
+        <section
+          aria-labelledby="contact-support-heading"
+          className="mt-16 pt-12 border-t border-border"
+        >
           <h2 id="contact-support-heading" className="text-2xl font-bold tracking-tight mb-8">
             Connect & Support the Mission
           </h2>
 
           <div className="grid gap-6 md:grid-cols-2">
             {/* Contact Us Card */}
-            <article id="contact" className="surface-card p-6 flex flex-col justify-between scroll-mt-24">
+            <article
+              id="contact"
+              className="surface-card p-6 flex flex-col justify-between scroll-mt-24"
+            >
               <div>
                 <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-4">
                   <Mail className="size-5" />
                 </div>
                 <h3 className="text-xl font-bold">Contact Us</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Have questions regarding the NetraSense ultrasonic sensor setup, caregiver pairing, or web accessibility features? Reach out directly.
+                  Have questions regarding the NetraSense ultrasonic sensor setup, caregiver
+                  pairing, or web accessibility features? Reach out directly.
                 </p>
               </div>
               <div className="mt-6">
                 <Button asChild variant="outline" className="w-full">
-                  <a href="mailto:contact@netrasense.org">
-                    Send an Email
-                  </a>
+                  <a href="mailto:contact@netrasense.org">Send an Email</a>
                 </Button>
               </div>
             </article>
 
             {/* Support Us Card */}
-            <article id="support" className="surface-card p-6 flex flex-col justify-between scroll-mt-24">
+            <article
+              id="support"
+              className="surface-card p-6 flex flex-col justify-between scroll-mt-24"
+            >
               <div>
                 <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
                   <Heart className="size-5" />
                 </div>
                 <h3 className="text-xl font-bold">Support Us</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  NetraSense is an open initiative dedicated to assistive telemetry and safer navigation. Help us improve hardware compatibility and test features.
+                  NetraSense is an open initiative dedicated to assistive telemetry and safer
+                  navigation. Help us improve hardware compatibility and test features.
                 </p>
               </div>
               <div className="mt-6">

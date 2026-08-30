@@ -10,7 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { fetchContacts } from "@/lib/queries";
@@ -20,7 +26,10 @@ export const Route = createFileRoute("/_authenticated/contacts")({
   head: () => ({
     meta: [
       { title: "Emergency Contacts Hub — NetraSense" },
-      { name: "description", content: "Add, edit and test the caregivers who are alerted when a collision is detected." },
+      {
+        name: "description",
+        content: "Add, edit and test the caregivers who are alerted when a collision is detected.",
+      },
       { property: "og:title", content: "Emergency Contacts Hub — NetraSense" },
       { property: "og:description", content: "Manage caregivers notified during emergencies." },
     ],
@@ -53,7 +62,11 @@ function ContactsPage() {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [busy, setBusy] = useState(false);
 
-  const contactsQuery = useQuery({ queryKey: ["contacts", userId], enabled: !!userId, queryFn: fetchContacts });
+  const contactsQuery = useQuery({
+    queryKey: ["contacts", userId],
+    enabled: !!userId,
+    queryFn: fetchContacts,
+  });
 
   function openAdd() {
     setEditing(null);
@@ -104,7 +117,10 @@ function ContactsPage() {
   const contacts = contactsQuery.data ?? [];
 
   return (
-    <AppShell title="Emergency Contacts Hub" description="Caregivers alerted when a collision is detected">
+    <AppShell
+      title="Emergency Contacts Hub"
+      description="Caregivers alerted when a collision is detected"
+    >
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           {contacts.length} contact{contacts.length === 1 ? "" : "s"} saved
@@ -189,24 +205,48 @@ function ContactsPage() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit contact" : "Add emergency contact"}</DialogTitle>
-            <DialogDescription>These details are used for calls and collision notifications.</DialogDescription>
+            <DialogDescription>
+              These details are used for calls and collision notifications.
+            </DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <Label htmlFor="c-name">Contact name</Label>
-              <Input id="c-name" required value={form.contact_name} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} />
+              <Input
+                id="c-name"
+                required
+                placeholder="e.g. Dr. Sarah Jenkins"
+                value={form.contact_name}
+                onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="c-relationship">Relationship</Label>
-              <Input id="c-relationship" value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })} />
+              <Input
+                id="c-relationship"
+                placeholder="e.g. Primary Caregiver / Daughter"
+                value={form.relationship}
+                onChange={(e) => setForm({ ...form, relationship: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="c-phone">Phone number</Label>
-              <Input id="c-phone" type="tel" required value={form.phone_number} onChange={(e) => setForm({ ...form, phone_number: e.target.value })} />
+              <Input
+                id="c-phone"
+                type="tel"
+                required
+                placeholder="e.g. +1 (555) 234-5678"
+                value={form.phone_number}
+                onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
+              />
             </div>
             <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
               <Label htmlFor="c-primary">Primary contact</Label>
-              <Switch id="c-primary" checked={form.is_primary} onCheckedChange={(v) => setForm({ ...form, is_primary: v })} />
+              <Switch
+                id="c-primary"
+                checked={form.is_primary}
+                onCheckedChange={(v) => setForm({ ...form, is_primary: v })}
+              />
             </div>
             <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
               <Label htmlFor="c-notify">Notify on collision (SMS / WhatsApp)</Label>

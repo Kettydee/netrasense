@@ -52,6 +52,7 @@ class Detection:
     depth_meters: Optional[float] = None
     distance_cm: Optional[int] = None
     threat_level: str = "Normal"  # "Normal" | "Warning" | "Alarming" | "Collision"
+    motion_state: str = "Stationary"  # "Stationary" | "Moving"
 
 
 @dataclass
@@ -103,6 +104,7 @@ class VisionPipeline:
         self._confidence = confidence
         self._frame_width = frame_width
         self._depth_scale = depth_scale
+        self._prev_tracks: dict[str, tuple[int, int, float]] = {}
         
         self.set_mode(mode)
 
@@ -265,9 +267,18 @@ class VisionPipeline:
             # Heuristic distance estimation if depth model is not loaded:
             # Bounding box relative height inversely proportional to distance
             rel_h = max(1, y2 - y1) / float(frame_h)
-            approx_dist_m = round(max(0.4, min(4.0, 1.2 / (rel_h + 0.1))), 2)
-            dist_cm = int(approx_dist_m * 100)
-            threat = classify_distance(dist_cm)
+            # Compute motion state via temporal centroid displacement
+            now = time.time()
+            track_id = f"{label}_{direction}"
+            motion_state = "Stationary"
+            if track_id in self._prev_tracks:
+                prev_cx, prev_cy, prev_time = self._prev_tracks[track_id]
+                dt = max(0.001, now - prev_time)
+                dist_pixels = np.hypot(cx - prev_cx, cy - prev_cy)
+                speed_px_sec = dist_pixels / dt
+                if speed_px_sec > 45.0:  # Threshold for camera motion displacement
+                    motion_state = "Moving"
+            self._prev_tracks[track_id] = (cx, cy, now)
 
             detections.append(Detection(
                 label=label,
@@ -278,6 +289,7 @@ class VisionPipeline:
                 depth_meters=approx_dist_m,
                 distance_cm=dist_cm,
                 threat_level=threat,
+                motion_state=motion_state,
             ))
 
         return detections

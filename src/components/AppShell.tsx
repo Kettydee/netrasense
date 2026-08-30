@@ -15,8 +15,10 @@ import {
   Laptop,
 } from "lucide-react";
 
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
+import { fetchSensorTelemetry } from "@/lib/sensor";
 
 // --- Precision Framed Eye Logo Component ---
 function NetraSenseFramedEye({ className = "h-8.5 w-auto" }: { className?: string }) {
@@ -65,12 +67,26 @@ interface AppShellProps {
   actions?: ReactNode;
 }
 
-const NAV_ITEMS = [
-  { to: "/dashboard", label: "Realtime Dashboard", icon: LayoutDashboard },
-  { to: "/profile", label: "User Profile & Medical ID", icon: User },
-  { to: "/contacts", label: "Emergency Contacts Hub", icon: Siren },
-  { to: "/logs", label: "Incident & Telemetry Logs", icon: FileText },
-  { to: "/settings", label: "Settings & Audio Preferences", icon: Settings },
+const NAV_GROUPS = [
+  {
+    category: "OVERVIEW",
+    items: [{ to: "/dashboard", label: "Live Command Center", icon: LayoutDashboard }],
+  },
+  {
+    category: "MONITORING",
+    items: [{ to: "/logs", label: "Telemetry History", icon: FileText }],
+  },
+  {
+    category: "SAFETY",
+    items: [{ to: "/contacts", label: "Emergency & Contacts", icon: Siren }],
+  },
+  {
+    category: "SYSTEM",
+    items: [
+      { to: "/profile", label: "Device & Profile", icon: User },
+      { to: "/settings", label: "Settings", icon: Settings },
+    ],
+  },
 ];
 
 type ThemeMode = "light" | "dark" | "system";
@@ -120,87 +136,141 @@ export function AppShell({ title, description, children, actions }: AppShellProp
     window.location.href = "/contacts";
   };
 
+  const sensorQuery = useQuery({
+    queryKey: ["sensor-status-sidebar"],
+    queryFn: fetchSensorTelemetry,
+    refetchInterval: 4000,
+    retry: false,
+  });
+
+  const isSensorConnected = !!sensorQuery.data?.sensor_status.connected;
+
   return (
     <div className="flex min-h-screen bg-background text-foreground overflow-x-hidden transition-colors">
-      {/* --- COLLAPSIBLE LEFT SIDEBAR --- */}
+      {/* --- COLLAPSIBLE COMMAND SIDEBAR --- */}
       <aside
-        className={`relative flex flex-col justify-between border-r border-border bg-card/80 backdrop-blur-md transition-all duration-300 ease-in-out z-30 shrink-0 ${
+        className={`relative flex flex-col justify-between border-r border-border bg-card transition-all duration-200 ease-in-out z-30 shrink-0 ${
           isSidebarOpen ? "w-64 p-5" : "w-20 p-3 items-center"
         }`}
       >
         <div className="w-full">
           {/* Top Branding Section */}
-          <div className={`flex items-center ${isSidebarOpen ? "justify-between" : "justify-center"}`}>
+          <div
+            className={`flex items-center ${isSidebarOpen ? "justify-between" : "justify-center"}`}
+          >
             {isSidebarOpen && (
               <Link to="/dashboard" className="flex items-center gap-3 overflow-hidden group">
-                <NetraSenseFramedEye className="h-8.5 w-auto max-w-[46px] group-hover:scale-105 transition-transform duration-200" />
-                <span className="text-xl font-black tracking-tight truncate text-foreground">
-                  NetraSense
-                </span>
+                <NetraSenseFramedEye className="h-8 w-auto max-w-[40px] group-hover:scale-105 transition-transform duration-200" />
+                <div className="flex flex-col">
+                  <span className="text-lg font-black tracking-tight truncate text-foreground">
+                    NETRASENSE
+                  </span>
+                  <span className="text-[10px] font-bold tracking-widest text-primary uppercase">
+                    Obsidian Command
+                  </span>
+                </div>
               </Link>
             )}
 
             <button
               type="button"
               onClick={() => setIsSidebarOpen((prev) => !prev)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none"
               aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
               title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
-              {isSidebarOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+              {isSidebarOpen ? <X className="size-4" /> : <Menu className="size-4" />}
             </button>
           </div>
 
+          {/* Grouped Command Navigation */}
+          <nav className="mt-6 flex flex-col gap-5 w-full" aria-label="Sidebar Navigation">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.category} className="flex flex-col gap-1.5">
+                {isSidebarOpen && (
+                  <span className="px-3 text-[10px] font-extrabold tracking-widest text-muted-foreground uppercase">
+                    {group.category}
+                  </span>
+                )}
+                {group.items.map(({ to, label, icon: Icon }) => (
+                  <Link
+                    key={`${group.category}-${to}`}
+                    to={to}
+                    activeProps={{
+                      className:
+                        "bg-primary/10 text-primary border-l-2 border-primary font-bold shadow-2xs dark:bg-sky-500/10 dark:text-cyan-300 dark:border-cyan-400",
+                    }}
+                    inactiveProps={{
+                      className:
+                        "text-muted-foreground hover:bg-muted/80 hover:text-foreground border-l-2 border-transparent",
+                    }}
+                    className={`flex w-full items-center rounded-r-xl px-3 py-2 text-sm font-medium transition-colors ${
+                      isSidebarOpen ? "gap-3 justify-start" : "justify-center rounded-xl"
+                    }`}
+                    title={!isSidebarOpen ? label : undefined}
+                  >
+                    <Icon className="size-4 shrink-0" />
+                    {isSidebarOpen && <span className="truncate">{label}</span>}
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </nav>
+        </div>
+
+        {/* Bottom Section: Theme Switcher & Device Status */}
+        <div className="mt-auto flex flex-col gap-3 pt-4 border-t border-border w-full">
           {/* Theme Switcher */}
-          <div className="mt-4 flex w-full items-center justify-center rounded-xl border border-border bg-muted/40 p-1">
+          <div className="flex w-full items-center justify-center rounded-xl border border-border bg-muted/40 p-1">
             {isSidebarOpen ? (
               <div className="grid w-full grid-cols-3 gap-1">
                 <button
                   type="button"
                   onClick={() => handleThemeChange("light")}
-                  className={`flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-1 text-xs font-semibold transition-all ${
                     theme === "light"
-                      ? "bg-background text-primary shadow-sm"
+                      ? "bg-card text-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
-                  title="Light Theme"
                 >
-                  <Sun className="size-3.5" />
-                  <span>Light</span>
+                  <Sun className="size-3 text-amber-500" />
+                  Light
                 </button>
                 <button
                   type="button"
                   onClick={() => handleThemeChange("dark")}
-                  className={`flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-1 text-xs font-semibold transition-all ${
                     theme === "dark"
-                      ? "bg-background text-primary shadow-sm"
+                      ? "bg-card text-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
-                  title="Dark Theme"
                 >
-                  <Moon className="size-3.5" />
-                  <span>Dark</span>
+                  <Moon className="size-3 text-primary" />
+                  Dark
                 </button>
                 <button
                   type="button"
                   onClick={() => handleThemeChange("system")}
-                  className={`flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-1 text-xs font-semibold transition-all ${
                     theme === "system"
-                      ? "bg-background text-primary shadow-sm"
+                      ? "bg-card text-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
-                  title="System Default"
                 >
-                  <Laptop className="size-3.5" />
-                  <span>Auto</span>
+                  <Laptop className="size-3" />
+                  Auto
                 </button>
               </div>
             ) : (
               <button
                 type="button"
-                onClick={() => handleThemeChange(theme === "light" ? "dark" : theme === "dark" ? "system" : "light")}
-                className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
-                title={`Current Theme: ${theme.toUpperCase()} (Click to cycle)`}
+                onClick={() =>
+                  handleThemeChange(
+                    theme === "dark" ? "light" : theme === "light" ? "system" : "dark",
+                  )
+                }
+                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
+                title={`Theme: ${theme}`}
               >
                 {theme === "light" && <Sun className="size-4 text-amber-500" />}
                 {theme === "dark" && <Moon className="size-4 text-primary" />}
@@ -209,44 +279,43 @@ export function AppShell({ title, description, children, actions }: AppShellProp
             )}
           </div>
 
-          {/* ESP32 Status Pill */}
+          {/* Arduino Device Status Pill */}
           {isSidebarOpen ? (
-            <div className="mt-4 inline-flex w-full items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1.5 text-xs font-semibold text-live">
-              <Radio className="size-3.5 animate-pulse text-live shrink-0" />
-              <span className="truncate">ESP32 Live Stream: Connected</span>
+            <div
+              className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-[11px] font-bold tracking-wider uppercase transition-colors ${
+                isSensorConnected
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-500"
+              }`}
+            >
+              <div className="flex items-center gap-2 truncate">
+                <span
+                  className={`size-2 rounded-full animate-pulse ${
+                    isSensorConnected ? "bg-emerald-500" : "bg-amber-500"
+                  }`}
+                />
+                <span className="truncate">
+                  {isSensorConnected ? "DEVICE ONLINE" : "DEVICE STANDBY"}
+                </span>
+              </div>
+              <span className="font-mono text-[9px] opacity-70">
+                {isSensorConnected ? "ARDUINO" : "SEARCHING"}
+              </span>
             </div>
           ) : (
-            <div className="mt-4 flex justify-center" title="ESP32 Live Stream: Connected">
-              <Radio className="size-4 animate-pulse text-live" />
+            <div
+              className="flex justify-center"
+              title={isSensorConnected ? "DEVICE ONLINE" : "DEVICE STANDBY"}
+            >
+              <span
+                className={`size-3 rounded-full animate-pulse ${
+                  isSensorConnected ? "bg-emerald-500" : "bg-amber-500"
+                }`}
+              />
             </div>
           )}
 
-          {/* Navigation Items */}
-          <nav className="mt-6 flex flex-col gap-2 w-full" aria-label="Sidebar Navigation">
-            {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
-              <Link
-                key={to}
-                to={to}
-                activeProps={{
-                  className: "bg-primary text-primary-foreground shadow-sm font-semibold",
-                }}
-                inactiveProps={{
-                  className: "text-muted-foreground hover:bg-muted hover:text-foreground",
-                }}
-                className={`flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isSidebarOpen ? "gap-3 justify-start" : "justify-center"
-                }`}
-                title={!isSidebarOpen ? label : undefined}
-              >
-                <Icon className="size-5 shrink-0" />
-                {isSidebarOpen && <span className="truncate">{label}</span>}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        {/* Logout Button */}
-        <div className="mt-auto flex flex-col gap-2 pt-4 border-t border-border w-full">
+          {/* Logout Button */}
           <Button
             type="button"
             variant="ghost"

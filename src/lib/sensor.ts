@@ -28,12 +28,13 @@ const DEFAULT_SENSOR_SERVER_URL = "http://localhost:5000";
 
 /** Map the hardware's Phase 2 names onto the dashboard's existing visual tokens. */
 export function hardwareThreatToUiLevel(level: HardwareThreatLevel): ThreatLevel {
-  return {
+  const map: Record<HardwareThreatLevel, ThreatLevel> = {
     NORMAL: "Normal",
     WARNING: "Warning",
     ALARM: "Alarming",
     CRITICAL: "Collision",
-  }[level];
+  };
+  return map[level] ?? "Normal";
 }
 
 export function resolveSensorServerUrl(): string {

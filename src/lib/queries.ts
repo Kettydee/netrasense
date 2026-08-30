@@ -2,7 +2,11 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Contact, DailyStats, Profile, Telemetry } from "@/lib/netrasense";
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
   if (error) throw error;
   return data;
 }

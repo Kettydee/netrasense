@@ -5,11 +5,13 @@ Real-time YOLO11 object detection, spatial zone classification (Left/Center/Righ
 ## Quick Start
 
 ### 1. Install Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 2. Start the Vision Server
+
 ```bash
 python vision_server.py --port 5000
 ```
@@ -46,7 +48,13 @@ python serial_sensor.py --port auto --baudrate 9600
 It prints validated records in this standard format:
 
 ```json
-{"distance_cm": 73, "timestamp": "2026-08-29T12:34:56.789Z", "device_id": "NETRA-001", "threat_level": "ALARM", "processing_latency_ms": 0.12}
+{
+  "distance_cm": 73,
+  "timestamp": "2026-08-29T12:34:56.789Z",
+  "device_id": "NETRA-001",
+  "threat_level": "ALARM",
+  "processing_latency_ms": 0.12
+}
 ```
 
 The reader automatically retries after a USB disconnect and rediscovery. It
@@ -71,12 +79,12 @@ timestamp, processing latency, and USB connection status.
 
 The serial pipeline assigns a threat level before vision/AI processing:
 
-| Distance | Threat level |
-| --- | --- |
-| `> 300 cm` | `NORMAL` |
-| `100–300 cm` | `WARNING` |
-| `50–99.99 cm` | `ALARM` |
-| `< 50 cm` | `CRITICAL` |
+| Distance      | Threat level |
+| ------------- | ------------ |
+| `> 300 cm`    | `NORMAL`     |
+| `100–300 cm`  | `WARNING`    |
+| `50–99.99 cm` | `ALARM`      |
+| `< 50 cm`     | `CRITICAL`   |
 
 Run the hardware-free validation to test 3 m, 2 m, 1 m, 70 cm, and 40 cm. It
 prints a pass/fail row and local response latency for each input, plus average
@@ -90,6 +98,7 @@ At the shared 100 cm and 300 cm boundaries, the wider upper range applies:
 both values are `WARNING`.
 
 ### 3. Server Endpoints
+
 - **Live Video Stream (MJPEG)**: `http://localhost:5000/video_feed`
   - High-speed annotated video with YOLO bounding boxes, direction tags, and distance readouts.
 - **Telemetry API (JSON)**: `http://localhost:5000/api/latest`
@@ -98,6 +107,7 @@ both values are `WARNING`.
   - Dynamic update of confidence thresholds and context modes (`all`, `indoor`, `outdoor`).
 
 ### 4. Options
+
 - `--camera 0`: Default webcam device index or RTSP/HTTP camera stream URL.
 - `--mode indoor`: Limit recognition to indoor obstacles (furniture, stairs, doorways).
 - `--mode outdoor`: Prioritize vehicles, pedestrians, traffic lights, curbs.
