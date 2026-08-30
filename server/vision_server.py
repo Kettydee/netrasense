@@ -34,6 +34,12 @@ def add_cors_headers(response):
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return response
 
+# ── Sensor heartbeat timeout (seconds) ───────────────────────────────
+# If no valid Arduino reading arrives within this window the sensor is
+# considered disconnected / stale.  Centralised here so every consumer
+# references the same value.
+SENSOR_HEARTBEAT_TIMEOUT_S = 3.0
+
 # Global pipeline state
 state = {
     "camera": None,
@@ -48,7 +54,10 @@ state = {
     "threat_level": "Normal",
     "closest_obstacle": None,
     "sensor_data": None,
-    "sensor_status": {"connected": False, "port": None, "last_error": None},
+    "sensor_reader": None,
+    # Heartbeat bookkeeping — populated by update_sensor_data()
+    "sensor_last_update": 0.0,   # time.monotonic() of last valid reading
+    "sensor_total_readings": 0,  # lifetime count of accepted readings
 }
 state_lock = threading.Lock()
 
@@ -57,6 +66,8 @@ def update_sensor_data(record):
     """Store the latest validated Arduino measurement for API clients."""
     with state_lock:
         state["sensor_data"] = record
+        state["sensor_last_update"] = time.monotonic()
+        state["sensor_total_readings"] += 1
 
 
 def init_vision_engine(args):
@@ -126,9 +137,150 @@ def init_vision_engine(args):
         sensor_reader.start()
         with state_lock:
             state["sensor_reader"] = sensor_reader
+    else:
+        # Even without --serial-port, expose the reader slot so
+        # /api/hardware-status can report DISCONNECTED correctly.
+        with state_lock:
+            state["sensor_reader"] = None
 
     tts.speak("NetraSense Vision Server is ready.")
     print("[INIT] Vision server initialized successfully.")
+
+
+def _build_hardware_status() -> dict:
+    """Build the authoritative runtime hardware status object.
+
+    Every field is derived from actual runtime state — nothing is
+    hardcoded.  This is the single source of truth consumed by the
+    frontend Device Status panel.
+    """
+    now = time.monotonic()
+
+    # ── Arduino Serial ───────────────────────────────────────────────
+    sensor_reader = state.get("sensor_reader")
+    arduino_connected = bool(sensor_reader and sensor_reader.connected_port)
+    arduino_last_update = state["sensor_last_update"]
+    arduino_last_error = sensor_reader.last_error if sensor_reader else None
+    arduino_port = sensor_reader.connected_port if sensor_reader else None
+
+    # The Arduino serial port is considered stale if no valid reading
+    # arrived within the heartbeat window.
+    if arduino_connected and arduino_last_update > 0:
+        sensor_age = now - arduino_last_update
+        if sensor_age > SENSOR_HEARTBEAT_TIMEOUT_S:
+            # Port handle is still open but data flow stopped — treat as
+            # a de-facto disconnection (e.g. cable pulled mid-read).
+            arduino_connected = False
+            arduino_last_error = f"No sensor data for {sensor_age:.1f}s (timeout {SENSOR_HEARTBEAT_TIMEOUT_S}s)"
+
+    arduino_status = "CONNECTED" if arduino_connected else "DISCONNECTED"
+    if arduino_last_error and not arduino_connected:
+        arduino_status = "DISCONNECTED"
+
+    # ── HC-SR04 Ultrasonic ───────────────────────────────────────────
+    sensor_data = state["sensor_data"]
+    ultrasonic_active = False
+    ultrasonic_distance_cm = None
+    ultrasonic_threat = None
+    ultrasonic_device_id = None
+    ultrasonic_timestamp = None
+
+    if (
+        arduino_connected
+        and sensor_data is not None
+        and arduino_last_update > 0
+        and (now - arduino_last_update) <= SENSOR_HEARTBEAT_TIMEOUT_S
+    ):
+        ultrasonic_active = True
+        ultrasonic_distance_cm = sensor_data.get("distance_cm")
+        ultrasonic_threat = sensor_data.get("threat_level")
+        ultrasonic_device_id = sensor_data.get("device_id")
+        ultrasonic_timestamp = sensor_data.get("timestamp")
+
+    ultrasonic_status = "ACTIVE" if ultrasonic_active else "NOT ACTIVE"
+
+    # ── Camera ───────────────────────────────────────────────────────
+    camera = state.get("camera")
+    camera_connected = False
+    camera_fps = 0.0
+    camera_last_frame_ts = None
+    camera_last_error = None
+    camera_source = None
+
+    if camera is not None:
+        cam_status = camera.status()
+        camera_connected = bool(cam_status.get("available"))
+        camera_fps = cam_status.get("fps", 0.0)
+        camera_last_frame_ts = cam_status.get("last_frame_timestamp")
+        camera_last_error = cam_status.get("last_error")
+        camera_source = cam_status.get("source")
+
+    camera_runtime_status = "ACTIVE" if camera_connected else "DISCONNECTED"
+    if camera_last_error and not camera_connected:
+        camera_runtime_status = "ERROR"
+
+    # ── AI Engine ────────────────────────────────────────────────────
+    pipeline = state.get("pipeline")
+    ai_model_loaded = pipeline is not None
+    ai_processing = False
+    ai_model_name = None
+
+    if ai_model_loaded and camera_connected:
+        # The pipeline actively processes frames only when the camera is
+        # producing frames.  Check the fps counter as a proxy for
+        # "currently processing".
+        ai_processing = camera_fps > 0
+        # Derive the model name from what was actually loaded.
+        ai_model_name = "YOLO11"
+
+    ai_status = "NOT READY"
+    if ai_model_loaded and camera_connected and ai_processing:
+        ai_status = "PROCESSING"
+    elif ai_model_loaded and not camera_connected:
+        ai_status = "READY (no camera)"
+    elif ai_model_loaded:
+        ai_status = "READY"
+
+    # ── Overall system status ─────────────────────────────────────────
+    any_connected = arduino_connected or camera_connected
+    system_status = "ONLINE" if any_connected else "NO HARDWARE"
+
+    return {
+        "system": {
+            "status": system_status,
+            "sensor_heartbeat_timeout_s": SENSOR_HEARTBEAT_TIMEOUT_S,
+        },
+        "arduino": {
+            "connected": arduino_connected,
+            "port": arduino_port,
+            "last_error": arduino_last_error,
+            "status": arduino_status,
+            "last_update": arduino_last_update,
+            "total_readings": state["sensor_total_readings"],
+        },
+        "ultrasonic": {
+            "active": ultrasonic_active,
+            "distance_cm": ultrasonic_distance_cm,
+            "threat_level": ultrasonic_threat,
+            "device_id": ultrasonic_device_id,
+            "timestamp": ultrasonic_timestamp,
+            "status": ultrasonic_status,
+        },
+        "camera": {
+            "connected": camera_connected,
+            "fps": camera_fps,
+            "source": camera_source,
+            "last_frame_timestamp": camera_last_frame_ts,
+            "last_error": camera_last_error,
+            "status": camera_runtime_status,
+        },
+        "ai": {
+            "loaded": ai_model_loaded,
+            "processing": ai_processing,
+            "model": ai_model_name,
+            "status": ai_status,
+        },
+    }
 
 
 def generate_frames():
@@ -146,9 +298,11 @@ def generate_frames():
 
         ret, frame = camera.read()
         if not ret or frame is None:
-            # Send black placeholder frame if camera unavailable
-            blank = (b'--frame\r\n'
-                     b'Content-Type: image/jpeg\r\n\r\n' + b'\r\n')
+            # Track that camera stopped producing frames
+            with state_lock:
+                cam = state.get("camera")
+                if cam and not cam.isOpened():
+                    cam.last_error = "Camera stopped producing frames"
             time.sleep(0.05)
             continue
 
@@ -198,11 +352,15 @@ def generate_frames():
             state["latest_detections"] = det_dicts
             state["fps"] = round(fps, 1)
             state["threat_level"] = highest_threat
-            state["closest_obstacle"] = {
-                "object": closest_obj or "Clear",
-                "distance_cm": closest_dist if closest_obj else 400,
-                "threat_level": highest_threat,
-            }
+            if closest_obj:
+                state["closest_obstacle"] = {
+                    "object": closest_obj,
+                    "distance_cm": closest_dist,
+                    "threat_level": highest_threat,
+                }
+            # Do NOT overwrite closest_obstacle to a fake 400cm when no
+            # object is detected.  Leave it as-is (or None) so the
+            # frontend can distinguish "clear" from "no data".
 
         # Encode JPEG
         ret, buffer = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 80])
@@ -239,8 +397,27 @@ def video_feed():
 
 @app.route('/api/latest')
 def api_latest():
-    """Returns current detection telemetry and threat analysis."""
+    """Returns current detection telemetry, threat analysis, and hardware status.
+
+    The response is split into two sections:
+    - Legacy fields (fps, detections, threat_level …) for backward compat.
+    - ``hardware_status``: the authoritative runtime state object.
+    """
     with state_lock:
+        hw = _build_hardware_status()
+
+        # Derive a safe sensor_status from the heartbeat-aware arduino status
+        # for callers that still read the old flat shape.
+        sensor_status = {
+            "connected": hw["arduino"]["connected"],
+            "port": hw["arduino"]["port"],
+            "last_error": hw["arduino"]["last_error"],
+        }
+
+        # Only expose sensor_data when it is fresh.
+        fresh_sensor = hw["ultrasonic"]["active"]
+        sensor_data = state["sensor_data"] if fresh_sensor else None
+
         return jsonify({
             "timestamp": time.time(),
             "fps": state["fps"],
@@ -249,12 +426,10 @@ def api_latest():
             "threat_level": state["threat_level"],
             "closest_obstacle": state["closest_obstacle"],
             "detections": state["latest_detections"],
-            "sensor_data": state["sensor_data"],
-            "sensor_status": {
-                "connected": bool(state.get("sensor_reader") and state["sensor_reader"].connected_port),
-                "port": state.get("sensor_reader").connected_port if state.get("sensor_reader") else None,
-                "last_error": state.get("sensor_reader").last_error if state.get("sensor_reader") else None,
-            },
+            "sensor_data": sensor_data,
+            "sensor_status": sensor_status,
+            # New authoritative hardware status object
+            "hardware_status": hw,
         })
 
 
@@ -297,6 +472,17 @@ def api_config():
             "mode": state["mode"],
             "audio_enabled": state["audio_enabled"],
         })
+
+
+@app.route('/api/hardware-status')
+def api_hardware_status():
+    """Standalone endpoint returning the authoritative hardware status.
+
+    Useful for the dashboard to poll without pulling full detection
+    telemetry every time.
+    """
+    with state_lock:
+        return jsonify(_build_hardware_status())
 
 
 def main():

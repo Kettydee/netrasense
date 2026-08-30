@@ -280,15 +280,17 @@ class VisionPipeline:
                     motion_state = "Moving"
             self._prev_tracks[track_id] = (cx, cy, now)
 
+            # Without the depth model these are filled in by
+            # process_frame() depth-fusion; default to None / Normal.
             detections.append(Detection(
                 label=label,
                 confidence=conf,
                 x1=x1, y1=y1, x2=x2, y2=y2,
                 cx=cx, cy=cy,
                 direction=direction,
-                depth_meters=approx_dist_m,
-                distance_cm=dist_cm,
-                threat_level=threat,
+                depth_meters=None,
+                distance_cm=None,
+                threat_level="Normal",
                 motion_state=motion_state,
             ))
 

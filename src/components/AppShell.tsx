@@ -13,6 +13,7 @@ import {
   Sun,
   Moon,
   Laptop,
+  ShieldCheck,
 } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
@@ -78,7 +79,10 @@ const NAV_GROUPS = [
   },
   {
     category: "SAFETY",
-    items: [{ to: "/contacts", label: "Emergency & Contacts", icon: Siren }],
+    items: [
+      { to: "/contacts", label: "Emergency & Contacts", icon: Siren },
+      { to: "/medical-id", label: "Medical ID Card", icon: ShieldCheck },
+    ],
   },
   {
     category: "SYSTEM",
@@ -143,7 +147,12 @@ export function AppShell({ title, description, children, actions }: AppShellProp
     retry: false,
   });
 
-  const isSensorConnected = !!sensorQuery.data?.sensor_status.connected;
+  // Use hardware_status from the API for accurate connection state.
+  // Falls back to the flat sensor_status for backward compat.
+  const hwStatus = sensorQuery.data?.hardware_status?.arduino;
+  const isSensorConnected = hwStatus
+    ? hwStatus.connected
+    : !!sensorQuery.data?.sensor_status.connected;
 
   return (
     <div className="flex min-h-screen bg-background text-foreground overflow-x-hidden transition-colors">
@@ -285,31 +294,31 @@ export function AppShell({ title, description, children, actions }: AppShellProp
               className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-[11px] font-bold tracking-wider uppercase transition-colors ${
                 isSensorConnected
                   ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
-                  : "border-amber-500/30 bg-amber-500/10 text-amber-500"
+                  : "border-zinc-500/30 bg-zinc-500/10 text-zinc-400"
               }`}
             >
               <div className="flex items-center gap-2 truncate">
                 <span
-                  className={`size-2 rounded-full animate-pulse ${
-                    isSensorConnected ? "bg-emerald-500" : "bg-amber-500"
+                  className={`size-2 rounded-full ${
+                    isSensorConnected ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
                   }`}
                 />
                 <span className="truncate">
-                  {isSensorConnected ? "DEVICE ONLINE" : "DEVICE STANDBY"}
+                  {isSensorConnected ? "DEVICE ONLINE" : "DEVICE DISCONNECTED"}
                 </span>
               </div>
               <span className="font-mono text-[9px] opacity-70">
-                {isSensorConnected ? "ARDUINO" : "SEARCHING"}
+                {isSensorConnected ? hwStatus?.port ?? "ARDUINO" : "NO DEVICE"}
               </span>
             </div>
           ) : (
             <div
               className="flex justify-center"
-              title={isSensorConnected ? "DEVICE ONLINE" : "DEVICE STANDBY"}
+              title={isSensorConnected ? "DEVICE ONLINE" : "DEVICE DISCONNECTED"}
             >
               <span
-                className={`size-3 rounded-full animate-pulse ${
-                  isSensorConnected ? "bg-emerald-500" : "bg-amber-500"
+                className={`size-3 rounded-full ${
+                  isSensorConnected ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
                 }`}
               />
             </div>
@@ -333,7 +342,7 @@ export function AppShell({ title, description, children, actions }: AppShellProp
 
       {/* --- MAIN CONTENT VIEWPORT --- */}
       <main className="flex-1 overflow-y-auto px-6 py-8 transition-all duration-300 ease-in-out max-w-full">
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-border/50 pb-4">
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-border/50 pb-4" data-print-hidden>
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
             {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}

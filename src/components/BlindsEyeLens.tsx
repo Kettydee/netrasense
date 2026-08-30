@@ -278,16 +278,20 @@ export function BlindsEyeLens() {
           <div className="flex size-10 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
             <Eye className="size-5" />
           </div>
-          <div>
-            <h3 className="flex items-center gap-2 text-lg font-bold text-foreground">
+          <div>              <h3 className="flex items-center gap-2 text-lg font-bold text-foreground">
               Blind&apos;s Eye — YOLO Spatial Vision
               {isServerLive && engineMode === "yolo" && (
                 <span className="flex size-2 rounded-full bg-emerald-500 animate-pulse" />
               )}
             </h3>
             <p className="text-xs text-muted-foreground">
-              Real-time YOLO11 Detection, Depth Distance & Directional Voice Alerts
+              {isServerLive && engineMode === "yolo"
+                ? `YOLO11 · ${serverStatus?.mode ?? "all"} mode · ${serverStatus?.fps ?? 0} FPS`
+                : engineMode === "browser"
+                  ? (browserModel ? "COCO-SSD loaded" : "Loading browser AI...")
+                  : "Server not connected"}`
             </p>
+
           </div>
         </div>
 

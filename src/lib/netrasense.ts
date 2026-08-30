@@ -9,6 +9,16 @@ export type DailyStats = Database["public"]["Tables"]["daily_stats"]["Row"];
 
 export const THREAT_LEVELS: ThreatLevel[] = ["Normal", "Warning", "Alarming", "Collision"];
 
+/** Sentinel values for when hardware is disconnected / no data available. */
+export const NO_DATA_SENTINEL = "NO DATA" as const;
+export const NOT_ACTIVE_SENTINEL = "NOT ACTIVE" as const;
+export const DISCONNECTED_SENTINEL = "DISCONNECTED" as const;
+export const NOT_READY_SENTINEL = "NOT READY" as const;
+export const NO_HARDWARE_SENTINEL = "NO HARDWARE" as const;
+
+/** Distance value shown when sensor is unavailable. */
+export const NO_DISTANCE_PLACEHOLDER = "--";
+
 export const IMPAIRMENT_LEVELS: ImpairmentLevel[] = ["Partial", "Legal Blindness", "Total"];
 
 export const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
