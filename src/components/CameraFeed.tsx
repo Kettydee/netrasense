@@ -41,7 +41,7 @@ function safeHost(url: string): string {
  *
  * Two sources, no backend required:
  *  - "device": this browser's camera via getUserMedia (works on the deployed https site).
- *  - "network": an MJPEG stream URL from an ESP32-CAM or a vision service, set in Settings
+ *  - "network": an MJPEG stream URL from an Arduino / vision service, set in Settings
  *    or via the VITE_CAMERA_STREAM_URL env var. Note that an https dashboard cannot load an
  *    http camera (browser mixed-content rule) — use a tunnel or run the dashboard locally.
  */

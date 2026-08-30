@@ -3,11 +3,23 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { BLOOD_GROUPS, IMPAIRMENT_LEVELS, type ImpairmentLevel } from "@/lib/netrasense";
@@ -69,7 +81,8 @@ export function OnboardingDialog({ open }: { open: boolean }) {
         <DialogHeader>
           <DialogTitle>Set up your safety profile</DialogTitle>
           <DialogDescription>
-            These details power your emergency medical ID and caregiver alerts. All fields are required.
+            These details power your emergency medical ID and caregiver alerts. All fields are
+            required.
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -97,7 +110,10 @@ export function OnboardingDialog({ open }: { open: boolean }) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="ob-blood">Blood group</Label>
-              <Select value={form.blood_group} onValueChange={(v) => setForm({ ...form, blood_group: v })}>
+              <Select
+                value={form.blood_group}
+                onValueChange={(v) => setForm({ ...form, blood_group: v })}
+              >
                 <SelectTrigger id="ob-blood">
                   <SelectValue />
                 </SelectTrigger>

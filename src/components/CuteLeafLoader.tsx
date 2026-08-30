@@ -1,12 +1,20 @@
 interface BlueBubbleLoaderProps {
   text?: string;
+  size?: "sm" | "md" | "lg";
   className?: string;
 }
 
 export function CuteLeafLoader({
   text = "Loading...",
+  size = "md",
   className = "",
 }: BlueBubbleLoaderProps) {
+  const sizeClasses = {
+    sm: "size-10",
+    md: "size-16",
+    lg: "size-24",
+  };
+
   return (
     <div
       role="status"
@@ -16,7 +24,7 @@ export function CuteLeafLoader({
       {/* 10-Bubble Smooth Gradual Ring (All light sky-blue) */}
       <svg
         viewBox="0 0 100 100"
-        className="size-16 animate-spin [animation-duration:1.4s] drop-shadow-[0_0_8px_rgba(56,189,248,0.45)]"
+        className={`${sizeClasses[size] || "size-16"} animate-spin [animation-duration:1.4s] drop-shadow-[0_0_8px_rgba(56,189,248,0.45)]`}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >

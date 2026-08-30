@@ -102,7 +102,7 @@ Automatically generate and link Supabase PostgreSQL tables with Realtime Replica
 
 #### A. Left Sidebar Navigation (Collapsible on Mobile)
 
-- **Header:** App logo with an active system status indicator badge ("ESP32 Live Stream: Connected").
+- **Header:** App logo with an active system status indicator badge ("Arduino Live Stream: Connected").
 
 - **Navigation Links with Icons (Lucide-React):**
 

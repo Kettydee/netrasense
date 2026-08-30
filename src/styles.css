@@ -2,65 +2,62 @@
 
 @layer base {
   /* =========================================================
-     LIGHT THEME: Ruddy Blue (#76ABDF) Clinical Palette
+     NETRASENSE OBSIDIAN COMMAND — LIGHT MODE
      ========================================================= */
   :root {
-    --background: 209 60% 95%; /* Soft Ruddy Ice Canvas #E8F2FA */
-    --foreground: 215 45% 15%; /* Deep Navy-Slate #132235 */
+    --background: 210 20% 97%; /* #F5F7FA */
+    --foreground: 218 48% 9%; /* #0B1220 */
 
-    --card: 0 0% 100%; /* Pure White #FFFFFF */
-    --card-foreground: 215 45% 15%;
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 218 48% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 45% 15%;
+    --popover-foreground: 218 48% 9%;
 
-    /* Ruddy Blue Primary #76ABDF */
-    --primary: 209 61% 67%;
+    --primary: 194 100% 33%; /* #007EA7 */
     --primary-foreground: 0 0% 100%;
 
-    /* Soft Ruddy & Slate Neutrals */
-    --muted: 209 50% 90%; /* #D4E6F6 */
-    --muted-foreground: 212 25% 45%; /* #566D85 */
-    --border: 209 45% 84%; /* #BED8EE */
-    --input: 209 45% 84%;
-    --ring: 209 61% 67%;
+    --muted: 210 20% 98%; /* #F8FAFC */
+    --muted-foreground: 217 14% 46%; /* #667085 */
+    --border: 216 24% 92%; /* #E6EAF0 */
+    --input: 216 24% 92%;
+    --ring: 194 100% 33%;
 
-    /* Live Telemetry Pill & Radar Stream */
-    --live: 209 70% 50%;
-    --live-surface: 209 70% 95%;
-    --live-border: 209 60% 80%;
+    --live: 194 100% 33%;
+    --live-surface: 194 100% 97%;
+    --live-border: 194 100% 85%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --radius: 0.875rem;
+    --radius: 1rem;
   }
 
   /* =========================================================
-     DARK THEME: TW.1 Titanium Obsidian & Luminous Bio-Cyan
+     NETRASENSE OBSIDIAN COMMAND — DARK MODE
      ========================================================= */
   .dark {
-    --background: 190 31% 6%; /* Deep Titanium Obsidian #0B1315 */
-    --foreground: 175 30% 96%; /* Ice Mint White #F0FAF8 */
+    --background: 218 38% 4%; /* #070A0F */
+    --foreground: 210 33% 97%; /* #F4F7FA */
 
-    --card: 190 35% 11%; /* Dark Seafoam Slate #122226 */
-    --card-foreground: 175 30% 96%;
+    --card: 214 27% 7%; /* #0D1117 */
+    --card-foreground: 210 33% 97%;
 
-    --popover: 190 35% 11%;
-    --popover-foreground: 175 30% 96%;
+    --popover: 214 27% 7%;
+    --popover-foreground: 210 33% 97%;
 
-    --primary: 173 100% 45%; /* #00E5C9 */
-    --primary-foreground: 190 31% 6%;
+    --primary: 189 100% 68%; /* Electric Cyan #5EE7FF */
+    --primary-foreground: 218 38% 4%;
 
-    --muted: 190 30% 16%;
-    --muted-foreground: 180 16% 68%;
-    --border: 190 37% 18%;
-    --input: 190 37% 18%;
-    --ring: 173 100% 45%;
+    --muted: 216 32% 10%; /* Elevated Surface #121923 */
+    --muted-foreground: 214 14% 60%; /* Secondary Text #8B98A9 */
+    --border: 214 25% 17%; /* Border #202A36 */
+    --input: 214 25% 17%;
+    --ring: 189 100% 68%;
 
-    --live: 173 100% 45%;
-    --live-surface: 173 100% 8%;
-    --live-border: 173 80% 22%;
+    --live: 189 100% 68%;
+    --live-surface: 189 100% 8%;
+    --live-border: 189 100% 25%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -70,218 +67,181 @@
   body,
   #root {
     min-height: 100vh;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
     transition:
-      background-color 0.3s ease,
-      color 0.3s ease;
+      background-color 0.2s ease,
+      color 0.2s ease;
     overflow-x: hidden;
   }
 
-  /* --- Light Canvas Gradient --- */
+  /* --- Light Canvas --- */
   html:not(.dark) body {
-    background-color: #e8f2fa !important;
-    background-image:
-      radial-gradient(at 0% 0%, rgba(118, 171, 223, 0.35) 0px, transparent 55%),
-      radial-gradient(at 100% 0%, rgba(118, 171, 223, 0.25) 0px, transparent 50%),
-      radial-gradient(at 50% 100%, rgba(212, 230, 246, 0.6) 0px, transparent 60%),
-      radial-gradient(at 100% 100%, rgba(118, 171, 223, 0.2) 0px, transparent 45%) !important;
-    background-attachment: fixed !important;
-    color: #132235 !important;
+    background-color: #f5f7fa !important;
+    color: #0b1220 !important;
   }
 
-  /* --- Dark Canvas Gradient --- */
+  /* --- Dark Canvas --- */
   html.dark body {
-    background-color: #0b1315 !important;
-    background-image:
-      radial-gradient(at 0% 0%, rgba(0, 229, 201, 0.12) 0px, transparent 55%),
-      radial-gradient(at 100% 100%, rgba(7, 18, 20, 0.95) 0px, transparent 50%) !important;
-    background-attachment: fixed !important;
-    color: #f0faf8 !important;
+    background-color: #070a0f !important;
+    color: #f4f7fa !important;
   }
 }
 
 /* =========================================================
-   SIDEBAR & CARDS: COMPLETELY STATIC (NO SCALING/POPPING)
+   COMMAND CENTER CARDS & SURFACES (SOLID & RESTRAINED)
    ========================================================= */
 
-/* Auth must remain comfortably usable even if utility CSS is delayed. */
-.auth-page {
-  display: flex;
-  min-height: 100svh;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1rem;
-}
-
-.auth-panel {
-  width: min(100%, 28rem);
-  margin-inline: auto;
-}
-
-.auth-panel .surface-card {
-  width: 100%;
-}
-
-/* Light Mode */
+/* Light Mode Card Surfaces */
 html:not(.dark) aside {
-  background-color: #deecf7 !important;
-  border-right: 1px solid #bed8ee !important;
-  color: #132235 !important;
-  transform: none !important;
+  background-color: #ffffff !important;
+  border-right: 1px solid #e6eaf0 !important;
+  color: #0b1220 !important;
 }
 
 html:not(.dark) .surface-card,
-html:not(.dark) [class*="bg-card"],
-html:not(.dark) [class*="bg-slate-900"],
-html:not(.dark) [class*="bg-zinc-900"],
-html:not(.dark) [class*="bg-gray-900"] {
+html:not(.dark) [class*="bg-card"] {
   background-color: #ffffff !important;
-  border: 1px solid #c5dcf0 !important;
-  color: #132235 !important;
-  box-shadow: 0 4px 18px -2px rgba(19, 34, 53, 0.05) !important;
-  transform: none !important; /* Prevents cards/background from popping */
+  border: 1px solid #e6eaf0 !important;
+  color: #0b1220 !important;
+  box-shadow: 0 1px 3px rgba(11, 18, 32, 0.04) !important;
+  border-radius: var(--radius);
 }
 
-/* Dark Mode */
+/* Dark Mode Card Surfaces */
 html.dark aside {
-  background-color: #0e1a1d !important;
-  border-right: 1px solid #1d383f !important;
-  color: #f0faf8 !important;
-  transform: none !important;
+  background-color: #0d1117 !important;
+  border-right: 1px solid #202a36 !important;
+  color: #f4f7fa !important;
 }
 
 html.dark .surface-card,
-html.dark [class*="bg-card"],
-html.dark [class*="bg-slate-900"],
-html.dark [class*="bg-zinc-900"],
-html.dark [class*="bg-gray-900"] {
-  background-color: #122226 !important;
-  border: 1px solid #1d383f !important;
-  color: #f0faf8 !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5) !important;
-  transform: none !important; /* Prevents cards/background from popping */
+html.dark [class*="bg-card"] {
+  background-color: #0d1117 !important;
+  border: 1px solid #202a36 !important;
+  color: #f4f7fa !important;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.4) !important;
+  border-radius: var(--radius);
 }
 
-/* Keep card border subtle on hover with ZERO scaling */
-.surface-card,
-[class*="bg-card"] {
-  border-radius: var(--radius);
-  transform: none !important;
+/* Elevated Surfaces */
+html.dark .surface-elevated {
+  background-color: #121923 !important;
+  border: 1px solid #202a36 !important;
+}
+
+html:not(.dark) .surface-elevated {
+  background-color: #f8fafc !important;
+  border: 1px solid #e6eaf0 !important;
 }
 
 /* =========================================================
-   STRICT POP-OUT & GLOW ON BUTTONS AND LINKS ONLY
+   DIALOG OVERLAYS (SELECTIVE GLASSMORPHISM)
    ========================================================= */
+[data-radix-dialog-overlay] {
+  background-color: rgba(7, 10, 15, 0.8) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+html:not(.dark) [data-radix-dialog-content] {
+  background-color: #ffffff !important;
+  border: 1px solid #e6eaf0 !important;
+  color: #0b1220 !important;
+  box-shadow: 0 20px 40px -12px rgba(11, 18, 32, 0.15) !important;
+  border-radius: 1.25rem !important;
+}
+
+html.dark [data-radix-dialog-content] {
+  background-color: #0d1117 !important;
+  border: 1px solid #202a36 !important;
+  color: #f4f7fa !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
+  border-radius: 1.25rem !important;
+}
+
+/* =========================================================
+   FORM INPUTS & CONTROLS
+   ========================================================= */
+input,
+textarea,
+select {
+  border-radius: 0.75rem !important;
+  font-feature-settings: "tnum";
+}
+
+html:not(.dark) input,
+html:not(.dark) textarea,
+html:not(.dark) select {
+  background-color: #f8fafc !important;
+  border: 1px solid #e6eaf0 !important;
+  color: #0b1220 !important;
+}
+
+html:not(.dark) input:focus,
+html:not(.dark) textarea:focus,
+html:not(.dark) select:focus {
+  border-color: #007ea7 !important;
+  box-shadow: 0 0 0 2px rgba(0, 126, 167, 0.2) !important;
+  outline: none !important;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #121923 !important;
+  border: 1px solid #202a36 !important;
+  color: #f4f7fa !important;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  border-color: #5ee7ff !important;
+  box-shadow: 0 0 0 2px rgba(94, 231, 255, 0.2) !important;
+  outline: none !important;
+}
+
+/* Tabular number utilities for telemetry readouts */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Micro-interaction transition */
 button,
 a,
-[role="button"],
-.btn,
-nav a,
-nav button,
-aside a,
-aside button {
-  position: relative;
+[role="button"] {
   transition:
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.2s ease,
-    border-color 0.2s ease,
-    background-color 0.2s ease !important;
-  will-change: transform, box-shadow;
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease !important;
 }
 
-/* Hover: Pops outward (1.06x scale) + Glow highlight */
-button:hover,
-a:hover,
-[role="button"]:hover,
-.btn:hover,
-nav a:hover,
-nav button:hover,
-aside a:hover,
-aside button:hover {
-  transform: scale(1.06) translateY(-1px) !important;
-  z-index: 20;
-}
-
-/* Light Theme Button Glow */
-html:not(.dark) button:hover,
-html:not(.dark) a:hover,
-html:not(.dark) [role="button"]:hover {
-  border-color: #76abdf !important;
-  box-shadow:
-    0 0 16px rgba(118, 171, 223, 0.5),
-    0 6px 16px -2px rgba(19, 34, 53, 0.1) !important;
-}
-
-/* Dark Theme Button Glow */
-html.dark button:hover,
-html.dark a:hover,
-html.dark [role="button"]:hover {
-  border-color: #00e5c9 !important;
-  box-shadow:
-    0 0 16px rgba(0, 229, 201, 0.5),
-    0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
-}
-
-/* Active Click Feedback */
 button:active,
 a:active,
 [role="button"]:active {
-  transform: scale(0.98) !important;
+  transform: scale(0.99) !important;
 }
 
-/* Scrollbars */
+/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 html:not(.dark) ::-webkit-scrollbar-thumb {
-  background: #bed8ee;
+  background: #e6eaf0;
   border-radius: 9999px;
-}
-html:not(.dark) ::-webkit-scrollbar-thumb:hover {
-  background: #76abdf;
 }
 html.dark ::-webkit-scrollbar-thumb {
-  background: #1d383f;
+  background: #202a36;
   border-radius: 9999px;
-}
-html.dark ::-webkit-scrollbar-thumb:hover {
-  background: #00e5c9;
 }
 
 /* Cleanups */
 #lovable-badge,
 [data-lovable-badge],
-.lovable-badge,
-a[href="#main"],
-a[href="#content"],
-[data-skip-link] {
+.lovable-badge {
   display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-/* Screen-reader and keyboard users need a visible shortcut past navigation. */
-.skip-link {
-  position: fixed;
-  top: 0.75rem;
-  left: 0.75rem;
-  z-index: 100;
-  transform: translateY(-200%);
-  border-radius: 0.5rem;
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-  padding: 0.75rem 1rem;
-  font-weight: 700;
-  transition: transform 0.2s ease;
-}
-
-.skip-link:focus-visible {
-  transform: translateY(0);
-  outline: 3px solid hsl(var(--ring));
-  outline-offset: 3px;
 }
