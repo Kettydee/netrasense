@@ -165,7 +165,6 @@ function DashboardPage() {
   const queryClient = useQueryClient();
   const [voiceOn, setVoiceOn] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const [sessionDodgedCount, setSessionDodgedCount] = useState<number>(0);
   const [sessionMinutes, setSessionMinutes] = useState<number>(0);
   const [liveVision, setLiveVision] = useState<{
     object: string;
@@ -178,68 +177,54 @@ function DashboardPage() {
   const lastSpokenId = useRef<string | null>(null);
   const userId = user?.id ?? "";
 
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+
+  // Local persistent state keyed by date for instant offline/guest/online sync
+  const [localDailyDodged, setLocalDailyDodged] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Number(window.localStorage.getItem(`netrasense:dodged_${userId || "guest"}_${today}`) || 0);
+    }
+    return 0;
+  });
+
+  const [localDailyDistM, setLocalDailyDistM] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Number(window.localStorage.getItem(`netrasense:dist_${userId || "guest"}_${today}`) || 0);
+    }
+    return 0;
+  });
+
+  const [localLifetimeMinutes, setLocalLifetimeMinutes] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Number(window.localStorage.getItem(`netrasense:lifetime_mins_${userId || "guest"}`) || 0);
+    }
+    return 0;
+  });
+
   useEffect(() => {
     setVoiceOn(window.localStorage.getItem("netrasense:voice") === "on");
   }, []);
 
+  // Minute ticker for assistance time
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 2000);
-    const m = window.setInterval(() => setSessionMinutes((prev) => prev + 1), 60000);
+    const m = window.setInterval(() => {
+      setSessionMinutes((prev) => prev + 1);
+      setLocalLifetimeMinutes((prev) => {
+        const next = prev + 1;
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(`netrasense:lifetime_mins_${userId || "guest"}`, String(next));
+        }
+        return next;
+      });
+    }, 60000);
+
     return () => {
       window.clearInterval(t);
       window.clearInterval(m);
     };
-  }, []);
-
-  const handleVisionTelemetry = useCallback(
-    (event: VisionTelemetryEvent) => {
-      const timestamp = Date.now();
-      setLiveVision({
-        object: event.object,
-        distance_cm: event.distance_cm,
-        threat_level: event.threat_level,
-        timestamp,
-      });
-
-      // Avoid spamming stats for the same object within 3.5s
-      const lastLogged = lastLoggedVisionRef.current.get(event.object) || 0;
-      if (timestamp - lastLogged > 3500) {
-        lastLoggedVisionRef.current.set(event.object, timestamp);
-
-        if (event.threat_level !== "Normal") {
-          setSessionDodgedCount((prev) => prev + 1);
-        }
-
-        const newIncident: Telemetry = {
-          id: `vis-${timestamp}-${Math.random().toString(36).slice(2, 6)}`,
-          user_id: userId || "demo",
-          detected_object: event.object.charAt(0).toUpperCase() + event.object.slice(1),
-          distance_cm: event.distance_cm,
-          threat_level: event.threat_level,
-          action_taken: "AI Vision spatial detection",
-          created_at: new Date().toISOString(),
-        };
-
-        setLiveIncidents((prev) => [newIncident, ...prev.slice(0, 19)]);
-
-        if (userId && !userId.startsWith("demo-")) {
-          supabase
-            .from("telemetry_stream")
-            .insert({
-              user_id: userId,
-              detected_object: newIncident.detected_object,
-              distance_cm: event.distance_cm,
-              threat_level: event.threat_level,
-              action_taken: "AI Vision spatial detection",
-            })
-            .then(() => {
-              queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
-            });
-        }
-      }
-    },
-    [userId, queryClient],
-  );
+  }, [userId]);
 
   const profileQuery = useQuery({
     queryKey: ["profile", userId],
@@ -261,6 +246,93 @@ function DashboardPage() {
     enabled: !!userId && !userId.startsWith("demo-"),
     queryFn: () => fetchDailyStats(userId),
   });
+
+  const todayStats = statsQuery.data?.find((s) => s.date === today);
+  const yesterdayStats = statsQuery.data?.find((s) => s.date === yesterday);
+
+  // Sync vision detections to daily stats and lifetime metrics
+  const handleVisionTelemetry = useCallback(
+    (event: VisionTelemetryEvent) => {
+      const timestamp = Date.now();
+      setLiveVision({
+        object: event.object,
+        distance_cm: event.distance_cm,
+        threat_level: event.threat_level,
+        timestamp,
+      });
+
+      const lastLogged = lastLoggedVisionRef.current.get(event.object) || 0;
+      if (timestamp - lastLogged > 3500) {
+        lastLoggedVisionRef.current.set(event.object, timestamp);
+
+        const isObstacle = event.threat_level !== "Normal";
+        let newDodged = localDailyDodged;
+        let newDist = localDailyDistM + 15;
+
+        if (isObstacle) {
+          newDodged += 1;
+          setLocalDailyDodged(newDodged);
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem(`netrasense:dodged_${userId || "guest"}_${today}`, String(newDodged));
+          }
+        }
+
+        setLocalDailyDistM(newDist);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(`netrasense:dist_${userId || "guest"}_${today}`, String(newDist));
+        }
+
+        const newIncident: Telemetry = {
+          id: `vis-${timestamp}-${Math.random().toString(36).slice(2, 6)}`,
+          user_id: userId || "guest",
+          detected_object: event.object.charAt(0).toUpperCase() + event.object.slice(1),
+          distance_cm: event.distance_cm,
+          threat_level: event.threat_level,
+          action_taken: "AI Vision spatial detection",
+          created_at: new Date().toISOString(),
+        };
+
+        setLiveIncidents((prev) => [newIncident, ...prev.slice(0, 19)]);
+
+        // Persist daily stats to database for registered users
+        if (userId && !userId.startsWith("demo-")) {
+          supabase
+            .from("telemetry_stream")
+            .insert({
+              user_id: userId,
+              detected_object: newIncident.detected_object,
+              distance_cm: event.distance_cm,
+              threat_level: event.threat_level,
+              action_taken: "AI Vision spatial detection",
+            })
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
+            });
+
+          const totalDodged = (todayStats?.obstacles_avoided ?? 0) + (isObstacle ? 1 : 0);
+          const totalDistM = Number(todayStats?.safe_distance_walked_m ?? 0) + 15;
+          const totalMins = (todayStats?.active_session_minutes ?? 0) + 1;
+
+          supabase
+            .from("daily_stats")
+            .upsert(
+              {
+                user_id: userId,
+                date: today,
+                obstacles_avoided: totalDodged,
+                safe_distance_walked_m: totalDistM,
+                active_session_minutes: totalMins,
+              },
+              { onConflict: "user_id,date" },
+            )
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ["daily-stats", userId] });
+            });
+        }
+      }
+    },
+    [userId, today, todayStats, localDailyDodged, localDailyDistM, queryClient],
+  );
 
   useEffect(() => {
     if (!userId || userId.startsWith("demo-")) return;
@@ -298,12 +370,6 @@ function DashboardPage() {
     }
   }, [latest, voiceOn]);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const todayStats = statsQuery.data?.find((s) => s.date === today);
-  const yesterdayStats = statsQuery.data?.find(
-    (s) => s.date === new Date(Date.now() - 86_400_000).toISOString().slice(0, 10),
-  );
-
   const simulate = useCallback(async () => {
     if (!userId) return;
     const distance = Math.round(Math.random() * MAX_DISTANCE_CM);
@@ -322,13 +388,24 @@ function DashboardPage() {
       return;
     }
     const prev = todayStats;
-    const { error: statsError } = await supabase.from("daily_stats").upsert({
-      user_id: userId,
-      date: today,
-      obstacles_avoided: (prev?.obstacles_avoided ?? 0) + (level === "Normal" ? 0 : 1),
-      safe_distance_walked_m: Number(prev?.safe_distance_walked_m ?? 0) + 12,
-      active_session_minutes: (prev?.active_session_minutes ?? 0) + 1,
-    });
+    const isObstacle = level !== "Normal";
+    const nextDodged = (prev?.obstacles_avoided ?? 0) + (isObstacle ? 1 : 0);
+    const nextDist = Number(prev?.safe_distance_walked_m ?? 0) + 18;
+    const nextMins = (prev?.active_session_minutes ?? 0) + 1;
+
+    setLocalDailyDodged((p) => p + (isObstacle ? 1 : 0));
+    setLocalDailyDistM((p) => p + 18);
+
+    const { error: statsError } = await supabase.from("daily_stats").upsert(
+      {
+        user_id: userId,
+        date: today,
+        obstacles_avoided: nextDodged,
+        safe_distance_walked_m: nextDist,
+        active_session_minutes: nextMins,
+      },
+      { onConflict: "user_id,date" },
+    );
     if (statsError) toast.error("Reading saved, but daily stats could not update.");
     void queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
     void queryClient.invalidateQueries({ queryKey: ["daily-stats", userId] });
@@ -339,13 +416,29 @@ function DashboardPage() {
     !!profileQuery.data &&
     (!profileQuery.data.full_name || !profileQuery.data.impairment_level);
 
-  const obstacles = (todayStats?.obstacles_avoided ?? 0) + sessionDodgedCount;
-  const obstacleTrend = obstacles - (yesterdayStats?.obstacles_avoided ?? 0);
-  const distanceKm = (
-    (Number(todayStats?.safe_distance_walked_m ?? 0) + sessionDodgedCount * 14 + sessionMinutes * 30) /
-    1000
-  ).toFixed(2);
-  const minutes = (todayStats?.active_session_minutes ?? 0) + sessionMinutes;
+  // 1. Obstacles dodged TODAY (refreshes to 0 on next day)
+  const obstaclesToday = Math.max(
+    todayStats?.obstacles_avoided ?? 0,
+    localDailyDodged,
+  );
+  const obstacleTrend = obstaclesToday - (yesterdayStats?.obstacles_avoided ?? 0);
+
+  // 2. Safe distance explored TODAY (refreshes to 0 on next day)
+  const distanceWalkedTodayM = Math.max(
+    Number(todayStats?.safe_distance_walked_m ?? 0),
+    localDailyDistM,
+  );
+  const distanceKm = (distanceWalkedTodayM / 1000).toFixed(2);
+
+  // 3. Active assistance time LIFETIME (from account creation until account deletion)
+  const historicalLifetimeMinutes = (statsQuery.data ?? []).reduce(
+    (acc, curr) => acc + (curr.active_session_minutes || 0),
+    0,
+  );
+  const totalLifetimeMinutes = Math.max(
+    localLifetimeMinutes,
+    historicalLifetimeMinutes + sessionMinutes,
+  );
 
   const isLiveVisionActive = !!(liveVision && now - liveVision.timestamp < 4500);
   const level: ThreatLevel = isLiveVisionActive
@@ -392,7 +485,7 @@ function DashboardPage() {
       {/* --- TOP METRICS CARDS ROW --- */}
       <section aria-labelledby="stats-heading" className="mb-6">
         <h2 id="stats-heading" className="sr-only">
-          Daily navigation statistics
+          Navigation statistics
         </h2>
         {statsQuery.isLoading ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -405,7 +498,7 @@ function DashboardPage() {
             <StatCard
               icon={PartyPopper}
               label="Obstacles dodged today"
-              value={String(obstacles)}
+              value={String(obstaclesToday)}
               trend={obstacleTrend}
               sub={
                 yesterdayStats
@@ -422,8 +515,8 @@ function DashboardPage() {
             <StatCard
               icon={Activity}
               label="Active assistance time"
-              value={`${Math.floor(minutes / 60)}h ${minutes % 60}m`}
-              sub="Monitored session time"
+              value={`${Math.floor(totalLifetimeMinutes / 60)}h ${totalLifetimeMinutes % 60}m`}
+              sub="All-time navigation assistance"
             />
           </div>
         )}
