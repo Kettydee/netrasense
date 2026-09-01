@@ -377,6 +377,27 @@ html.dark ::-webkit-scrollbar-thumb {
   }
 }
 
+/* =========================================================
+   REDUCED MOTION SUPPORT
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-pulse,
+  .animate-ping,
+  .animate-bounce,
+  .animate-spin {
+    animation: none !important;
+  }
+}
+
 /* Cleanups */
 #lovable-badge,
 [data-lovable-badge],

@@ -109,6 +109,9 @@ class ArduinoSerialReader:
 
     Set ``port`` to a device path (for example ``/dev/tty.usbmodem1101``), or
     ``None``/``auto`` to rediscover a likely Arduino-compatible USB device.
+
+    Supports sending commands back to Arduino (e.g. buzzer control) via
+    ``send_command()``.
     """
 
     def __init__(
@@ -132,6 +135,8 @@ class ArduinoSerialReader:
         self.last_error: Optional[str] = None
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
+        self._connection: Optional[serial.Serial] = None
+        self._connection_lock = threading.Lock()
 
     def start(self) -> None:
         if serial is None:
@@ -169,6 +174,8 @@ class ArduinoSerialReader:
                 continue
             try:
                 with serial.Serial(port, self.baudrate, timeout=1) as connection:
+                    with self._connection_lock:
+                        self._connection = connection
                     self.connected_port = port
                     self.last_error = None
                     LOGGER.info("Connected to Arduino on %s at %s baud", port, self.baudrate)
@@ -188,12 +195,38 @@ class ArduinoSerialReader:
                         self.on_reading(record)
             except (serial.SerialException, OSError) as exc:
                 self.connected_port = None
+                with self._connection_lock:
+                    self._connection = None
                 self._wait_to_retry(f"Serial connection lost ({exc})")
 
     def _wait_to_retry(self, message: str) -> None:
         self.last_error = message
         LOGGER.warning("%s; retrying in %ss", message, self.reconnect_delay)
         self._stop_event.wait(self.reconnect_delay)
+
+    def send_command(self, command: dict) -> bool:
+        """Send a JSON command to the Arduino (e.g. buzzer control).
+
+        Parameters
+        ----------
+        command : dict
+            Command to send, e.g. {"buzzer": "ALARM"}.
+
+        Returns
+        -------
+        bool
+            True if the command was sent successfully.
+        """
+        with self._connection_lock:
+            conn = self._connection
+        if conn is None or not conn.is_open:
+            return False
+        try:
+            msg = json.dumps(command) + "\n"
+            conn.write(msg.encode("utf-8"))
+            return True
+        except (serial.SerialException, OSError):
+            return False
 
 
 def main() -> None:

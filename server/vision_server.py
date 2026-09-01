@@ -12,6 +12,7 @@ import os
 import sys
 import time
 import threading
+from pathlib import Path
 from typing import Optional
 
 import cv2
@@ -23,6 +24,9 @@ from tts_module import TTSEngine
 from vision import VisionPipeline, AnnouncementTracker, Detection
 from camera import CameraStream
 from serial_sensor import ArduinoSerialReader
+from ensemble import EnsembleClassifier
+from dataset_collector import DatasetCollector
+from dataset_cleaner import DatasetCleaner
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -53,6 +57,8 @@ state = {
     "audio_enabled": True,
     "threat_level": "Normal",
     "closest_obstacle": None,
+    "ensemble": None,
+    "dataset_collector": None,
     "sensor_data": None,
     "sensor_reader": None,
     # Heartbeat bookkeeping — populated by update_sensor_data()
@@ -63,11 +69,20 @@ state_lock = threading.Lock()
 
 
 def update_sensor_data(record):
-    """Store the latest validated Arduino measurement for API clients."""
+    """Store the latest validated Arduino measurement for API clients.
+
+    Also sends the corresponding threat level back to the Arduino buzzer.
+    """
     with state_lock:
         state["sensor_data"] = record
         state["sensor_last_update"] = time.monotonic()
         state["sensor_total_readings"] += 1
+
+        # Send buzzer command to Arduino
+        reader = state.get("sensor_reader")
+        if reader:
+            threat = record.get("threat_level", "NORMAL")
+            reader.send_command({"buzzer": threat})
 
 
 def init_vision_engine(args):
@@ -116,11 +131,21 @@ def init_vision_engine(args):
     if not camera.isOpened():
         print(f"[WARNING] Camera {cam_src} could not be opened. Check device index or permissions.")
 
+    ensemble = EnsembleClassifier()
+
+    # Dataset collector (optional — enabled via --dataset-dir)
+    dataset = None
+    if hasattr(args, 'dataset_dir') and args.dataset_dir:
+        dataset = DatasetCollector(args.dataset_dir)
+        print(f"[INIT] Dataset collection enabled: {args.dataset_dir}")
+
     with state_lock:
         state["camera"] = camera
         state["pipeline"] = pipeline
         state["tracker"] = tracker
         state["tts"] = tts
+        state["ensemble"] = ensemble
+        state["dataset_collector"] = dataset
         state["mode"] = args.mode
         state["confidence"] = args.confidence
         state["audio_enabled"] = not args.mute
@@ -302,7 +327,8 @@ def generate_frames():
             with state_lock:
                 cam = state.get("camera")
                 if cam and not cam.isOpened():
-                    cam.last_error = "Camera stopped producing frames"
+                    with cam._lock:
+                        cam.last_error = "Camera stopped producing frames"
             time.sleep(0.05)
             continue
 
@@ -348,10 +374,37 @@ def generate_frames():
                 closest_dist = d.distance_cm
                 closest_obj = d.label
 
+        # ── Run ensemble classifier ──────────────────────────────────
+        ensemble = state.get("ensemble")
+        sensor = state.get("sensor_data")
+        ensemble_result = None
+        if ensemble:
+            ensemble_result = ensemble.classify(
+                ultrasonic_cm=sensor.get("distance_cm") if sensor else None,
+                ultrasonic_threat=sensor.get("threat_level") if sensor else None,
+                yolo_detections=det_dicts,
+                depth_distance_cm=None,  # depth_map centroid used per-detection
+                yolo_closest_cm=closest_dist if closest_obj else None,
+            )
+            # Use ensemble's fused threat level as the authoritative value
+            if ensemble_result.has_data:
+                fused_to_title = {
+                    "NORMAL": "Normal", "WARNING": "Warning",
+                    "ALARM": "Alarming", "CRITICAL": "Collision",
+                }
+                highest_threat = fused_to_title.get(
+                    ensemble_result.fused_threat_level, highest_threat
+                )
+                if ensemble_result.fused_distance_cm is not None:
+                    closest_dist = ensemble_result.fused_distance_cm
+                    if closest_obj is None and ensemble_result.signal_count >= 1:
+                        closest_obj = "Obstacle"
+
         with state_lock:
             state["latest_detections"] = det_dicts
             state["fps"] = round(fps, 1)
             state["threat_level"] = highest_threat
+            state["ensemble_result"] = ensemble_result.to_dict() if ensemble_result else None
             if closest_obj:
                 state["closest_obstacle"] = {
                     "object": closest_obj,
@@ -382,6 +435,8 @@ def index():
             "api_latest": "/api/latest",
             "api_config": "/api/config",
             "api_capture": "/api/capture",
+            "api_dataset_capture": "/api/dataset/capture (POST)",
+            "api_dataset_stats": "/api/dataset/stats (GET)",
         },
     })
 
@@ -428,6 +483,8 @@ def api_latest():
             "detections": state["latest_detections"],
             "sensor_data": sensor_data,
             "sensor_status": sensor_status,
+            # Ensemble fused result
+            "ensemble": state.get("ensemble_result"),
             # New authoritative hardware status object
             "hardware_status": hw,
         })
@@ -445,6 +502,80 @@ def capture_webcam_frame():
     if captured is None:
         return jsonify({"error": "No camera frame is available", "camera_status": camera.status()}), 503
     return jsonify({"status": "captured", "path": str(captured), "camera_status": camera.status()})
+
+
+@app.route('/api/dataset/capture', methods=['POST'])
+def dataset_capture_frame():
+    """Capture a frame with full metadata for ML dataset collection.
+
+    Saves the frame as JPEG, YOLO-format label file, and appends
+    a row to metadata.csv with detection/sensor/ensemble data.
+
+    POST body (all optional):
+        source: str — "manual" | "auto" | "capture" (default: "manual")
+        label: str — override threat label for supervised collection
+    """
+    with state_lock:
+        camera = state["camera"]
+        collector = state.get("dataset_collector")
+        detections = list(state["latest_detections"])
+        sensor = state["sensor_data"]
+        ensemble = state.get("ensemble_result")
+        fps = state["fps"]
+        mode = state["mode"]
+
+    if collector is None:
+        return jsonify({
+            "error": "Dataset collection not enabled",
+            "hint": "Start the server with --dataset-dir dataset to enable",
+        }), 400
+
+    if camera is None:
+        return jsonify({"error": "Camera is not initialized"}), 503
+
+    ret, frame = camera.read()
+    if not ret or frame is None:
+        return jsonify({"error": "No camera frame available", "camera_status": camera.status()}), 503
+
+    body = request.get_json(silent=True) or {}
+    source = body.get("source", "manual")
+
+    record = collector.save_frame(
+        frame=frame,
+        detections=detections,
+        sensor_data=sensor,
+        ensemble_result=ensemble,
+        fps=fps,
+        mode=mode,
+        source=source,
+    )
+
+    if not record:
+        return jsonify({"error": "Failed to save frame"}), 500
+
+    return jsonify({
+        "status": "captured",
+        "record": record,
+        "dataset_stats": collector.stats,
+    })
+
+
+@app.route('/api/dataset/stats', methods=['GET'])
+def dataset_stats():
+    """Return dataset collection statistics."""
+    with state_lock:
+        collector = state.get("dataset_collector")
+
+    if collector is None:
+        return jsonify({
+            "enabled": False,
+            "hint": "Start the server with --dataset-dir dataset to enable",
+        })
+
+    return jsonify({
+        "enabled": True,
+        **collector.stats,
+    })
 
 
 @app.route('/api/config', methods=['GET', 'POST'])
@@ -485,6 +616,121 @@ def api_hardware_status():
         return jsonify(_build_hardware_status())
 
 
+# ── Server start time for uptime tracking ────────────────────────────
+_SERVER_START_TIME = time.monotonic()
+
+
+@app.route('/api/health')
+def api_health():
+    """Comprehensive health check endpoint.
+
+    Returns status of all components: backend, Arduino, ultrasonic,
+    camera, AI engine, and database connectivity.
+    """
+    now = time.monotonic()
+    uptime_s = round(now - _SERVER_START_TIME, 1)
+
+    with state_lock:
+        hw = _build_hardware_status()
+        fps = state["fps"]
+        total_readings = state["sensor_total_readings"]
+        mode = state["mode"]
+
+    # Check database connectivity (Supabase)
+    db_ok = True
+    try:
+        import requests
+        supabase_url = os.environ.get("SUPABASE_URL", "")
+        if supabase_url:
+            resp = requests.get(f"{supabase_url}/rest/v1/", timeout=3)
+            db_ok = resp.status_code < 500
+        else:
+            db_ok = False  # No Supabase configured
+    except Exception:
+        db_ok = False
+
+    # Overall status
+    all_ok = (
+        hw["system"]["status"] == "ONLINE"
+        and db_ok
+    )
+
+    return jsonify({
+        "status": "healthy" if all_ok else "degraded",
+        "uptime_seconds": uptime_s,
+        "uptime_human": _format_uptime(uptime_s),
+        "components": {
+            "backend": {
+                "status": "healthy",
+                "fps": fps,
+                "mode": mode,
+                "total_sensor_readings": total_readings,
+            },
+            "arduino": hw["arduino"],
+            "ultrasonic": hw["ultrasonic"],
+            "camera": hw["camera"],
+            "ai": hw["ai"],
+            "database": {
+                "status": "connected" if db_ok else "unavailable",
+                "provider": "supabase",
+            },
+        },
+    })
+
+
+def _format_uptime(seconds: float) -> str:
+    """Format uptime as a human-readable string."""
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = int(seconds % 60)
+    if h > 0:
+        return f"{h}h {m}m {s}s"
+    elif m > 0:
+        return f"{m}m {s}s"
+    else:
+        return f"{s}s"
+
+
+@app.route('/api/dataset/clean', methods=['POST'])
+def dataset_clean():
+    """Run the dataset cleaning pipeline on the configured dataset directory.
+
+    POST body (all optional):
+        min_confidence: float — minimum ensemble confidence (default 0.3)
+        blank_threshold: float — grayscale std-dev below this = blank (default 5.0)
+        hash_distance: int — pHash Hamming distance for dedup (default 4)
+        dry_run: bool — if true, report only (default false)
+    """
+    with state_lock:
+        collector = state.get("dataset_collector")
+
+    if collector is None:
+        return jsonify({
+            "error": "Dataset collection not enabled",
+            "hint": "Start the server with --dataset-dir dataset to enable",
+        }), 400
+
+    dataset_dir = Path(collector._root)
+    body = request.get_json(silent=True) or {}
+
+    try:
+        cleaner = DatasetCleaner(
+            input_dir=dataset_dir,
+            output_dir=None,  # clean in-place
+            dry_run=bool(body.get("dry_run", False)),
+            min_confidence=float(body.get("min_confidence", 0.3)),
+            blank_threshold=float(body.get("blank_threshold", 5.0)),
+            hash_distance=int(body.get("hash_distance", 4)),
+        )
+        report = cleaner.run()
+        return jsonify({
+            "status": "cleaned",
+            "report": report.to_dict(),
+        })
+    except Exception as exc:
+        return jsonify({"error": f"Cleaning failed: {exc}"}), 500
+
+
 def main():
     parser = argparse.ArgumentParser(description="NetraSense YOLO Vision Server")
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host address (default: 0.0.0.0)")
@@ -506,6 +752,7 @@ def main():
     parser.add_argument("--sensor-device-id", type=str, default="NETRA-001", help="ID added to sensor records")
     parser.add_argument("--sensor-min-distance-cm", type=float, default=2.0, help="Reject sensor readings below this value")
     parser.add_argument("--sensor-max-distance-cm", type=float, default=400.0, help="Reject sensor readings above this value")
+    parser.add_argument("--dataset-dir", type=str, default=None, help="Enable dataset collection; save frames + metadata to this directory")
 
     args = parser.parse_args()
     init_vision_engine(args)
