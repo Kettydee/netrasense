@@ -35,6 +35,7 @@ import {
   speak,
   threatStyles,
   type Telemetry,
+  type ThreatLevel,
   NO_DATA_SENTINEL,
   NO_DISTANCE_PLACEHOLDER,
 } from "@/lib/netrasense";
@@ -45,6 +46,7 @@ import {
   type HardwareStatus,
   type EnsembleBreakdown,
 } from "@/lib/sensor";
+import type { VisionTelemetryEvent } from "@/components/BlindsEyeLens";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -655,11 +657,6 @@ function DashboardPage() {
   );
 
   const isLiveVisionActive = !!(liveVision && now - liveVision.timestamp < 4500);
-  const level: ThreatLevel = isLiveVisionActive
-    ? liveVision.threat_level
-    : latest
-      ? latest.threat_level
-      : "Normal";
   const currentDistance = isLiveVisionActive
     ? liveVision.distance_cm
     : latest
