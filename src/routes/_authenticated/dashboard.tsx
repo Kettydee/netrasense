@@ -43,6 +43,7 @@ import {
   fetchHardwareStatus,
   hardwareThreatToUiLevel,
   type HardwareStatus,
+  type EnsembleBreakdown,
 } from "@/lib/sensor";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -187,6 +188,136 @@ function DistanceMeter({
   );
 }
 
+function EnsembleSignalCard({ ensemble }: { ensemble: EnsembleBreakdown }) {
+  const hasData = ensemble.signal_count > 0 && ensemble.fused_threat_level !== "NO DATA";
+
+  const signals = [
+    { name: "Ultrasonic", icon: "🔊", data: ensemble.ultrasonic, weight: "50%" },
+    { name: "YOLO Vision", icon: "👁", data: ensemble.yolo, weight: "30%" },
+    { name: "Depth Est.", icon: "📐", data: ensemble.depth, weight: "20%" },
+  ];
+
+  const confidencePct = Math.round(ensemble.confidence * 100);
+  const confidenceColor =
+    confidencePct >= 80
+      ? "text-emerald-400"
+      : confidencePct >= 50
+        ? "text-amber-400"
+        : "text-zinc-400";
+
+  const threatColor = (level: string | null) => {
+    if (!level) return "text-zinc-500";
+    switch (level) {
+      case "CRITICAL":
+      case "Collision":
+        return "text-rose-400";
+      case "ALARM":
+      case "Alarming":
+        return "text-orange-400";
+      case "WARNING":
+      case "Warning":
+        return "text-amber-400";
+      default:
+        return "text-emerald-400";
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-surface-elevated p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground">
+          Ensemble Signal Fusion
+        </h3>
+        {hasData && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-bold text-muted-foreground">CONFIDENCE</span>
+            <span className={`font-mono text-sm font-black ${confidenceColor}`}>
+              {confidencePct}%
+            </span>
+          </div>
+        )}
+      </div>
+
+      {!hasData ? (
+        <p className="text-xs text-muted-foreground italic">
+          No ensemble data — waiting for sensor signals
+        </p>
+      ) : (
+        <>
+          {/* Confidence bar */}
+          <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full transition-all duration-500 bg-cyan-400"
+              style={{ width: `${confidencePct}%` }}
+            />
+          </div>
+
+          {/* Per-signal breakdown */}
+          <div className="space-y-2">
+            {signals.map((sig) => {
+              const active = sig.data.distance_cm !== null;
+              return (
+                <div
+                  key={sig.name}
+                  className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-3 py-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm" aria-hidden="true">
+                      {sig.icon}
+                    </span>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">
+                        {sig.name}
+                        <span className="ml-1.5 font-normal text-muted-foreground">
+                          ({sig.weight})
+                        </span>
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {active ? sig.data.threat_level ?? "—" : "No signal"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span
+                      className={`font-mono text-sm font-black tabular-nums ${
+                        active ? "text-foreground" : "text-zinc-500"
+                      }`}
+                    >
+                      {active ? `${Math.round(sig.data.distance_cm!)} cm` : "—"}
+                    </span>
+                    <p className={`text-[10px] font-bold ${threatColor(sig.data.threat_level)}`}>
+                      {active ? sig.data.threat_level ?? "—" : "OFF"}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Fused result footer */}
+          <div className="mt-3 flex items-center justify-between rounded-lg border border-cyan-500/30 bg-cyan-500/5 px-3 py-2">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-cyan-400">
+              Fused Result
+            </span>
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-sm font-black text-foreground tabular-nums">
+                {Math.round(ensemble.fused_distance_cm ?? 0)} cm
+              </span>
+              <span
+                className={`rounded-md px-2 py-0.5 text-[10px] font-black uppercase ${
+                  threatColor(ensemble.fused_threat_level)
+                } bg-card border border-border`}
+              >
+                {ensemble.fused_threat_level}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function DashboardPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -285,6 +416,9 @@ function DashboardPage() {
   const aiStatus = hw?.ai.status ?? "NOT READY";
   const arduinoStatus = hw?.arduino.status ?? "DISCONNECTED";
   const systemStatus = hw?.system.status ?? "NO HARDWARE";
+
+  // Ensemble signal breakdown (from /api/latest via sensorQuery)
+  const ensemble: EnsembleBreakdown | undefined = sensorQuery.data?.ensemble;
 
   // Determine if we have ANY valid sensor data right now
   const hasSensorData = ultrasonicActive && ultrasonicDistance !== null;
@@ -515,6 +649,9 @@ function DashboardPage() {
                 />
               )}
             </div>
+
+            {/* Ensemble Signal Fusion Breakdown */}
+            {ensemble && <EnsembleSignalCard ensemble={ensemble} />}
 
             <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-surface-elevated p-4">
               <div className="flex items-center gap-3">

@@ -71,10 +71,26 @@ export type HardwareStatus = {
   ai: AiStatus;
 };
 
+export type SignalBreakdown = {
+  distance_cm: number | null;
+  threat_level: HardwareThreatLevel | null;
+};
+
+export type EnsembleBreakdown = {
+  fused_distance_cm: number | null;
+  fused_threat_level: HardwareThreatLevel | "NO DATA";
+  confidence: number;
+  signal_count: number;
+  ultrasonic: SignalBreakdown;
+  yolo: SignalBreakdown;
+  depth: SignalBreakdown;
+};
+
 type SensorApiResponse = {
   sensor_data: SensorReading | null;
   sensor_status: SensorStatus;
   hardware_status?: HardwareStatus;
+  ensemble?: EnsembleBreakdown;
 };
 
 const DEFAULT_SENSOR_SERVER_URL = "http://localhost:5000";

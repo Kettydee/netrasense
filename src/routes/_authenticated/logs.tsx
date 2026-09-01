@@ -84,45 +84,53 @@ function LogsPage() {
     return Math.round(sum / data.length);
   }, [telemetryQuery.data]);
 
+  const mostDetected = useMemo(() => {
+    const data = telemetryQuery.data ?? [];
+    if (data.length === 0) return "—";
+    const counts: Record<string, number> = {};
+    for (const r of data) {
+      counts[r.detected_object] = (counts[r.detected_object] ?? 0) + 1;
+    }
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
+  }, [telemetryQuery.data]);
+
+  const normalCount = useMemo(
+    () => (telemetryQuery.data ?? []).filter((r) => r.threat_level === "Normal").length,
+    [telemetryQuery.data],
+  );
+
   return (
     <AppShell
       title="Incident & Telemetry Logs"
       description="Every reading recorded by your assistive sensor"
     >
       {/* Metrics Summary Row */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <div className="surface-card p-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Total Records
-            </p>
-            <p className="text-2xl font-black">{telemetryQuery.data?.length ?? 0}</p>
-          </div>
-          <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
-            <Search className="size-5" />
-          </div>
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+        <div className="surface-card p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Records</p>
+          <p className="mt-1 text-2xl font-black">{telemetryQuery.data?.length ?? 0}</p>
         </div>
-
-        <div className="surface-card p-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              High Risk Alerts
-            </p>
-            <p className="text-2xl font-black text-rose-500">{criticalCount}</p>
-          </div>
-          <div className="rounded-xl bg-rose-500/10 p-2.5 text-rose-500">
-            <span className="size-3 rounded-full bg-rose-500 animate-ping inline-block" />
-          </div>
+        <div className="surface-card p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">High Risk</p>
+          <p className="mt-1 text-2xl font-black text-rose-500">{criticalCount}</p>
         </div>
-
-        <div className="surface-card p-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Avg Proximity
-            </p>
-            <p className="text-2xl font-black">{avgDistance} cm</p>
-          </div>
-          <div className="rounded-xl bg-sky-500/10 p-2.5 text-sky-500 font-bold text-xs">CM</div>
+        <div className="surface-card p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Safe (Normal)</p>
+          <p className="mt-1 text-2xl font-black text-emerald-500">{normalCount}</p>
+        </div>
+        <div className="surface-card p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Avg Proximity</p>
+          <p className="mt-1 text-2xl font-black">{avgDistance} <span className="text-sm text-muted-foreground">cm</span></p>
+        </div>
+        <div className="surface-card p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Most Detected</p>
+          <p className="mt-1 text-lg font-black truncate">{mostDetected}</p>
+        </div>
+        <div className="surface-card p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Detection Rate</p>
+          <p className="mt-1 text-2xl font-black">
+            {telemetryQuery.data?.length ? Math.round((criticalCount / telemetryQuery.data.length) * 100) : 0}<span className="text-sm text-muted-foreground">%</span>
+          </p>
         </div>
       </div>
 
