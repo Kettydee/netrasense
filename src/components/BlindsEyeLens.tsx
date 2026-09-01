@@ -329,11 +329,11 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
           if (newItemsToAnnounce.length > 0) {
             let message = "";
             if (newItemsToAnnounce.length === 1) {
-              message = newItemsToAnnounce[0];
+              message = newItemsToAnnounce[0] ?? "";
             } else if (newItemsToAnnounce.length === 2) {
-              message = `${newItemsToAnnounce[0]}, and ${newItemsToAnnounce[1]}`;
+              message = `${newItemsToAnnounce[0] ?? ""}, and ${newItemsToAnnounce[1] ?? ""}`;
             } else {
-              message = `${newItemsToAnnounce.slice(0, 3).join(", ")}, and ${newItemsToAnnounce[3] || ""}`.replace(/,\s*and\s*$/, "");
+              message = `${newItemsToAnnounce.slice(0, 3).join(", ")}, and ${newItemsToAnnounce[3] ?? ""}`.replace(/,\s*and\s*$/, "");
             }
             speakBrowser(message);
           }
@@ -341,7 +341,7 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
           if (detectedSummaries.length > 0 && predictions.length > 0) {
             const top = predictions.reduce(
               (prev, curr) => (curr.bbox[3] > prev.bbox[3] ? curr : prev),
-              predictions[0],
+              predictions[0]!,
             );
             const relH = Math.max(0.05, top.bbox[3] / canvas.height);
             const approxDistCm = Math.round(
