@@ -73,7 +73,7 @@ export function BlindsEyeLens() {
 
   // Poll YOLO Vision Server status
   useEffect(() => {
-    let timer: number;
+    let timer: number | undefined;
     let isSubscribed = true;
 
     async function checkServer() {
@@ -110,12 +110,12 @@ export function BlindsEyeLens() {
 
     if (engineMode === "yolo") {
       checkServer();
-      timer = window.setInterval(checkServer, 1000);
+      timer = window.setInterval(checkServer, 1000) as unknown as number;
     }
 
     return () => {
       isSubscribed = false;
-      window.clearInterval(timer);
+      if (timer !== undefined) window.clearInterval(timer);
     };
   }, [engineMode, serverUrl, serverCheckKey]);
 

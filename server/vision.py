@@ -75,12 +75,16 @@ def get_direction(cx: int, frame_width: int) -> str:
 
 
 def classify_distance(distance_cm: int) -> str:
-    """NetraSense threat level classification based on distance."""
-    if distance_cm <= 40:
+    """NetraSense threat level classification based on distance.
+
+    Thresholds must match serial_sensor.classify_threat_level() and
+    ensemble.py THRESHOLDS so that the fused result is consistent.
+    """
+    if distance_cm <= 50:
         return "Collision"
     elif distance_cm <= 100:
         return "Alarming"
-    elif distance_cm <= 200:
+    elif distance_cm <= 300:
         return "Warning"
     return "Normal"
 
@@ -358,7 +362,9 @@ class AnnouncementTracker:
 
             if track_key not in self._announced and (now - self._first_seen[track_key]) >= self._min_duration:
                 if det.threat_level in ("Collision", "Alarming"):
-                    speech = f"CRITICAL: {det.label} on the {det.direction} at {det.depth_meters or (det.distance_cm/100):.1f} meters"
+                    dist = det.depth_meters if det.depth_meters is not None else ((det.distance_cm / 100.0) if det.distance_cm is not None else None)
+                    dist_text = f"{dist:.1f} meters" if dist is not None else "unknown distance"
+                    speech = f"CRITICAL: {det.label} on the {det.direction} at {dist_text}"
                 else:
                     speech = f"{det.label} on the {det.direction}"
 
