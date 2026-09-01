@@ -490,92 +490,65 @@ def api_latest():
         })
 
 
-@app.route('/api/capture', methods=['POST'])
-def capture_webcam_frame():
-    """Save the newest webcam frame as a JPEG without requiring AI inference."""
+from dataset_collector import DatasetCollector
+from ensemble_model import MultiModalEnsembleModel
+
+dataset_collector = DatasetCollector(base_dir="dataset")
+ensemble_model = MultiModalEnsembleModel()
+
+
+@app.route('/api/capture', methods=['GET', 'POST'])
+def api_capture():
+    """Capture current live frame and log to structured dataset with metadata."""
     with state_lock:
-        camera = state["camera"]
-    if camera is None:
-        return jsonify({"error": "Camera is not initialized"}), 503
+        raw_frame = state.get("raw_frame")
+        if raw_frame is None:
+            return jsonify({"success": False, "error": "No camera frame available"}), 400
 
-    captured = camera.capture_frame()
-    if captured is None:
-        return jsonify({"error": "No camera frame is available", "camera_status": camera.status()}), 503
-    return jsonify({"status": "captured", "path": str(captured), "camera_status": camera.status()})
+        data = request.get_json(silent=True) or {}
+        ultrasonic_cm = float(data.get("ultrasonic_cm")) if "ultrasonic_cm" in data else None
+        custom_class = data.get("class_name")
+
+        # Extract latest detections and threat
+        detections = state.get("latest_detections", [])
+        threat_level = state.get("threat_level", "Normal")
+
+        # Save to structured dataset
+        res = dataset_collector.save_sample(
+            frame=raw_frame,
+            detections=detections,
+            ultrasonic_cm=ultrasonic_cm,
+            threat_level=threat_level,
+            custom_class=custom_class
+        )
+        return jsonify(res)
 
 
-@app.route('/api/dataset/capture', methods=['POST'])
-def dataset_capture_frame():
-    """Capture a frame with full metadata for ML dataset collection.
-
-    Saves the frame as JPEG, YOLO-format label file, and appends
-    a row to metadata.csv with detection/sensor/ensemble data.
-
-    POST body (all optional):
-        source: str — "manual" | "auto" | "capture" (default: "manual")
-        label: str — override threat label for supervised collection
-    """
+@app.route('/api/fuse', methods=['POST', 'GET'])
+def api_fuse():
+    """Execute multi-modal sensor fusion across Ultrasonic, YOLO, and Depth signals."""
     with state_lock:
-        camera = state["camera"]
-        collector = state.get("dataset_collector")
-        detections = list(state["latest_detections"])
-        sensor = state["sensor_data"]
-        ensemble = state.get("ensemble_result")
-        fps = state["fps"]
-        mode = state["mode"]
+        data = request.get_json(silent=True) or {}
+        ultrasonic_cm = float(data.get("ultrasonic_cm")) if "ultrasonic_cm" in data else None
+        depth_m = float(data.get("depth_m")) if "depth_m" in data else None
 
-    if collector is None:
+        detections = state.get("latest_detections", [])
+
+        fusion_res = ensemble_model.fuse(
+            ultrasonic_distance_cm=ultrasonic_cm,
+            yolo_detections=detections,
+            depth_meters=depth_m
+        )
+
         return jsonify({
-            "error": "Dataset collection not enabled",
-            "hint": "Start the server with --dataset-dir dataset to enable",
-        }), 400
-
-    if camera is None:
-        return jsonify({"error": "Camera is not initialized"}), 503
-
-    ret, frame = camera.read()
-    if not ret or frame is None:
-        return jsonify({"error": "No camera frame available", "camera_status": camera.status()}), 503
-
-    body = request.get_json(silent=True) or {}
-    source = body.get("source", "manual")
-
-    record = collector.save_frame(
-        frame=frame,
-        detections=detections,
-        sensor_data=sensor,
-        ensemble_result=ensemble,
-        fps=fps,
-        mode=mode,
-        source=source,
-    )
-
-    if not record:
-        return jsonify({"error": "Failed to save frame"}), 500
-
-    return jsonify({
-        "status": "captured",
-        "record": record,
-        "dataset_stats": collector.stats,
-    })
-
-
-@app.route('/api/dataset/stats', methods=['GET'])
-def dataset_stats():
-    """Return dataset collection statistics."""
-    with state_lock:
-        collector = state.get("dataset_collector")
-
-    if collector is None:
-        return jsonify({
-            "enabled": False,
-            "hint": "Start the server with --dataset-dir dataset to enable",
+            "threat_level": fusion_res.threat_level,
+            "threat_score": fusion_res.threat_score,
+            "fused_distance_cm": fusion_res.fused_distance_cm,
+            "dominant_modality": fusion_res.dominant_modality,
+            "confidence": fusion_res.confidence,
+            "recommended_action": fusion_res.recommended_action,
+            "modality_breakdown": fusion_res.modality_breakdown
         })
-
-    return jsonify({
-        "enabled": True,
-        **collector.stats,
-    })
 
 
 @app.route('/api/config', methods=['GET', 'POST'])

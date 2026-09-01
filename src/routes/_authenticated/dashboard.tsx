@@ -323,36 +323,85 @@ function DashboardPage() {
   const queryClient = useQueryClient();
   const [voiceOn, setVoiceOn] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [sessionMinutes, setSessionMinutes] = useState<number>(0);
+  const [liveVision, setLiveVision] = useState<{
+    object: string;
+    distance_cm: number;
+    threat_level: ThreatLevel;
+    timestamp: number;
+  } | null>(null);
+  const [liveIncidents, setLiveIncidents] = useState<Telemetry[]>([]);
+  const lastLoggedVisionRef = useRef<Map<string, number>>(new Map());
   const lastSpokenId = useRef<string | null>(null);
   const userId = user?.id ?? "";
+
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+
+  // Local persistent state keyed by date for instant offline/guest/online sync
+  const [localDailyDodged, setLocalDailyDodged] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Number(window.localStorage.getItem(`netrasense:dodged_${userId || "guest"}_${today}`) || 0);
+    }
+    return 0;
+  });
+
+  const [localDailyDistM, setLocalDailyDistM] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Number(window.localStorage.getItem(`netrasense:dist_${userId || "guest"}_${today}`) || 0);
+    }
+    return 0;
+  });
+
+  const [localLifetimeMinutes, setLocalLifetimeMinutes] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Number(window.localStorage.getItem(`netrasense:lifetime_mins_${userId || "guest"}`) || 0);
+    }
+    return 0;
+  });
 
   useEffect(() => {
     setVoiceOn(window.localStorage.getItem("netrasense:voice") === "on");
   }, []);
 
+  // Minute ticker for assistance time
   useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), 5000);
-    return () => window.clearInterval(t);
-  }, []);
+    const t = window.setInterval(() => setNow(Date.now()), 2000);
+    const m = window.setInterval(() => {
+      setSessionMinutes((prev) => prev + 1);
+      setLocalLifetimeMinutes((prev) => {
+        const next = prev + 1;
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(`netrasense:lifetime_mins_${userId || "guest"}`, String(next));
+        }
+        return next;
+      });
+    }, 60000);
+
+    return () => {
+      window.clearInterval(t);
+      window.clearInterval(m);
+    };
+  }, [userId]);
 
   const profileQuery = useQuery({
     queryKey: ["profile", userId],
-    enabled: !!userId,
+    enabled: !!userId && !userId.startsWith("demo-"),
     queryFn: () => fetchProfile(userId),
   });
   const contactsQuery = useQuery({
     queryKey: ["contacts", userId],
-    enabled: !!userId,
+    enabled: !!userId && !userId.startsWith("demo-"),
     queryFn: fetchContacts,
   });
   const telemetryQuery = useQuery({
     queryKey: ["telemetry", userId],
-    enabled: !!userId,
+    enabled: !!userId && !userId.startsWith("demo-"),
     queryFn: () => fetchTelemetry(50),
   });
   const statsQuery = useQuery({
     queryKey: ["daily-stats", userId],
-    enabled: !!userId,
+    enabled: !!userId && !userId.startsWith("demo-"),
     queryFn: () => fetchDailyStats(userId),
   });
   const sensorQuery = useQuery({
@@ -379,8 +428,95 @@ function DashboardPage() {
 
   const hw = hardwareQuery.data;  // shorthand
 
+  const todayStats = statsQuery.data?.find((s) => s.date === today);
+  const yesterdayStats = statsQuery.data?.find((s) => s.date === yesterday);
+
+  // Sync vision detections to daily stats and lifetime metrics
+  const handleVisionTelemetry = useCallback(
+    (event: VisionTelemetryEvent) => {
+      const timestamp = Date.now();
+      setLiveVision({
+        object: event.object,
+        distance_cm: event.distance_cm,
+        threat_level: event.threat_level,
+        timestamp,
+      });
+
+      const lastLogged = lastLoggedVisionRef.current.get(event.object) || 0;
+      if (timestamp - lastLogged > 3500) {
+        lastLoggedVisionRef.current.set(event.object, timestamp);
+
+        const isObstacle = event.threat_level !== "Normal";
+        let newDodged = localDailyDodged;
+        let newDist = localDailyDistM + 15;
+
+        if (isObstacle) {
+          newDodged += 1;
+          setLocalDailyDodged(newDodged);
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem(`netrasense:dodged_${userId || "guest"}_${today}`, String(newDodged));
+          }
+        }
+
+        setLocalDailyDistM(newDist);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(`netrasense:dist_${userId || "guest"}_${today}`, String(newDist));
+        }
+
+        const newIncident: Telemetry = {
+          id: `vis-${timestamp}-${Math.random().toString(36).slice(2, 6)}`,
+          user_id: userId || "guest",
+          detected_object: event.object.charAt(0).toUpperCase() + event.object.slice(1),
+          distance_cm: event.distance_cm,
+          threat_level: event.threat_level,
+          action_taken: "AI Vision spatial detection",
+          created_at: new Date().toISOString(),
+        };
+
+        setLiveIncidents((prev) => [newIncident, ...prev.slice(0, 19)]);
+
+        // Persist daily stats to database for registered users
+        if (userId && !userId.startsWith("demo-")) {
+          supabase
+            .from("telemetry_stream")
+            .insert({
+              user_id: userId,
+              detected_object: newIncident.detected_object,
+              distance_cm: event.distance_cm,
+              threat_level: event.threat_level,
+              action_taken: "AI Vision spatial detection",
+            })
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
+            });
+
+          const totalDodged = (todayStats?.obstacles_avoided ?? 0) + (isObstacle ? 1 : 0);
+          const totalDistM = Number(todayStats?.safe_distance_walked_m ?? 0) + 15;
+          const totalMins = (todayStats?.active_session_minutes ?? 0) + 1;
+
+          supabase
+            .from("daily_stats")
+            .upsert(
+              {
+                user_id: userId,
+                date: today,
+                obstacles_avoided: totalDodged,
+                safe_distance_walked_m: totalDistM,
+                active_session_minutes: totalMins,
+              },
+              { onConflict: "user_id,date" },
+            )
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ["daily-stats", userId] });
+            });
+        }
+      }
+    },
+    [userId, today, todayStats, localDailyDodged, localDailyDistM, queryClient],
+  );
+
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || userId.startsWith("demo-")) return;
     const channel = supabase
       .channel("telemetry_stream")
       .on(
@@ -448,12 +584,6 @@ function DashboardPage() {
     speak(`Warning: ${source} at ${distText}`);
   }, [latest?.detected_object, level, liveDistance, hasSensorData, voiceOn]);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const todayStats = statsQuery.data?.find((s) => s.date === today);
-  const yesterdayStats = statsQuery.data?.find(
-    (s) => s.date === new Date(Date.now() - 86_400_000).toISOString().slice(0, 10),
-  );
-
   const simulate = useCallback(async () => {
     if (!userId) return;
     const distance = Math.round(Math.random() * MAX_DISTANCE_CM);
@@ -472,13 +602,24 @@ function DashboardPage() {
       return;
     }
     const prev = todayStats;
-    const { error: statsError } = await supabase.from("daily_stats").upsert({
-      user_id: userId,
-      date: today,
-      obstacles_avoided: (prev?.obstacles_avoided ?? 0) + (level === "Normal" ? 0 : 1),
-      safe_distance_walked_m: Number(prev?.safe_distance_walked_m ?? 0) + 12,
-      active_session_minutes: (prev?.active_session_minutes ?? 0) + 1,
-    });
+    const isObstacle = level !== "Normal";
+    const nextDodged = (prev?.obstacles_avoided ?? 0) + (isObstacle ? 1 : 0);
+    const nextDist = Number(prev?.safe_distance_walked_m ?? 0) + 18;
+    const nextMins = (prev?.active_session_minutes ?? 0) + 1;
+
+    setLocalDailyDodged((p) => p + (isObstacle ? 1 : 0));
+    setLocalDailyDistM((p) => p + 18);
+
+    const { error: statsError } = await supabase.from("daily_stats").upsert(
+      {
+        user_id: userId,
+        date: today,
+        obstacles_avoided: nextDodged,
+        safe_distance_walked_m: nextDist,
+        active_session_minutes: nextMins,
+      },
+      { onConflict: "user_id,date" },
+    );
     if (statsError) toast.error("Reading saved, but daily stats could not update.");
     void queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
     void queryClient.invalidateQueries({ queryKey: ["daily-stats", userId] });
@@ -489,10 +630,52 @@ function DashboardPage() {
     !!profileQuery.data &&
     (!profileQuery.data.full_name || !profileQuery.data.impairment_level);
 
-  const obstacles = todayStats?.obstacles_avoided ?? 0;
-  const obstacleTrend = obstacles - (yesterdayStats?.obstacles_avoided ?? 0);
-  const distanceKm = (Number(todayStats?.safe_distance_walked_m ?? 0) / 1000).toFixed(2);
-  const minutes = todayStats?.active_session_minutes ?? 0;
+  // 1. Obstacles dodged TODAY (refreshes to 0 on next day)
+  const obstaclesToday = Math.max(
+    todayStats?.obstacles_avoided ?? 0,
+    localDailyDodged,
+  );
+  const obstacleTrend = obstaclesToday - (yesterdayStats?.obstacles_avoided ?? 0);
+
+  // 2. Safe distance explored TODAY (refreshes to 0 on next day)
+  const distanceWalkedTodayM = Math.max(
+    Number(todayStats?.safe_distance_walked_m ?? 0),
+    localDailyDistM,
+  );
+  const distanceKm = (distanceWalkedTodayM / 1000).toFixed(2);
+
+  // 3. Active assistance time LIFETIME (from account creation until account deletion)
+  const historicalLifetimeMinutes = (statsQuery.data ?? []).reduce(
+    (acc, curr) => acc + (curr.active_session_minutes || 0),
+    0,
+  );
+  const totalLifetimeMinutes = Math.max(
+    localLifetimeMinutes,
+    historicalLifetimeMinutes + sessionMinutes,
+  );
+
+  const isLiveVisionActive = !!(liveVision && now - liveVision.timestamp < 4500);
+  const level: ThreatLevel = isLiveVisionActive
+    ? liveVision.threat_level
+    : latest
+      ? latest.threat_level
+      : "Normal";
+  const currentDistance = isLiveVisionActive
+    ? liveVision.distance_cm
+    : latest
+      ? Math.round(Number(latest.distance_cm))
+      : MAX_DISTANCE_CM;
+  const currentObject = isLiveVisionActive
+    ? liveVision.object
+    : latest
+      ? latest.detected_object
+      : null;
+
+  const allIncidents: Telemetry[] = [
+    ...liveIncidents,
+    ...(telemetryQuery.data ?? []).filter((t) => !liveIncidents.some((li) => li.id === t.id)),
+  ].slice(0, 5);
+
   if (telemetryQuery.isLoading || statsQuery.isLoading) {
     return (
       <AppShell
@@ -516,7 +699,7 @@ function DashboardPage() {
       {/* --- TOP METRICS CARDS ROW --- */}
       <section aria-labelledby="stats-heading" className="mb-6">
         <h2 id="stats-heading" className="sr-only">
-          Daily navigation statistics
+          Navigation statistics
         </h2>
         {statsQuery.isLoading ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -529,7 +712,7 @@ function DashboardPage() {
             <StatCard
               icon={PartyPopper}
               label="Obstacles dodged today"
-              value={String(obstacles)}
+              value={String(obstaclesToday)}
               trend={obstacleTrend}
               sub={
                 yesterdayStats
@@ -546,8 +729,8 @@ function DashboardPage() {
             <StatCard
               icon={Activity}
               label="Active assistance time"
-              value={`${Math.floor(minutes / 60)}h ${minutes % 60}m`}
-              sub="Monitored session time"
+              value={`${Math.floor(totalLifetimeMinutes / 60)}h ${totalLifetimeMinutes % 60}m`}
+              sub="All-time navigation assistance"
             />
           </div>
         )}
@@ -599,51 +782,24 @@ function DashboardPage() {
               </div>
             </div>
 
-            {/* Prominent Tabular Distance Readout */}
-            <div className="my-5 grid gap-4 sm:grid-cols-2 items-center">
-              <div className="space-y-1">
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                  CURRENT OBSTACLE DISTANCE
-                </span>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-mono text-5xl font-black tracking-tight text-foreground tabular-nums">
-                    {liveDistance !== null ? liveDistance : "--"}
-                  </span>
-                  <span className="font-mono text-xl font-bold text-muted-foreground">cm</span>
-                  {liveDistance !== null && (
-                    <span className="font-mono text-sm text-cyan-400 ml-2">
-                      ({(liveDistance / 100).toFixed(2)}m)
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {hasSensorData
-                    ? `${hw?.ultrasonic.device_id ?? "NETRA-001"} active · ${ultrasonicThreatHw}`
-                    : arduinoConnected
-                      ? "Arduino connected but no valid ultrasonic reading"
-                      : latest
-                        ? `Target: ${latest.detected_object}`
-                        : "No sensor data available."}
-                </p>
-              </div>
+            <p aria-live="polite" className="mt-3 text-base font-semibold">
+              {isLiveVisionActive
+                ? `${currentObject} detected at ${currentDistance} cm — ${level}`
+                : telemetryQuery.isLoading
+                  ? "Connecting to the sensor stream…"
+                  : latest
+                    ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${latest.threat_level}`
+                    : "No obstacles detected yet. Your camera / sensor stream is idle."}
+            </p>
 
-              {/* Spatial Radar Visualization */}
-              <RadarVisualization
-                items={[]}
-                currentDistanceCm={liveDistance ?? undefined}
-                currentThreatLevel={hasSensorData ? level : "Normal"}
-                hasData={hasSensorData}
-              />
-            </div>
-
-            <div className="mt-4">
-              {telemetryQuery.isLoading ? (
-                <div className="flex h-32 w-full items-center justify-center rounded-2xl border border-border bg-card p-6">
+            <div className="mt-5">
+              {telemetryQuery.isLoading && !isLiveVisionActive ? (
+                <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-border bg-card p-6">
                   <CuteLeafLoader text="Connecting to sensor stream..." size="md" />
                 </div>
               ) : (
                 <DistanceMeter
-                  distance={liveDistance ?? 0}
+                  distance={currentDistance}
                   level={level}
                   hasData={hasSensorData}
                 />
@@ -687,7 +843,7 @@ function DashboardPage() {
             <h2 id="vision-heading" className="sr-only">
               Blind's Eye Visual Recognition
             </h2>
-            <BlindsEyeLens />
+            <BlindsEyeLens onVisionTelemetry={handleVisionTelemetry} />
           </section>
         </div>
 
@@ -828,13 +984,13 @@ function DashboardPage() {
               Recent incidents
             </h2>
             <ul className="mt-4 space-y-2" aria-live="polite" data-now={now}>
-              {telemetryQuery.isLoading && <Skeleton className="h-14 rounded-lg" />}
-              {!telemetryQuery.isLoading && (telemetryQuery.data ?? []).length === 0 && (
+              {telemetryQuery.isLoading && allIncidents.length === 0 && <Skeleton className="h-14 rounded-lg" />}
+              {allIncidents.length === 0 && !telemetryQuery.isLoading && (
                 <li className="text-sm text-muted-foreground">
                   No encounters logged yet. Readings appear here the moment they arrive.
                 </li>
               )}
-              {(telemetryQuery.data ?? []).slice(0, 5).map((t) => (
+              {allIncidents.map((t) => (
                 <li key={t.id} className="rounded-lg border border-border p-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate font-semibold">{t.detected_object}</p>

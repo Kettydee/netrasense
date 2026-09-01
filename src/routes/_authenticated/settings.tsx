@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Moon, Radio, Sun, Video, Volume2 } from "lucide-react";
+import { createFileRoute } from '@tanstack/react-router'
+import { Moon, Sparkles, Sun, Video, Volume2 } from "lucide-react";
+import { GEMINI_API_KEY_STORAGE_KEY } from "@/lib/aiVision";
 
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ function SettingsPage() {
   const [threshold, setThreshold] = useState(100);
   const [dark, setDark] = useState(true);
   const [cameraUrl, setCameraUrl] = useState("");
-  const [sensorServerUrl, setSensorServerUrl] = useState("");
+  const [geminiApiKey, setGeminiApiKey] = useState("");
 
   useEffect(() => {
     setVoiceOn(window.localStorage.getItem("netrasense:voice") === "on");
@@ -42,9 +42,7 @@ function SettingsPage() {
     setThreshold(Number(window.localStorage.getItem("netrasense:threshold") ?? 100));
     setDark(document.documentElement.classList.contains("dark"));
     setCameraUrl(window.localStorage.getItem(CAMERA_STREAM_URL_KEY) ?? "");
-    setSensorServerUrl(
-      window.localStorage.getItem(SENSOR_SERVER_URL_KEY) ?? "http://localhost:5000",
-    );
+    setGeminiApiKey(window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY) ?? "");
   }, []);
 
   function persist(key: string, value: string) {
@@ -215,41 +213,48 @@ function SettingsPage() {
           </div>
         </section>
 
-        <section aria-labelledby="sensor-heading" className="surface-card p-5">
-          <h2 id="sensor-heading" className="flex items-center gap-2 text-lg font-bold">
-            <Radio aria-hidden="true" className="size-5 text-primary" />
-            Arduino ultrasonic sensor
+        {/* Gemini AI Multimodal Vision Settings */}
+        <section aria-labelledby="gemini-heading" className="surface-card p-5 xl:col-span-2">
+          <h2 id="gemini-heading" className="flex items-center gap-2 text-lg font-bold">
+            <Sparkles aria-hidden="true" className="size-5 text-primary" />
+            Google Gemini Multimodal AI Vision
           </h2>
-          <div className="mt-4 rounded-lg border border-border p-4">
-            <Label htmlFor="s-sensor-url" className="text-base font-semibold">
-              Sensor server URL
-            </Label>
-            <p className="mb-3 text-sm text-muted-foreground">
-              Address of the Python vision and serial service. The dashboard reads its latest
-              Arduino measurement from{" "}
-              <code className="rounded bg-muted px-1 py-0.5">/api/latest</code>.
-            </p>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                id="s-sensor-url"
-                type="url"
-                inputMode="url"
-                placeholder="http://localhost:5000"
-                value={sensorServerUrl}
-                onChange={(e) => setSensorServerUrl(e.target.value)}
-              />
-              <Button
-                variant="outline"
-                className="shrink-0"
-                onClick={() => {
-                  const next = sensorServerUrl.trim().replace(/\/$/, "");
-                  window.localStorage.setItem(SENSOR_SERVER_URL_KEY, next);
-                  setSensorServerUrl(next);
-                  speak(next ? "Sensor server URL saved." : "Sensor server URL cleared.");
-                }}
-              >
-                Save
-              </Button>
+          <div className="mt-4 space-y-4">
+            <div className="rounded-lg border border-border p-4">
+              <Label htmlFor="s-gemini-key" className="text-base font-semibold">
+                Gemini API Key (Optional)
+              </Label>
+              <p className="mb-3 text-sm text-muted-foreground">
+                Powers real-time natural language scene descriptions (*"What's around me?"*) and smart optical currency denomination / medicine document reading. You can get a free key from{" "}
+                <a
+                  href="https://aistudio.google.com/apikey"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-primary underline underline-offset-4"
+                >
+                  Google AI Studio
+                </a>.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  id="s-gemini-key"
+                  type="password"
+                  placeholder="AIzaSy..."
+                  value={geminiApiKey}
+                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                />
+                <Button
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={() => {
+                    const next = geminiApiKey.trim();
+                    window.localStorage.setItem(GEMINI_API_KEY_STORAGE_KEY, next);
+                    speak(next ? "Gemini API key saved." : "Gemini API key cleared.");
+                  }}
+                >
+                  Save API Key
+                </Button>
+              </div>
             </div>
           </div>
         </section>
