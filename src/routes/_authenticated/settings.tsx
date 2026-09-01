@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { createFileRoute } from '@tanstack/react-router'
-import { Moon, Sparkles, Sun, Video, Volume2 } from "lucide-react";
+import { Moon, Radio, Sparkles, Sun, Video, Volume2 } from "lucide-react";
 import { GEMINI_API_KEY_STORAGE_KEY } from "@/lib/aiVision";
 
 import { AppShell } from "@/components/AppShell";
@@ -35,6 +36,7 @@ function SettingsPage() {
   const [dark, setDark] = useState(true);
   const [cameraUrl, setCameraUrl] = useState("");
   const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [sensorServerUrl, setSensorServerUrl] = useState("");
 
   useEffect(() => {
     setVoiceOn(window.localStorage.getItem("netrasense:voice") === "on");
@@ -43,6 +45,9 @@ function SettingsPage() {
     setDark(document.documentElement.classList.contains("dark"));
     setCameraUrl(window.localStorage.getItem(CAMERA_STREAM_URL_KEY) ?? "");
     setGeminiApiKey(window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY) ?? "");
+    setSensorServerUrl(
+      window.localStorage.getItem(SENSOR_SERVER_URL_KEY) ?? "http://localhost:5000",
+    );
   }, []);
 
   function persist(key: string, value: string) {
@@ -255,6 +260,45 @@ function SettingsPage() {
                   Save API Key
                 </Button>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="sensor-heading" className="surface-card p-5">
+          <h2 id="sensor-heading" className="flex items-center gap-2 text-lg font-bold">
+            <Radio aria-hidden="true" className="size-5 text-primary" />
+            Arduino ultrasonic sensor
+          </h2>
+          <div className="mt-4 rounded-lg border border-border p-4">
+            <Label htmlFor="s-sensor-url" className="text-base font-semibold">
+              Sensor server URL
+            </Label>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Address of the Python vision and serial service. The dashboard reads its latest
+              Arduino measurement from{" "}
+              <code className="rounded bg-muted px-1 py-0.5">/api/latest</code>.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                id="s-sensor-url"
+                type="url"
+                inputMode="url"
+                placeholder="http://localhost:5000"
+                value={sensorServerUrl}
+                onChange={(e) => setSensorServerUrl(e.target.value)}
+              />
+              <Button
+                variant="outline"
+                className="shrink-0"
+                onClick={() => {
+                  const next = sensorServerUrl.trim().replace(/\/$/, "");
+                  window.localStorage.setItem(SENSOR_SERVER_URL_KEY, next);
+                  setSensorServerUrl(next);
+                  speak(next ? "Sensor server URL saved." : "Sensor server URL cleared.");
+                }}
+              >
+                Save
+              </Button>
             </div>
           </div>
         </section>
