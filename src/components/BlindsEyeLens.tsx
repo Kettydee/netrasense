@@ -39,7 +39,20 @@ interface YoloStatus {
   detections: YoloDetection[];
 }
 
-export function BlindsEyeLens() {
+import { SmartSceneDescriber } from "@/components/SmartSceneDescriber";
+
+export interface VisionTelemetryEvent {
+  object: string;
+  distance_cm: number;
+  threat_level: "Normal" | "Warning" | "Alarming" | "Collision";
+  direction?: string;
+}
+
+interface BlindsEyeLensProps {
+  onVisionTelemetry?: (event: VisionTelemetryEvent) => void;
+}
+
+export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
   const [engineMode, setEngineMode] = useState<"yolo" | "browser">("yolo");
   const [serverUrl, setServerUrl] = useState<string>("http://localhost:5000");
   const [isServerLive, setIsServerLive] = useState<boolean>(false);
@@ -49,12 +62,56 @@ export function BlindsEyeLens() {
   // In-browser Camera state
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const imgStreamRef = useRef<HTMLImageElement | null>(null);
   const [browserModel, setBrowserModel] = useState<cocoSsd.ObjectDetection | null>(null);
   const [isBrowserCameraActive, setIsBrowserCameraActive] = useState<boolean>(false);
   const [voiceAlerts, setVoiceAlerts] = useState<boolean>(true);
   const [browserDetectedItem, setBrowserDetectedItem] = useState<string>("Scanning...");
   const [isLoadingBrowserModel, setIsLoadingBrowserModel] = useState<boolean>(true);
   const [lastSpoken, setLastSpoken] = useState<string>("");
+  const announcedObjectsRef = useRef<Map<string, number>>(new Map());
+  const lastSeenObjectsRef = useRef<Map<string, number>>(new Map());
+
+  // Capture current camera frame as Base64 for multimodal AI scene analysis
+  const captureFrameBase64 = useCallback((): string | null => {
+    if (engineMode === "browser" && videoRef.current && videoRef.current.readyState >= 2) {
+      const v = videoRef.current;
+      const hiddenCanvas = document.createElement("canvas");
+      hiddenCanvas.width = v.videoWidth || 640;
+      hiddenCanvas.height = v.videoHeight || 480;
+      const ctx = hiddenCanvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(v, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+        return hiddenCanvas.toDataURL("image/jpeg", 0.85);
+      }
+    }
+
+    if (engineMode === "yolo" && imgStreamRef.current && imgStreamRef.current.complete) {
+      const img = imgStreamRef.current;
+      const hiddenCanvas = document.createElement("canvas");
+      hiddenCanvas.width = img.naturalWidth || 640;
+      hiddenCanvas.height = img.naturalHeight || 480;
+      const ctx = hiddenCanvas.getContext("2d");
+      if (ctx) {
+        try {
+          ctx.drawImage(img, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+          return hiddenCanvas.toDataURL("image/jpeg", 0.85);
+        } catch {
+          // Cross-origin fallback
+        }
+      }
+    }
+
+    if (canvasRef.current && canvasRef.current.width > 0) {
+      try {
+        return canvasRef.current.toDataURL("image/jpeg", 0.85);
+      } catch {
+        // ignore
+      }
+    }
+
+    return null;
+  }, [engineMode]);
 
   // Resolve configured server URL from localStorage if any
   useEffect(() => {
@@ -95,6 +152,18 @@ export function BlindsEyeLens() {
               if (url !== serverUrl) setServerUrl(url);
               setServerStatus(data);
               setIsServerLive(true);
+
+              if (
+                data.closest_obstacle &&
+                data.closest_obstacle.object &&
+                data.closest_obstacle.object !== "Clear"
+              ) {
+                onVisionTelemetry?.({
+                  object: data.closest_obstacle.object,
+                  distance_cm: data.closest_obstacle.distance_cm || 100,
+                  threat_level: (data.closest_obstacle.threat_level as any) || "Warning",
+                });
+              }
             }
             return;
           }
@@ -142,7 +211,7 @@ export function BlindsEyeLens() {
   const speakBrowser = useCallback(
     (text: string) => {
       if (!voiceAlerts || typeof window === "undefined" || !("speechSynthesis" in window)) return;
-      if (text === lastSpoken) return;
+      if (!text.trim()) return;
 
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
@@ -151,7 +220,7 @@ export function BlindsEyeLens() {
       window.speechSynthesis.speak(utterance);
       setLastSpoken(text);
     },
-    [voiceAlerts, lastSpoken],
+    [voiceAlerts],
   );
 
   // Browser Camera Start/Stop
@@ -178,6 +247,8 @@ export function BlindsEyeLens() {
       videoRef.current.srcObject = null;
       setIsBrowserCameraActive(false);
       setBrowserDetectedItem("Lens Inactive");
+      announcedObjectsRef.current.clear();
+      lastSeenObjectsRef.current.clear();
     }
   };
 
@@ -204,7 +275,14 @@ export function BlindsEyeLens() {
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+          const now = Date.now();
+          const currentSeen = new Set<string>();
+          const newItemsToAnnounce: string[] = [];
+          const detectedSummaries: string[] = [];
+
           predictions.forEach((prediction) => {
+            if (prediction.score < 0.48) return;
+
             const [x, y, width, height] = prediction.bbox;
             const cx = x + width / 2;
             const dir =
@@ -225,15 +303,68 @@ export function BlindsEyeLens() {
             ctx.fillStyle = "#0f172a";
             ctx.font = "bold 12px Inter, sans-serif";
             ctx.fillText(label, x + 6, y > 24 ? y - 8 : y + 16);
+
+            const trackKey = `${prediction.class}_${dir.toLowerCase()}`;
+            currentSeen.add(trackKey);
+            lastSeenObjectsRef.current.set(trackKey, now);
+            detectedSummaries.push(`${prediction.class} (${dir})`);
+
+            // Check if this distinct object in this zone has been announced
+            const lastAnnounced = announcedObjectsRef.current.get(trackKey);
+            if (!lastAnnounced || (now - lastAnnounced) > 4000) {
+              newItemsToAnnounce.push(`${prediction.class} on the ${dir.toLowerCase()}`);
+              announcedObjectsRef.current.set(trackKey, now);
+            }
           });
 
-          const top = predictions[0];
-          if (top && top.score > 0.6) {
-            const cx = top.bbox[0] + top.bbox[2] / 2;
-            const dir =
-              cx < canvas.width / 3 ? "left" : cx < (2 * canvas.width) / 3 ? "center" : "right";
-            setBrowserDetectedItem(`${top.class} (${Math.round(top.score * 100)}%) on ${dir}`);
-            speakBrowser(`${top.class} on the ${dir}`);
+          // Clean up objects that have left the scene for > 3.5s
+          for (const [key, seenTime] of lastSeenObjectsRef.current.entries()) {
+            if (now - seenTime > 3500) {
+              lastSeenObjectsRef.current.delete(key);
+              announcedObjectsRef.current.delete(key);
+            }
+          }
+
+          // Announce every newly detected object name once
+          if (newItemsToAnnounce.length > 0) {
+            let message = "";
+            if (newItemsToAnnounce.length === 1) {
+              message = newItemsToAnnounce[0];
+            } else if (newItemsToAnnounce.length === 2) {
+              message = `${newItemsToAnnounce[0]}, and ${newItemsToAnnounce[1]}`;
+            } else {
+              message = `${newItemsToAnnounce.slice(0, 3).join(", ")}, and ${newItemsToAnnounce[3] || ""}`.replace(/,\s*and\s*$/, "");
+            }
+            speakBrowser(message);
+          }
+
+          if (detectedSummaries.length > 0 && predictions.length > 0) {
+            const top = predictions.reduce(
+              (prev, curr) => (curr.bbox[3] > prev.bbox[3] ? curr : prev),
+              predictions[0],
+            );
+            const relH = Math.max(0.05, top.bbox[3] / canvas.height);
+            const approxDistCm = Math.round(
+              Math.max(25, Math.min(400, (1.1 / (relH + 0.1)) * 100)),
+            );
+            const threat =
+              approxDistCm <= 40
+                ? "Collision"
+                : approxDistCm <= 100
+                  ? "Alarming"
+                  : approxDistCm <= 200
+                    ? "Warning"
+                    : "Normal";
+
+            onVisionTelemetry?.({
+              object: top.class,
+              distance_cm: approxDistCm,
+              threat_level: threat,
+            });
+
+            // Remove duplicates for display summary
+            const uniqueSummaries = Array.from(new Set(detectedSummaries));
+            setBrowserDetectedItem(uniqueSummaries.join(" · "));
           } else {
             setBrowserDetectedItem("Path clear");
           }
@@ -250,7 +381,7 @@ export function BlindsEyeLens() {
     }
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isBrowserCameraActive, browserModel, engineMode, speakBrowser]);
+  }, [isBrowserCameraActive, browserModel, engineMode, speakBrowser, onVisionTelemetry]);
 
   const threatColor = (level?: string) => {
     switch (level) {
@@ -339,6 +470,8 @@ export function BlindsEyeLens() {
           <>
             {isServerLive ? (
               <img
+                ref={imgStreamRef}
+                crossOrigin="anonymous"
                 key={`yolo-stream-${serverCheckKey}`}
                 src={`${serverUrl}/video_feed`}
                 alt="YOLO Object Detection & Distance Stream"
@@ -560,6 +693,21 @@ export function BlindsEyeLens() {
           )}
         </div>
       )}
+
+      {/* Smart Assistive AI Scene Describer & Currency Reader */}
+      <SmartSceneDescriber
+        getFrameBase64={captureFrameBase64}
+        detectedObjects={
+          engineMode === "yolo"
+            ? detections.map((d) => `${d.label} on ${d.direction}`)
+            : browserDetectedItem &&
+                browserDetectedItem !== "Path clear" &&
+                browserDetectedItem !== "Scanning..." &&
+                browserDetectedItem !== "Lens Inactive"
+              ? [browserDetectedItem]
+              : []
+        }
+      />
     </div>
   );
 }

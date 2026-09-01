@@ -1,0 +1,23 @@
+============================================================
+       NetraSense Model Evaluation Benchmark Report
+============================================================
+Model: YOLO11n + Spatial Threat Fusion Engine
+Overall Accuracy  : 98.80%
+Mean AUC Score    : 0.9995
+mAP@50            : 89.20%
+mAP@50-95         : 68.40%
+
+Per-Class Performance:
+------------------------------------------------------------
+Class       | Precision | Recall | F1-Score | Support
+------------------------------------------------------------
+Normal      | 0.99      | 0.98   | 0.99     | 110
+Warning     | 1.00      | 0.98   | 0.99     | 65
+Alarming    | 1.00      | 1.00   | 1.00     | 49
+Collision   | 0.93      | 1.00   | 0.96     | 26
+------------------------------------------------------------
+Plots generated:
+- Confusion Matrix: server\evaluation_results\confusion_matrix.png
+- ROC Curves      : server\evaluation_results\roc_curves.png
+- JSON Report     : server\evaluation_results\evaluation_report.json
+============================================================

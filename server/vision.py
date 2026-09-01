@@ -331,9 +331,9 @@ class AnnouncementTracker:
 
     def __init__(
         self,
-        absence_reset: float = 1.5,
-        speak_interval: float = 2.0,
-        min_duration: float = 0.4,
+        absence_reset: float = 2.5,
+        speak_interval: float = 1.5,
+        min_duration: float = 0.3,
     ) -> None:
         self._absence_reset = absence_reset
         self._speak_interval = speak_interval
@@ -354,38 +354,43 @@ class AnnouncementTracker:
             track_key = f"{det.label}_{det.direction}"
             current_keys.add(track_key)
 
+            # If new object or returned after absence, reset streak
             if track_key not in self._last_seen or (now - self._last_seen[track_key]) > self._absence_reset:
                 self._first_seen[track_key] = now
                 self._announced.discard(track_key)
 
             self._last_seen[track_key] = now
 
+            # If visible long enough and not yet announced, queue for speech once
             if track_key not in self._announced and (now - self._first_seen[track_key]) >= self._min_duration:
                 if det.threat_level in ("Collision", "Alarming"):
-                    dist = det.depth_meters if det.depth_meters is not None else ((det.distance_cm / 100.0) if det.distance_cm is not None else None)
-                    dist_text = f"{dist:.1f} meters" if dist is not None else "unknown distance"
-                    speech = f"CRITICAL: {det.label} on the {det.direction} at {dist_text}"
+                    speech = f"CRITICAL: {det.label} on the {det.direction}"
                 else:
                     speech = f"{det.label} on the {det.direction}"
 
-                self._pending.append(speech)
+                if speech not in self._pending:
+                    self._pending.append(speech)
                 self._announced.add(track_key)
 
+        # Remove objects that have left the scene
         expired = [k for k, v in self._last_seen.items() if (now - v) > self._absence_reset]
         for k in expired:
             self._last_seen.pop(k, None)
             self._first_seen.pop(k, None)
             self._announced.discard(k)
 
+        # Emit announcements if pending
         if self._pending and (now - self._last_speak_time) >= self._speak_interval:
-            # Sort critical messages first
-            critical_items = [p for p in self._pending if p.startswith("CRITICAL:")]
-            if critical_items:
-                msg = critical_items[0]
-            else:
-                msg = ", ".join(self._pending[:2])
-            self._pending.clear()
+            # Announce up to 4 items in one batch
+            batch = self._pending[:4]
+            self._pending = self._pending[4:]
             self._last_speak_time = now
-            return msg
+
+            if len(batch) == 1:
+                return batch[0]
+            elif len(batch) == 2:
+                return f"{batch[0]}, and {batch[1]}"
+            else:
+                return ", ".join(batch[:-1]) + f", and {batch[-1]}"
 
         return None
