@@ -37,7 +37,7 @@ export async function fetchDailyStats(userId: string): Promise<DailyStats[]> {
     .select("*")
     .eq("user_id", userId)
     .order("date", { ascending: false })
-    .limit(7);
+    .limit(365);
   if (error) throw error;
   return data ?? [];
 }
