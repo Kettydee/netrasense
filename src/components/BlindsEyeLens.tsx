@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CAMERA_STREAM_URL_KEY } from "@/components/CameraFeed";
 import { VoiceSelector } from "@/components/VoiceSelector";
+import { speak } from "@/lib/netrasense";
 
 interface YoloDetection {
   label: string;
@@ -208,17 +209,11 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
     }
   }, [engineMode, browserModel]);
 
-  // Browser TTS Speak function
+  // Browser TTS Speak function - uses chosen NetraSense AI Voice
   const speakBrowser = useCallback(
     (text: string) => {
-      if (!voiceAlerts || typeof window === "undefined" || !("speechSynthesis" in window)) return;
-      if (!text.trim()) return;
-
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      window.speechSynthesis.speak(utterance);
+      if (!voiceAlerts || !text.trim()) return;
+      speak(text);
       setLastSpoken(text);
     },
     [voiceAlerts],
