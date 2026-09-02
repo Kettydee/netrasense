@@ -41,7 +41,7 @@ interface YoloStatus {
   detections: YoloDetection[];
 }
 
-import { SmartSceneDescriber } from "@/components/SmartSceneDescriber";
+import { SmartAssistiveSuite } from "@/components/SmartAssistiveSuite";
 
 export interface VisionTelemetryEvent {
   object: string;
@@ -69,6 +69,9 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
   const [isBrowserCameraActive, setIsBrowserCameraActive] = useState<boolean>(false);
   const [voiceAlerts, setVoiceAlerts] = useState<boolean>(true);
   const [browserDetectedItem, setBrowserDetectedItem] = useState<string>("Scanning...");
+  const [browserDetections, setBrowserDetections] = useState<
+    Array<{ label: string; direction: string; distance_cm: number }>
+  >([]);
   const [isLoadingBrowserModel, setIsLoadingBrowserModel] = useState<boolean>(true);
   const [lastSpoken, setLastSpoken] = useState<string>("");
   const announcedObjectsRef = useRef<Map<string, number>>(new Map());
@@ -361,8 +364,29 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
             // Remove duplicates for display summary
             const uniqueSummaries = Array.from(new Set(detectedSummaries));
             setBrowserDetectedItem(uniqueSummaries.join(" · "));
+            setBrowserDetections(
+              predictions.map((p) => {
+                const relH = Math.max(0.05, p.bbox[3] / canvas.height);
+                const approxDistCm = Math.round(
+                  Math.max(25, Math.min(400, (1.1 / (relH + 0.1)) * 100)),
+                );
+                const centerX = p.bbox[0] + p.bbox[2] / 2;
+                const dir =
+                  centerX < canvas.width * 0.33
+                    ? "left"
+                    : centerX > canvas.width * 0.66
+                      ? "right"
+                      : "center";
+                return {
+                  label: p.class,
+                  direction: dir,
+                  distance_cm: approxDistCm,
+                };
+              }),
+            );
           } else {
             setBrowserDetectedItem("Path clear");
+            setBrowserDetections([]);
           }
         }
       }
@@ -700,8 +724,8 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
         </div>
       )}
 
-      {/* Smart Assistive AI Scene Describer & Currency Reader */}
-      <SmartSceneDescriber
+      {/* Smart Assistive AI Copilot Suite (Find Object, Face & Mood, Indoor Nav, Scene Reader) */}
+      <SmartAssistiveSuite
         getFrameBase64={captureFrameBase64}
         detectedObjects={
           engineMode === "yolo"
@@ -712,6 +736,17 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
                 browserDetectedItem !== "Lens Inactive"
               ? [browserDetectedItem]
               : []
+        }
+        detections={
+          engineMode === "yolo"
+            ? detections.map((d) => ({
+                label: d.label,
+                direction: d.direction,
+                distance_cm:
+                  d.distance_cm ||
+                  (d.depth_meters ? Math.round(d.depth_meters * 100) : 120),
+              }))
+            : browserDetections
         }
       />
     </div>
