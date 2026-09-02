@@ -80,20 +80,93 @@ export const AI_VOICE_STORAGE_KEY = "netrasense:ai_voice";
 export interface AiVoiceProfile {
   id: string;
   name: string;
-  description: string;
+  vibe: string;
+  lang: "EN" | "HIN";
+  speechLang: string;
   gender: "female" | "male";
   pitch: number;
   rate: number;
+  sampleText: string;
 }
 
 export const AI_VOICE_PROFILES: AiVoiceProfile[] = [
-  { id: "nova", name: "Nova", description: "Natural Female (US)", gender: "female", pitch: 1.05, rate: 1.05 },
-  { id: "echo", name: "Echo", description: "Natural Male (US)", gender: "male", pitch: 0.95, rate: 1.02 },
-  { id: "aria", name: "Aria", description: "Expressive & Clear (UK)", gender: "female", pitch: 1.25, rate: 1.05 },
-  { id: "onyx", name: "Onyx", description: "Deep & Authoritative", gender: "male", pitch: 0.72, rate: 0.92 },
-  { id: "swara", name: "Swara", description: "Hindi & Indian Voice (हिन्दी)", gender: "female", pitch: 1.0, rate: 1.0 },
-  { id: "fable", name: "Fable", description: "Warm Storyteller", gender: "female", pitch: 0.88, rate: 0.92 },
-  { id: "shimmer", name: "Shimmer", description: "Bright & Energetic", gender: "female", pitch: 1.35, rate: 1.15 },
+  {
+    id: "nova",
+    name: "Nova",
+    vibe: "Calm & Natural",
+    lang: "EN",
+    speechLang: "en-US",
+    gender: "female",
+    pitch: 1.05,
+    rate: 1.02,
+    sampleText: "Hello! I am Nova, calm and natural.",
+  },
+  {
+    id: "echo",
+    name: "Echo",
+    vibe: "Confident & Clear",
+    lang: "EN",
+    speechLang: "en-US",
+    gender: "male",
+    pitch: 0.92,
+    rate: 1.04,
+    sampleText: "Hello! I am Echo, confident and clear.",
+  },
+  {
+    id: "swara",
+    name: "Swara",
+    vibe: "Friendly & Fluent",
+    lang: "HIN",
+    speechLang: "hi-IN",
+    gender: "female",
+    pitch: 1.08,
+    rate: 0.98,
+    sampleText: "नमस्ते! मैं स्वरा हूँ, आपकी सहायता के लिए तैयार।",
+  },
+  {
+    id: "aria",
+    name: "Aria",
+    vibe: "Expressive & Upbeat",
+    lang: "EN",
+    speechLang: "en-GB",
+    gender: "female",
+    pitch: 1.28,
+    rate: 1.1,
+    sampleText: "Hello! I am Aria, expressive and upbeat!",
+  },
+  {
+    id: "onyx",
+    name: "Onyx",
+    vibe: "Deep & Authoritative",
+    lang: "EN",
+    speechLang: "en-US",
+    gender: "male",
+    pitch: 0.65,
+    rate: 0.9,
+    sampleText: "I am Onyx. Deep and authoritative command.",
+  },
+  {
+    id: "kavya",
+    name: "Kavya",
+    vibe: "Sweet & Reassuring",
+    lang: "HIN",
+    speechLang: "hi-IN",
+    gender: "female",
+    pitch: 0.95,
+    rate: 0.92,
+    sampleText: "नमस्ते! मैं काव्या हूँ। सब कुछ शांत और सुरक्षित है।",
+  },
+  {
+    id: "zephyr",
+    name: "Zephyr",
+    vibe: "Fast & Alert",
+    lang: "EN",
+    speechLang: "en-US",
+    gender: "female",
+    pitch: 1.38,
+    rate: 1.22,
+    sampleText: "Ready! I am Zephyr, fast and alert navigation.",
+  },
 ];
 
 // In-memory voices cache for reliable access across browser async lifecycles
@@ -108,9 +181,13 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
 export function speak(text: string, overrideVoiceId?: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
-  const utterance = new SpeechSynthesisUtterance(text);
   const savedVoiceId = overrideVoiceId || window.localStorage.getItem(AI_VOICE_STORAGE_KEY) || "nova";
-  const profile = AI_VOICE_PROFILES.find((p) => p.id === savedVoiceId);
+  const profile = AI_VOICE_PROFILES.find((p) => p.id === savedVoiceId) || AI_VOICE_PROFILES[0];
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.pitch = profile.pitch;
+  utterance.rate = profile.rate;
+  utterance.lang = profile.speechLang;
 
   // Retrieve current or cached voices
   let voices = window.speechSynthesis.getVoices();
@@ -119,70 +196,48 @@ export function speak(text: string, overrideVoiceId?: string) {
   }
 
   const hasHindiScript = /[\u0900-\u097F]/.test(text);
-  let matchedVoice: SpeechSynthesisVoice | null = null;
 
-  if (profile) {
-    utterance.pitch = profile.pitch;
-    utterance.rate = profile.rate;
+  if (voices && voices.length > 0) {
+    let matchedVoice: SpeechSynthesisVoice | null = null;
 
-    if (voices.length > 0) {
-      if (profile.id === "swara" || hasHindiScript) {
-        // Find Hindi (hi-IN) or Indian English (en-IN) voice
-        matchedVoice =
-          voices.find((v) => v.lang.startsWith("hi") || /hindi|हिन्दी|swara|madhur|lekha/i.test(v.name)) ||
-          voices.find((v) => v.lang === "en-IN" || /neerja|heera|rishi/i.test(v.name)) ||
-          null;
-      } else if (profile.id === "aria") {
-        // Expressive British / UK voice
-        matchedVoice =
-          voices.find((v) => /uk english female|hazel|stephanie|serena|victoria/i.test(v.name)) ||
-          voices.find((v) => v.lang.startsWith("en-GB") && !/male|george/i.test(v.name)) ||
-          null;
-      } else if (profile.id === "onyx") {
-        // Deep resonant male voice
-        matchedVoice =
-          voices.find((v) => /daniel|oliver|george|david/i.test(v.name)) ||
-          voices.find((v) => /male/i.test(v.name)) ||
-          null;
-      } else if (profile.id === "echo") {
-        // Standard clear male voice
-        matchedVoice =
-          voices.find((v) => /guy|david|alex|mark|google.*us.*male/i.test(v.name)) ||
-          voices.find((v) => /male/i.test(v.name)) ||
-          null;
-      } else if (profile.id === "fable") {
-        // Warm storytelling voice
-        matchedVoice =
-          voices.find((v) => /karen|catherine|moira|fiona/i.test(v.name)) ||
-          null;
-      } else if (profile.id === "shimmer") {
-        // Bright energetic female voice
-        matchedVoice =
-          voices.find((v) => /stephanie|zira|samantha/i.test(v.name)) ||
-          null;
-      } else {
-        // Nova (Standard natural female voice)
-        matchedVoice =
-          voices.find((v) => /jenny|samantha|zira|google.*us.*female/i.test(v.name)) ||
-          voices.find((v) => !/male|david|mark|alex|george/i.test(v.name) && v.lang.startsWith("en")) ||
-          null;
-      }
+    if (profile.lang === "HIN" || hasHindiScript) {
+      // Find Hindi or Indian English voice
+      matchedVoice =
+        voices.find((v) => v.lang.startsWith("hi") || /hindi|हिन्दी|swara|madhur|lekha/i.test(v.name)) ||
+        voices.find((v) => v.lang === "en-IN" || /neerja|heera|rishi/i.test(v.name)) ||
+        null;
+    } else if (profile.id === "aria") {
+      matchedVoice =
+        voices.find((v) => /uk|british|hazel|stephanie|serena|victoria/i.test(v.name + v.lang) && !/male|george/i.test(v.name)) ||
+        voices.find((v) => !/male|david|mark/i.test(v.name) && v.lang.startsWith("en")) ||
+        null;
+    } else if (profile.id === "onyx") {
+      matchedVoice =
+        voices.find((v) => /daniel|george|oliver/i.test(v.name)) ||
+        voices.find((v) => /david|mark|guy|male/i.test(v.name)) ||
+        null;
+    } else if (profile.id === "echo") {
+      matchedVoice =
+        voices.find((v) => /guy|david|alex|mark|male/i.test(v.name)) ||
+        null;
+    } else if (profile.id === "zephyr") {
+      matchedVoice =
+        voices.find((v) => /stephanie|zira|samantha/i.test(v.name)) ||
+        null;
+    } else {
+      // Nova
+      matchedVoice =
+        voices.find((v) => /jenny|samantha|zira/i.test(v.name)) ||
+        voices.find((v) => !/male|david|mark/i.test(v.name) && v.lang.startsWith("en")) ||
+        null;
     }
-  } else {
-    // User picked a specific device-native voice by name or voiceURI
-    matchedVoice = voices.find((v) => v.name === savedVoiceId || v.voiceURI === savedVoiceId) || null;
-    utterance.rate = 1.05;
-    utterance.pitch = 1.0;
+
+    if (matchedVoice) {
+      utterance.voice = matchedVoice;
+    }
   }
 
-  if (matchedVoice) {
-    utterance.voice = matchedVoice;
-    utterance.lang = matchedVoice.lang;
-  } else if (hasHindiScript) {
-    utterance.lang = "hi-IN";
-  }
-
-  // Cancel any ongoing speech and use a brief timeout to allow audio channels to reset
+  // Cancel prior speech and queue immediately
   window.speechSynthesis.cancel();
   setTimeout(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
