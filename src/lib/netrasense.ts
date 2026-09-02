@@ -75,11 +75,64 @@ export function relativeTime(iso: string): string {
   return `${d} day${d === 1 ? "" : "s"} ago`;
 }
 
-export function speak(text: string) {
+export const AI_VOICE_STORAGE_KEY = "netrasense:ai_voice";
+
+export interface AiVoiceProfile {
+  id: string;
+  name: string;
+  description: string;
+  gender: "female" | "male";
+  pitch: number;
+  rate: number;
+}
+
+export const AI_VOICE_PROFILES: AiVoiceProfile[] = [
+  { id: "nova", name: "Nova", description: "Natural Female", gender: "female", pitch: 1.05, rate: 1.05 },
+  { id: "echo", name: "Echo", description: "Natural Male", gender: "male", pitch: 0.95, rate: 1.05 },
+  { id: "aria", name: "Aria", description: "Expressive & Clear", gender: "female", pitch: 1.18, rate: 1.0 },
+  { id: "onyx", name: "Onyx", description: "Deep & Authoritative", gender: "male", pitch: 0.8, rate: 0.98 },
+  { id: "fable", name: "Fable", description: "Warm Storyteller", gender: "female", pitch: 1.0, rate: 0.95 },
+  { id: "shimmer", name: "Shimmer", description: "Bright & Energetic", gender: "female", pitch: 1.25, rate: 1.1 },
+];
+
+export function speak(text: string, overrideVoiceId?: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 1.05;
-  utterance.pitch = 1;
+  
+  const savedVoiceId = overrideVoiceId || window.localStorage.getItem(AI_VOICE_STORAGE_KEY) || "nova";
+  const profile = AI_VOICE_PROFILES.find((p) => p.id === savedVoiceId);
+  const voices = window.speechSynthesis.getVoices();
+
+  if (profile) {
+    utterance.pitch = profile.pitch;
+    utterance.rate = profile.rate;
+
+    if (voices.length > 0) {
+      if (profile.gender === "female") {
+        const femaleVoice = voices.find(
+          (v) =>
+            /female|samantha|zira|jenny|victoria|karen|catherine|google us english|hazel/i.test(v.name) &&
+            !/male|david|mark|george/i.test(v.name),
+        ) || voices.find((v) => v.lang.startsWith("en"));
+        if (femaleVoice) utterance.voice = femaleVoice;
+      } else if (profile.gender === "male") {
+        const maleVoice = voices.find(
+          (v) =>
+            /male|david|alex|george|daniel|guy|mark|google uk english male/i.test(v.name),
+        ) || voices.find((v) => v.lang.startsWith("en"));
+        if (maleVoice) utterance.voice = maleVoice;
+      }
+    }
+  } else {
+    // If user selected a specific device voice by name
+    const match = voices.find((v) => v.name === savedVoiceId);
+    if (match) {
+      utterance.voice = match;
+    }
+    utterance.rate = 1.05;
+    utterance.pitch = 1.0;
+  }
+
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utterance);
 }
