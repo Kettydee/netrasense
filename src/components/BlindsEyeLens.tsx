@@ -480,28 +480,33 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
               />
             ) : (
               <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
-                <Radio className="size-10 text-muted-foreground/60 animate-pulse" />
+                <Radio className="size-10 text-white/70 animate-pulse" />
                 <div>
-                  <p className="text-sm font-semibold text-foreground">
+                  <p className="text-base font-bold text-white">
                     YOLO Vision Server Not Connected
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground max-w-sm">
+                  <p className="mt-1 text-xs text-white/80 max-w-sm">
                     Start the local AI engine with{" "}
-                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-primary">
+                    <code className="rounded bg-white/15 px-1.5 py-0.5 font-mono text-cyan-300">
                       python server/vision_server.py
                     </code>{" "}
-                    or switch to <strong>Browser Lens</strong> above.
+                    or switch to <strong className="text-white">Browser Lens</strong> above.
                   </p>
                 </div>
                 <div className="flex gap-2 mt-2">
                   <Button
                     size="sm"
                     variant="outline"
+                    className="border-white/40 text-white bg-white/10 hover:bg-white/20 hover:text-white"
                     onClick={() => setServerCheckKey((k) => k + 1)}
                   >
                     <RefreshCw className="mr-1.5 size-3.5" /> Retry Connection
                   </Button>
-                  <Button size="sm" variant="secondary" onClick={() => setEngineMode("browser")}>
+                  <Button
+                    size="sm"
+                    className="bg-white text-black hover:bg-white/90 font-bold"
+                    onClick={() => setEngineMode("browser")}
+                  >
                     Use Browser Camera
                   </Button>
                 </div>
@@ -515,10 +520,10 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
           <>
             {!isBrowserCameraActive && (
               <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
-                <Camera className="size-10 text-muted-foreground/60" />
+                <Camera className="size-10 text-white/70" />
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Browser Camera is Off</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="text-base font-bold text-white">Browser Camera is Off</p>
+                  <p className="mt-1 text-xs text-white/80">
                     Click &ldquo;Open Camera&rdquo; below to run in-browser object detection.
                   </p>
                 </div>
@@ -526,7 +531,7 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
                   size="sm"
                   disabled={isLoadingBrowserModel}
                   onClick={startBrowserCamera}
-                  className="mt-2"
+                  className="mt-2 bg-white text-black hover:bg-white/90 font-bold shadow-md"
                 >
                   {isLoadingBrowserModel ? "Loading AI..." : "Open Camera"}
                 </Button>
