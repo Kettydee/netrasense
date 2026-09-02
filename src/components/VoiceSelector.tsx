@@ -32,11 +32,15 @@ export function VoiceSelector({ onVoiceChange, className = "" }: VoiceSelectorPr
     const loadVoices = () => {
       if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
       const allVoices = window.speechSynthesis.getVoices();
-      // Filter primarily for English or clean system voices
+      // Filter for English, Hindi, and localized voices
       const filtered = allVoices.filter(
-        (v) => v.lang.startsWith("en") || v.default
+        (v) =>
+          v.lang.startsWith("en") ||
+          v.lang.startsWith("hi") ||
+          /hindi|हिन्दी|swara|madhur|lekha|neerja|heera|rishi/i.test(v.name) ||
+          v.default
       );
-      setSystemVoices(filtered.length > 0 ? filtered : allVoices.slice(0, 8));
+      setSystemVoices(filtered.length > 0 ? filtered : allVoices.slice(0, 10));
     };
 
     loadVoices();
@@ -52,8 +56,12 @@ export function VoiceSelector({ onVoiceChange, className = "" }: VoiceSelectorPr
 
     // Speak a brief preview in the newly selected voice
     const profile = AI_VOICE_PROFILES.find((p) => p.id === voiceId);
-    const voiceName = profile ? profile.name : voiceId.replace(/^(Microsoft|Google)\s+/, "");
-    speak(`Voice set to ${voiceName}`, voiceId);
+    if (voiceId === "swara") {
+      speak("नमस्ते! आवाज़ स्वरा पर सेट हो गई है। Voice set to Swara.", voiceId);
+    } else {
+      const voiceName = profile ? profile.name : voiceId.replace(/^(Microsoft|Google)\s+/, "");
+      speak(`Voice set to ${voiceName}`, voiceId);
+    }
   };
 
   return (
