@@ -155,14 +155,14 @@ export function AppShell({ title, description, children, actions }: AppShellProp
     : !!sensorQuery.data?.sensor_status.connected;
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground overflow-x-clip transition-colors">
+    <div className="flex min-h-screen bg-background text-foreground overflow-x-hidden transition-colors">
       {/* --- COLLAPSIBLE COMMAND SIDEBAR --- */}
       <aside
-        className={`sticky top-0 h-screen max-h-screen flex flex-col justify-between border-r border-border bg-card transition-all duration-200 ease-in-out z-30 shrink-0 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+        className={`relative flex flex-col border-r border-border bg-card transition-all duration-200 ease-in-out z-30 shrink-0 ${
           isSidebarOpen ? "w-64 p-5" : "w-20 p-3 items-center"
         }`}
       >
-        <div className="w-full flex-1 flex flex-col min-h-0">
+        <div className="w-full">
           {/* Top Branding Section */}
           <div
             className={`flex items-center ${isSidebarOpen ? "justify-between" : "justify-center"}`}
@@ -192,10 +192,108 @@ export function AppShell({ title, description, children, actions }: AppShellProp
             </button>
           </div>
 
+          {/* Brightness / Theme Switcher & Device Connected Part below 'NetraSense' */}
+          <div className="mt-4 flex flex-col gap-2.5 border-b border-border pb-4 w-full">
+            {/* Theme / Brightness Switcher */}
+            <div className="flex w-full items-center justify-center rounded-xl border border-border bg-muted/40 p-1">
+              {isSidebarOpen ? (
+                <div className="grid w-full grid-cols-3 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleThemeChange("light")}
+                    className={`flex items-center justify-center gap-1.5 rounded-lg py-1 text-xs font-semibold transition-all ${
+                      theme === "light"
+                        ? "bg-card text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Sun className="size-3 text-amber-500" />
+                    Light
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleThemeChange("dark")}
+                    className={`flex items-center justify-center gap-1.5 rounded-lg py-1 text-xs font-semibold transition-all ${
+                      theme === "dark"
+                        ? "bg-card text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Moon className="size-3 text-primary" />
+                    Dark
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleThemeChange("system")}
+                    className={`flex items-center justify-center gap-1.5 rounded-lg py-1 text-xs font-semibold transition-all ${
+                      theme === "system"
+                        ? "bg-card text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Laptop className="size-3" />
+                    Auto
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleThemeChange(
+                      theme === "dark" ? "light" : theme === "light" ? "system" : "dark",
+                    )
+                  }
+                  className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
+                  title={`Theme: ${theme}`}
+                >
+                  {theme === "light" && <Sun className="size-4 text-amber-500" />}
+                  {theme === "dark" && <Moon className="size-4 text-primary" />}
+                  {theme === "system" && <Laptop className="size-4" />}
+                </button>
+              )}
+            </div>
+
+            {/* Arduino Device Connected Status Pill */}
+            {isSidebarOpen ? (
+              <div
+                className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-[11px] font-bold tracking-wider uppercase transition-colors ${
+                  isSensorConnected
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
+                    : "border-zinc-500/30 bg-zinc-500/10 text-zinc-400"
+                }`}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <span
+                    className={`size-2 rounded-full ${
+                      isSensorConnected ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
+                    }`}
+                  />
+                  <span className="truncate">
+                    {isSensorConnected ? "DEVICE ONLINE" : "DEVICE DISCONNECTED"}
+                  </span>
+                </div>
+                <span className="font-mono text-[9px] opacity-70">
+                  {isSensorConnected ? hwStatus?.port ?? "ARDUINO" : "NO DEVICE"}
+                </span>
+              </div>
+            ) : (
+              <div
+                className="flex justify-center py-1"
+                title={isSensorConnected ? "DEVICE ONLINE" : "DEVICE DISCONNECTED"}
+              >
+                <span
+                  className={`size-3 rounded-full ${
+                    isSensorConnected ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
+                  }`}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Grouped Command Navigation */}
-          <nav className="mt-6 flex flex-col gap-4 w-full flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden" aria-label="Sidebar Navigation">
+          <nav className="mt-5 flex flex-col gap-5 w-full" aria-label="Sidebar Navigation">
             {NAV_GROUPS.map((group) => (
-              <div key={group.category} className="flex flex-col gap-1">
+              <div key={group.category} className="flex flex-col gap-1.5">
                 {isSidebarOpen && (
                   <span className="px-3 text-[10px] font-extrabold tracking-widest text-muted-foreground uppercase">
                     {group.category}
@@ -226,118 +324,6 @@ export function AppShell({ title, description, children, actions }: AppShellProp
             ))}
           </nav>
         </div>
-
-        {/* Bottom Section: Theme Switcher, Device Status & Logout */}
-        <div className="mt-auto flex flex-col gap-2.5 pt-3 border-t border-border w-full shrink-0">
-          {/* Theme Switcher */}
-          <div className="flex w-full items-center justify-center rounded-xl border border-border bg-muted/40 p-1">
-            {isSidebarOpen ? (
-              <div className="grid w-full grid-cols-3 gap-1">
-                <button
-                  type="button"
-                  onClick={() => handleThemeChange("light")}
-                  className={`flex items-center justify-center gap-1.5 rounded-lg py-1 text-xs font-semibold transition-all ${
-                    theme === "light"
-                      ? "bg-card text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Sun className="size-3 text-amber-500" />
-                  Light
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleThemeChange("dark")}
-                  className={`flex items-center justify-center gap-1.5 rounded-lg py-1 text-xs font-semibold transition-all ${
-                    theme === "dark"
-                      ? "bg-card text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Moon className="size-3 text-primary" />
-                  Dark
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleThemeChange("system")}
-                  className={`flex items-center justify-center gap-1.5 rounded-lg py-1 text-xs font-semibold transition-all ${
-                    theme === "system"
-                      ? "bg-card text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Laptop className="size-3" />
-                  Auto
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() =>
-                  handleThemeChange(
-                    theme === "dark" ? "light" : theme === "light" ? "system" : "dark",
-                  )
-                }
-                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
-                title={`Theme: ${theme}`}
-              >
-                {theme === "light" && <Sun className="size-4 text-amber-500" />}
-                {theme === "dark" && <Moon className="size-4 text-primary" />}
-                {theme === "system" && <Laptop className="size-4" />}
-              </button>
-            )}
-          </div>
-
-          {/* Arduino Device Status Pill */}
-          {isSidebarOpen ? (
-            <div
-              className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-[11px] font-bold tracking-wider uppercase transition-colors ${
-                isSensorConnected
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
-                  : "border-zinc-500/30 bg-zinc-500/10 text-zinc-400"
-              }`}
-            >
-              <div className="flex items-center gap-2 truncate">
-                <span
-                  className={`size-2 rounded-full ${
-                    isSensorConnected ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
-                  }`}
-                />
-                <span className="truncate">
-                  {isSensorConnected ? "DEVICE ONLINE" : "DEVICE DISCONNECTED"}
-                </span>
-              </div>
-              <span className="font-mono text-[9px] opacity-70">
-                {isSensorConnected ? hwStatus?.port ?? "ARDUINO" : "NO DEVICE"}
-              </span>
-            </div>
-          ) : (
-            <div
-              className="flex justify-center"
-              title={isSensorConnected ? "DEVICE ONLINE" : "DEVICE DISCONNECTED"}
-            >
-              <span
-                className={`size-3 rounded-full ${
-                  isSensorConnected ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
-                }`}
-              />
-            </div>
-          )}
-
-          {/* Logout Button */}
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={handleSignOut}
-            className={`w-full text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer ${
-              !isSidebarOpen ? "px-0 justify-center" : "justify-start"
-            }`}
-            title="Log out"
-          >
-            <LogOut className="size-4 shrink-0" />
-            {isSidebarOpen && <span className="ml-2">Log out</span>}
-          </Button>
-        </div>
       </aside>
 
       {/* --- MAIN CONTENT VIEWPORT --- */}
@@ -360,6 +346,18 @@ export function AppShell({ title, description, children, actions }: AppShellProp
               <Siren className="size-5 animate-bounce text-white shrink-0" />
               <span>BROADCAST SOS</span>
             </button>
+
+            {/* Logout Button right next to Broadcast SOS */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-2 rounded-2xl border-border px-4 py-3 h-auto text-sm font-bold text-foreground hover:text-rose-500 hover:border-rose-500/40 hover:bg-rose-500/10 transition-all cursor-pointer"
+              title="Log out of NetraSense"
+            >
+              <LogOut className="size-4 shrink-0 text-muted-foreground" />
+              <span>Log out</span>
+            </Button>
           </div>
         </header>
 
