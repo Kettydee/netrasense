@@ -93,68 +93,35 @@ export const AI_VOICE_PROFILES: AiVoiceProfile[] = [
   {
     id: "nova",
     name: "Nova",
-    vibe: "Calm & Natural",
+    vibe: "Female & Natural",
     lang: "EN",
     speechLang: "en-US",
     gender: "female",
     pitch: 1.05,
-    rate: 1.02,
+    rate: 1.0,
     sampleText: "Hello! I am Nova, calm and natural.",
   },
   {
     id: "echo",
     name: "Echo",
-    vibe: "Confident & Clear",
+    vibe: "Male & Deep",
     lang: "EN",
     speechLang: "en-US",
     gender: "male",
-    pitch: 0.92,
-    rate: 1.04,
-    sampleText: "Hello! I am Echo, confident and clear.",
+    pitch: 0.75,
+    rate: 0.98,
+    sampleText: "Hello! I am Echo, deep and strong.",
   },
   {
     id: "swara",
     name: "Swara",
-    vibe: "Friendly & Fluent",
+    vibe: "Hindi & Fluent",
     lang: "HIN",
     speechLang: "hi-IN",
     gender: "female",
-    pitch: 1.08,
+    pitch: 1.05,
     rate: 0.98,
-    sampleText: "नमस्ते! मैं स्वरा हूँ, आपकी सहायता के लिए तैयार।",
-  },
-  {
-    id: "aria",
-    name: "Aria",
-    vibe: "Expressive & Upbeat",
-    lang: "EN",
-    speechLang: "en-GB",
-    gender: "female",
-    pitch: 1.28,
-    rate: 1.1,
-    sampleText: "Hello! I am Aria, expressive and upbeat!",
-  },
-  {
-    id: "onyx",
-    name: "Onyx",
-    vibe: "Deep & Authoritative",
-    lang: "EN",
-    speechLang: "en-US",
-    gender: "male",
-    pitch: 0.65,
-    rate: 0.9,
-    sampleText: "I am Onyx. Deep and authoritative command.",
-  },
-  {
-    id: "kavya",
-    name: "Kavya",
-    vibe: "Sweet & Reassuring",
-    lang: "HIN",
-    speechLang: "hi-IN",
-    gender: "female",
-    pitch: 0.95,
-    rate: 0.92,
-    sampleText: "नमस्ते! मैं काव्या हूँ। सब कुछ शांत और सुरक्षित है।",
+    sampleText: "नमस्ते! मैं स्वरा हूँ, हिंदी और इंग्लिश में।",
   },
   {
     id: "zephyr",
@@ -163,8 +130,8 @@ export const AI_VOICE_PROFILES: AiVoiceProfile[] = [
     lang: "EN",
     speechLang: "en-US",
     gender: "female",
-    pitch: 1.38,
-    rate: 1.22,
+    pitch: 1.25,
+    rate: 1.32,
     sampleText: "Ready! I am Zephyr, fast and alert navigation.",
   },
 ];
@@ -198,38 +165,30 @@ export function speak(text: string, overrideVoiceId?: string) {
   const hasHindiScript = /[\u0900-\u097F]/.test(text);
 
   if (voices && voices.length > 0) {
+    // Discriminate between distinct female and male synthesizers
+    const femaleVoice =
+      voices.find((v) => /zira|samantha|jenny|female/i.test(v.name)) ||
+      voices.find((v) => !/male|david|mark|alex|george/i.test(v.name) && v.lang.startsWith("en")) ||
+      voices[0];
+
+    const maleVoice =
+      voices.find((v) => /david|alex|guy|mark|george|male/i.test(v.name)) ||
+      voices.find((v) => v !== femaleVoice) ||
+      voices[0];
+
+    const hindiVoice =
+      voices.find((v) => v.lang.startsWith("hi") || /hindi|हिन्दी|swara|madhur|lekha/i.test(v.name)) ||
+      voices.find((v) => v.lang === "en-IN" || /neerja|heera|rishi/i.test(v.name)) ||
+      null;
+
     let matchedVoice: SpeechSynthesisVoice | null = null;
 
-    if (profile.lang === "HIN" || hasHindiScript) {
-      // Find Hindi or Indian English voice
-      matchedVoice =
-        voices.find((v) => v.lang.startsWith("hi") || /hindi|हिन्दी|swara|madhur|lekha/i.test(v.name)) ||
-        voices.find((v) => v.lang === "en-IN" || /neerja|heera|rishi/i.test(v.name)) ||
-        null;
-    } else if (profile.id === "aria") {
-      matchedVoice =
-        voices.find((v) => /uk|british|hazel|stephanie|serena|victoria/i.test(v.name + v.lang) && !/male|george/i.test(v.name)) ||
-        voices.find((v) => !/male|david|mark/i.test(v.name) && v.lang.startsWith("en")) ||
-        null;
-    } else if (profile.id === "onyx") {
-      matchedVoice =
-        voices.find((v) => /daniel|george|oliver/i.test(v.name)) ||
-        voices.find((v) => /david|mark|guy|male/i.test(v.name)) ||
-        null;
+    if (profile.id === "swara" || hasHindiScript) {
+      matchedVoice = hindiVoice || femaleVoice;
     } else if (profile.id === "echo") {
-      matchedVoice =
-        voices.find((v) => /guy|david|alex|mark|male/i.test(v.name)) ||
-        null;
-    } else if (profile.id === "zephyr") {
-      matchedVoice =
-        voices.find((v) => /stephanie|zira|samantha/i.test(v.name)) ||
-        null;
+      matchedVoice = maleVoice;
     } else {
-      // Nova
-      matchedVoice =
-        voices.find((v) => /jenny|samantha|zira/i.test(v.name)) ||
-        voices.find((v) => !/male|david|mark/i.test(v.name) && v.lang.startsWith("en")) ||
-        null;
+      matchedVoice = femaleVoice;
     }
 
     if (matchedVoice) {
