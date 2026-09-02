@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CAMERA_STREAM_URL_KEY } from "@/components/CameraFeed";
+import { VoiceSelector } from "@/components/VoiceSelector";
 
 interface YoloDetection {
   label: string;
@@ -426,8 +427,11 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
           </div>
         </div>
 
-        {/* Engine Toggle Buttons */}
-        <div className="flex items-center gap-2">
+        {/* Engine Toggle Buttons & AI Voice Selector */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* AI Voice Selector Dropdown */}
+          <VoiceSelector />
+
           <div className="flex rounded-lg border border-border bg-muted/30 p-1">
             <Button
               size="sm"
