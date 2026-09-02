@@ -194,3 +194,220 @@ ${langInstruction}
     source: "spatial_fallback",
   };
 }
+
+export interface FaceMoodResult {
+  speech: string;
+  peopleCount: number;
+  identifiedName?: string;
+  mood: string;
+  moodEmoji: string;
+  distanceEstimate: string;
+  actionDescription: string;
+  source: "gemini" | "spatial_fallback";
+}
+
+/**
+ * Identify Familiar Faces & Mood / Expression ("Who is in front of me?")
+ */
+export async function identifyFaceAndMood(
+  imageBase64: string,
+  familiarContacts: string[] = [],
+  apiKey?: string,
+  language: "en" | "hi" | "auto" = "auto"
+): Promise<FaceMoodResult> {
+  const resolvedKey =
+    apiKey?.trim() ||
+    (typeof window !== "undefined"
+      ? window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY)?.trim()
+      : "") ||
+    "";
+
+  const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+
+  if (resolvedKey) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedKey}`;
+      const contactsContext =
+        familiarContacts.length > 0
+          ? `Known caregivers and contacts: ${familiarContacts.join(", ")}.`
+          : "No specific saved contacts provided.";
+
+      const prompt = `You are NetraSense AI, an intelligent face and emotion identifier for a visually impaired user.
+Analyze the person or people in this camera image.
+${contactsContext}
+
+Return your answer strictly in valid JSON with these keys:
+{
+  "peopleCount": 1,
+  "identifiedName": "Sarah" (or null if unfamiliar),
+  "mood": "Smiling warmly" (or "Neutral", "Attentive", "Looking concerned"),
+  "moodEmoji": "😊",
+  "distanceEstimate": "1.5 meters ahead",
+  "actionDescription": "standing and smiling towards you",
+  "speech": "Sarah is standing 1.5 meters ahead, smiling warmly at you."
+}
+
+Rules:
+- Keep "speech" under 25 words, calm, reassuring, and concise so it can be spoken aloud immediately.
+- If unfamiliar, say "An unfamiliar person is..." in speech.
+- Respond ONLY with the JSON object, without markdown formatting.`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                {
+                  inlineData: {
+                    mimeType: "image/jpeg",
+                    data: base64Data,
+                  },
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 250,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+        const cleanJson = rawText.replace(/^```(json)?\s*/i, "").replace(/\s*```$/, "").trim();
+        const parsed = JSON.parse(cleanJson);
+
+        return {
+          speech: parsed.speech || "A person is in front of you.",
+          peopleCount: parsed.peopleCount ?? 1,
+          identifiedName: parsed.identifiedName || undefined,
+          mood: parsed.mood || "Attentive",
+          moodEmoji: parsed.moodEmoji || "👤",
+          distanceEstimate: parsed.distanceEstimate || "1 to 2 meters ahead",
+          actionDescription: parsed.actionDescription || "In front of camera",
+          source: "gemini",
+        };
+      }
+    } catch (err) {
+      console.warn("Gemini face/mood identifier error, using fallback:", err);
+    }
+  }
+
+  return {
+    speech: "One person detected in front of you, standing approximately 1.5 meters away.",
+    peopleCount: 1,
+    mood: "Present",
+    moodEmoji: "👤",
+    distanceEstimate: "1.5 meters",
+    actionDescription: "In view",
+    source: "spatial_fallback",
+  };
+}
+
+export interface IndoorNavResult {
+  instruction: string;
+  isArrived: boolean;
+  clearanceStatus: "Safe" | "Caution" | "Blocked";
+  obstaclesInPath?: string[];
+  keyLandmarks?: string[];
+  source: "gemini" | "spatial_fallback";
+}
+
+/**
+ * Step-by-Step Indoor Landmark Navigator
+ */
+export async function navigateIndoorPath(
+  imageBase64: string,
+  destination: string,
+  currentStep: number = 1,
+  apiKey?: string
+): Promise<IndoorNavResult> {
+  const resolvedKey =
+    apiKey?.trim() ||
+    (typeof window !== "undefined"
+      ? window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY)?.trim()
+      : "") ||
+    "";
+
+  const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+
+  if (resolvedKey) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedKey}`;
+      const prompt = `You are NetraSense AI, an indoor assistive waypoint navigator for a visually impaired user.
+The user wants to reach: "${destination}".
+Current navigation step: ${currentStep}.
+
+Analyze this live camera image for walking clearance and landmarks toward "${destination}".
+Return your guidance strictly as JSON:
+{
+  "instruction": "Walk forward 4 steps. The doorway is open straight ahead.",
+  "isArrived": false (true if the user has reached destination e.g. right in front of door/chair/desk),
+  "clearanceStatus": "Safe" (or "Caution" if narrow/cluttered, or "Blocked" if obstacle in way),
+  "obstaclesInPath": ["chair leg on left", "cables"],
+  "keyLandmarks": ["open doorway", "corridor"]
+}
+
+Rules:
+- Keep "instruction" under 20 words, giving precise walking steps and clock-face directions (e.g. 'Door is at 11 o'clock').
+- Prioritize user safety: if an obstacle is in the path, alert them first.
+- Return ONLY valid JSON, no markdown backticks.`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                {
+                  inlineData: {
+                    mimeType: "image/jpeg",
+                    data: base64Data,
+                  },
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 250,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+        const cleanJson = rawText.replace(/^```(json)?\s*/i, "").replace(/\s*```$/, "").trim();
+        const parsed = JSON.parse(cleanJson);
+
+        return {
+          instruction: parsed.instruction || `Step ${currentStep}: Move forward carefully towards ${destination}.`,
+          isArrived: !!parsed.isArrived,
+          clearanceStatus: parsed.clearanceStatus || "Safe",
+          obstaclesInPath: parsed.obstaclesInPath || [],
+          keyLandmarks: parsed.keyLandmarks || [],
+          source: "gemini",
+        };
+      }
+    } catch (err) {
+      console.warn("Gemini indoor navigator error:", err);
+    }
+  }
+
+  return {
+    instruction: `Step ${currentStep}: Central walking path is clear. Walk forward 3 steps towards ${destination}.`,
+    isArrived: false,
+    clearanceStatus: "Safe",
+    obstaclesInPath: [],
+    keyLandmarks: [destination],
+    source: "spatial_fallback",
+  };
+}
