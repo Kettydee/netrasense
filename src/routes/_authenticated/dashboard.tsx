@@ -735,6 +735,14 @@ function DashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-3">
         <div className="space-y-6 xl:col-span-2">
+          {/* --- BLIND'S EYE AI VISION LENS (CAMERA) SECTION --- */}
+          <section aria-labelledby="vision-heading">
+            <h2 id="vision-heading" className="sr-only">
+              Blind's Eye Visual Recognition
+            </h2>
+            <BlindsEyeLens onVisionTelemetry={handleVisionTelemetry} />
+          </section>
+
           {/* --- LIVE ENVIRONMENT COMMAND SECTION --- */}
           <section aria-labelledby="live-heading" className="surface-card p-5">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
@@ -833,14 +841,6 @@ function DashboardPage() {
               <Zap aria-hidden="true" className="size-4" />
               Simulate Sensor Reading
             </Button>
-          </section>
-
-          {/* --- BLIND'S EYE AI VISION LENS SECTION --- */}
-          <section aria-labelledby="vision-heading">
-            <h2 id="vision-heading" className="sr-only">
-              Blind's Eye Visual Recognition
-            </h2>
-            <BlindsEyeLens onVisionTelemetry={handleVisionTelemetry} />
           </section>
         </div>
 
