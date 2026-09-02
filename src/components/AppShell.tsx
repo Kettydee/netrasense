@@ -155,14 +155,14 @@ export function AppShell({ title, description, children, actions }: AppShellProp
     : !!sensorQuery.data?.sensor_status.connected;
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground overflow-x-hidden transition-colors">
+    <div className="flex min-h-screen bg-background text-foreground overflow-x-clip transition-colors">
       {/* --- COLLAPSIBLE COMMAND SIDEBAR --- */}
       <aside
-        className={`relative flex flex-col justify-between border-r border-border bg-card transition-all duration-200 ease-in-out z-30 shrink-0 ${
+        className={`sticky top-0 h-screen max-h-screen flex flex-col justify-between border-r border-border bg-card transition-all duration-200 ease-in-out z-30 shrink-0 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
           isSidebarOpen ? "w-64 p-5" : "w-20 p-3 items-center"
         }`}
       >
-        <div className="w-full">
+        <div className="w-full flex-1 flex flex-col min-h-0">
           {/* Top Branding Section */}
           <div
             className={`flex items-center ${isSidebarOpen ? "justify-between" : "justify-center"}`}
@@ -193,9 +193,9 @@ export function AppShell({ title, description, children, actions }: AppShellProp
           </div>
 
           {/* Grouped Command Navigation */}
-          <nav className="mt-6 flex flex-col gap-5 w-full" aria-label="Sidebar Navigation">
+          <nav className="mt-6 flex flex-col gap-4 w-full flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden" aria-label="Sidebar Navigation">
             {NAV_GROUPS.map((group) => (
-              <div key={group.category} className="flex flex-col gap-1.5">
+              <div key={group.category} className="flex flex-col gap-1">
                 {isSidebarOpen && (
                   <span className="px-3 text-[10px] font-extrabold tracking-widest text-muted-foreground uppercase">
                     {group.category}
@@ -227,8 +227,8 @@ export function AppShell({ title, description, children, actions }: AppShellProp
           </nav>
         </div>
 
-        {/* Bottom Section: Theme Switcher & Device Status */}
-        <div className="mt-auto flex flex-col gap-3 pt-4 border-t border-border w-full">
+        {/* Bottom Section: Theme Switcher, Device Status & Logout */}
+        <div className="mt-auto flex flex-col gap-2.5 pt-3 border-t border-border w-full shrink-0">
           {/* Theme Switcher */}
           <div className="flex w-full items-center justify-center rounded-xl border border-border bg-muted/40 p-1">
             {isSidebarOpen ? (
