@@ -251,66 +251,29 @@ export function SmartSceneDescriber({
           </div>
         </div>
 
-        {/* Language Selector & Hands-free Voice Toggle */}
-        <div className="flex items-center gap-2">
-          {/* EN / HI Language Switcher */}
-          <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
-            <button
-              type="button"
-              onClick={() => {
-                setLanguage("en");
-                speak("Language set to English");
-              }}
-              className={`px-2 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                language === "en"
-                  ? "bg-card text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              title="English language mode"
-            >
-              EN
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLanguage("hi");
-                speak("भाषा हिन्दी पर सेट हो गई है।");
-              }}
-              className={`px-2 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                language === "hi"
-                  ? "bg-card text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              title="हिन्दी (Hindi language mode)"
-            >
-              हिन्दी (HI)
-            </button>
-          </div>
-
-          {/* Hands-free Voice Toggle */}
-          <Button
-            type="button"
-            size="sm"
-            variant={isListening ? "default" : "outline"}
-            onClick={toggleVoiceCommands}
-            className={`gap-1.5 text-xs font-semibold ${
-              isListening ? "bg-emerald-600 text-white shadow-emerald-500/30 animate-pulse" : ""
-            }`}
-            aria-label={isListening ? "Voice commands active" : "Enable voice commands"}
-          >
-            {isListening ? (
-              <>
-                <Mic className="size-3.5" />
-                <span>{language === "hi" ? "सुन रहे हैं..." : "Listening..."}</span>
-              </>
-            ) : (
-              <>
-                <MicOff className="size-3.5 text-muted-foreground" />
-                <span>{language === "hi" ? "ध्वनि नियंत्रण" : "Voice Control"}</span>
-              </>
-            )}
-          </Button>
-        </div>
+        {/* Hands-free Voice Toggle */}
+        <Button
+          type="button"
+          size="sm"
+          variant={isListening ? "default" : "outline"}
+          onClick={toggleVoiceCommands}
+          className={`gap-1.5 text-xs font-semibold ${
+            isListening ? "bg-emerald-600 text-white shadow-emerald-500/30 animate-pulse" : ""
+          }`}
+          aria-label={isListening ? "Voice commands active" : "Enable voice commands"}
+        >
+          {isListening ? (
+            <>
+              <Mic className="size-3.5" />
+              <span>Listening...</span>
+            </>
+          ) : (
+            <>
+              <MicOff className="size-3.5 text-muted-foreground" />
+              <span>Voice Control</span>
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Action Buttons */}
@@ -326,22 +289,14 @@ export function SmartSceneDescriber({
           <div className="flex w-full items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-foreground">
               <Eye className="size-4 text-amber-400 group-hover:scale-110 transition-transform" />
-              <span>{language === "hi" ? "आसपास क्या है? (Describe)" : "Describe Surroundings"}</span>
+              <span>Describe Surroundings</span>
             </div>
             {isProcessing && activeAction === "scene" && (
               <Loader2 className="size-3.5 animate-spin text-primary" />
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            {language === "hi" ? (
-              <>
-                बोलें: <span className="font-semibold text-primary">"आसपास क्या है?"</span> या <span className="font-semibold text-primary">"Aas paas kya hai"</span>
-              </>
-            ) : (
-              <>
-                Say: <span className="font-semibold text-primary">"What's around me?"</span> to get a full room walkthrough.
-              </>
-            )}
+            Say: <span className="font-semibold text-primary">"What's around me?"</span> to get a full room walkthrough.
           </p>
         </Button>
 
@@ -356,7 +311,7 @@ export function SmartSceneDescriber({
           <div className="flex w-full items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-foreground">
               <Banknote className="size-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-              <span>{language === "hi" ? "पैसे व टेक्स्ट पढ़ें (Currency/Text)" : "Read Currency / Text"}</span>
+              <span>Read Currency / Text</span>
             </div>
             {isProcessing && activeAction === "currency" && (
               <Loader2 className="size-3.5 animate-spin text-emerald-400" />
