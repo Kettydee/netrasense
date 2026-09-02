@@ -87,54 +87,108 @@ export interface AiVoiceProfile {
 }
 
 export const AI_VOICE_PROFILES: AiVoiceProfile[] = [
-  { id: "nova", name: "Nova", description: "Natural Female", gender: "female", pitch: 1.05, rate: 1.05 },
-  { id: "echo", name: "Echo", description: "Natural Male", gender: "male", pitch: 0.95, rate: 1.05 },
-  { id: "aria", name: "Aria", description: "Expressive & Clear", gender: "female", pitch: 1.18, rate: 1.0 },
-  { id: "onyx", name: "Onyx", description: "Deep & Authoritative", gender: "male", pitch: 0.8, rate: 0.98 },
-  { id: "fable", name: "Fable", description: "Warm Storyteller", gender: "female", pitch: 1.0, rate: 0.95 },
-  { id: "shimmer", name: "Shimmer", description: "Bright & Energetic", gender: "female", pitch: 1.25, rate: 1.1 },
+  { id: "nova", name: "Nova", description: "Natural Female (US)", gender: "female", pitch: 1.05, rate: 1.05 },
+  { id: "echo", name: "Echo", description: "Natural Male (US)", gender: "male", pitch: 0.95, rate: 1.02 },
+  { id: "aria", name: "Aria", description: "Expressive & Clear (UK)", gender: "female", pitch: 1.25, rate: 1.05 },
+  { id: "onyx", name: "Onyx", description: "Deep & Authoritative", gender: "male", pitch: 0.72, rate: 0.92 },
+  { id: "swara", name: "Swara", description: "Hindi & Indian Voice (हिन्दी)", gender: "female", pitch: 1.0, rate: 1.0 },
+  { id: "fable", name: "Fable", description: "Warm Storyteller", gender: "female", pitch: 0.88, rate: 0.92 },
+  { id: "shimmer", name: "Shimmer", description: "Bright & Energetic", gender: "female", pitch: 1.35, rate: 1.15 },
 ];
+
+// In-memory voices cache for reliable access across browser async lifecycles
+let cachedSpeechVoices: SpeechSynthesisVoice[] = [];
+if (typeof window !== "undefined" && "speechSynthesis" in window) {
+  cachedSpeechVoices = window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => {
+    cachedSpeechVoices = window.speechSynthesis.getVoices();
+  };
+}
 
 export function speak(text: string, overrideVoiceId?: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+
   const utterance = new SpeechSynthesisUtterance(text);
-  
   const savedVoiceId = overrideVoiceId || window.localStorage.getItem(AI_VOICE_STORAGE_KEY) || "nova";
   const profile = AI_VOICE_PROFILES.find((p) => p.id === savedVoiceId);
-  const voices = window.speechSynthesis.getVoices();
+
+  // Retrieve current or cached voices
+  let voices = window.speechSynthesis.getVoices();
+  if (!voices || voices.length === 0) {
+    voices = cachedSpeechVoices;
+  }
+
+  const hasHindiScript = /[\u0900-\u097F]/.test(text);
+  let matchedVoice: SpeechSynthesisVoice | null = null;
 
   if (profile) {
     utterance.pitch = profile.pitch;
     utterance.rate = profile.rate;
 
     if (voices.length > 0) {
-      if (profile.gender === "female") {
-        const femaleVoice = voices.find(
-          (v) =>
-            /female|samantha|zira|jenny|victoria|karen|catherine|google us english|hazel/i.test(v.name) &&
-            !/male|david|mark|george/i.test(v.name),
-        ) || voices.find((v) => v.lang.startsWith("en"));
-        if (femaleVoice) utterance.voice = femaleVoice;
-      } else if (profile.gender === "male") {
-        const maleVoice = voices.find(
-          (v) =>
-            /male|david|alex|george|daniel|guy|mark|google uk english male/i.test(v.name),
-        ) || voices.find((v) => v.lang.startsWith("en"));
-        if (maleVoice) utterance.voice = maleVoice;
+      if (profile.id === "swara" || hasHindiScript) {
+        // Find Hindi (hi-IN) or Indian English (en-IN) voice
+        matchedVoice =
+          voices.find((v) => v.lang.startsWith("hi") || /hindi|हिन्दी|swara|madhur|lekha/i.test(v.name)) ||
+          voices.find((v) => v.lang === "en-IN" || /neerja|heera|rishi/i.test(v.name)) ||
+          null;
+      } else if (profile.id === "aria") {
+        // Expressive British / UK voice
+        matchedVoice =
+          voices.find((v) => /uk english female|hazel|stephanie|serena|victoria/i.test(v.name)) ||
+          voices.find((v) => v.lang.startsWith("en-GB") && !/male|george/i.test(v.name)) ||
+          null;
+      } else if (profile.id === "onyx") {
+        // Deep resonant male voice
+        matchedVoice =
+          voices.find((v) => /daniel|oliver|george|david/i.test(v.name)) ||
+          voices.find((v) => /male/i.test(v.name)) ||
+          null;
+      } else if (profile.id === "echo") {
+        // Standard clear male voice
+        matchedVoice =
+          voices.find((v) => /guy|david|alex|mark|google.*us.*male/i.test(v.name)) ||
+          voices.find((v) => /male/i.test(v.name)) ||
+          null;
+      } else if (profile.id === "fable") {
+        // Warm storytelling voice
+        matchedVoice =
+          voices.find((v) => /karen|catherine|moira|fiona/i.test(v.name)) ||
+          null;
+      } else if (profile.id === "shimmer") {
+        // Bright energetic female voice
+        matchedVoice =
+          voices.find((v) => /stephanie|zira|samantha/i.test(v.name)) ||
+          null;
+      } else {
+        // Nova (Standard natural female voice)
+        matchedVoice =
+          voices.find((v) => /jenny|samantha|zira|google.*us.*female/i.test(v.name)) ||
+          voices.find((v) => !/male|david|mark|alex|george/i.test(v.name) && v.lang.startsWith("en")) ||
+          null;
       }
     }
   } else {
-    // If user selected a specific device voice by name
-    const match = voices.find((v) => v.name === savedVoiceId);
-    if (match) {
-      utterance.voice = match;
-    }
+    // User picked a specific device-native voice by name or voiceURI
+    matchedVoice = voices.find((v) => v.name === savedVoiceId || v.voiceURI === savedVoiceId) || null;
     utterance.rate = 1.05;
     utterance.pitch = 1.0;
   }
 
+  if (matchedVoice) {
+    utterance.voice = matchedVoice;
+    utterance.lang = matchedVoice.lang;
+  } else if (hasHindiScript) {
+    utterance.lang = "hi-IN";
+  }
+
+  // Cancel any ongoing speech and use a brief timeout to allow audio channels to reset
   window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
+  setTimeout(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.speak(utterance);
+    }
+  }, 25);
 }
 
 export const DETECTED_OBJECTS = [
