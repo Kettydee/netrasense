@@ -25,7 +25,8 @@ export interface CurrencyAndTextResult {
 export async function describeSurroundings(
   imageBase64: string,
   apiKey?: string,
-  detectedObjects?: string[]
+  detectedObjects?: string[],
+  language: "en" | "hi" | "auto" = "auto"
 ): Promise<SceneDescriptionResult> {
   const resolvedKey =
     apiKey?.trim() ||
@@ -40,12 +41,20 @@ export async function describeSurroundings(
   if (resolvedKey) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedKey}`;
+      const langInstruction =
+        language === "hi"
+          ? "Respond in conversational Hindi or natural Hinglish that can be spoken aloud naturally (e.g. 'Aapke saamne ek mez hai aur daayein taraf kursi hai. Aage ka raasta khula hai.')."
+          : language === "auto"
+            ? "Support both English and Hindi. If user context is Hindi, answer in friendly Hindi/Hinglish. Otherwise describe in concise English."
+            : "Respond in clear concise English.";
+
       const prompt = `You are NetraSense AI, an intelligent spatial navigation assistant for visually impaired users.
 Analyze this camera image and describe the user's immediate surroundings clearly and concisely in 2 to 3 sentences.
+${langInstruction}
 Focus on:
 1. Environment/Room type (e.g. living room, office desk, hallway, outdoor sidewalk).
 2. Layout of key objects, furniture, and clear walking paths.
-3. Any obstacles, people, or hazards with their clock position or direction (e.g. 'a chair at 10 o'clock', 'a table straight ahead', 'open doorway to your right').
+3. Any obstacles, people, or hazards with their clock position or direction (e.g. 'a chair at 10 o'clock / daayein taraf kursi', 'a table straight ahead / saamne mez').
 Keep your tone calm, reassuring, and concise so it can be spoken aloud immediately.`;
 
       const response = await fetch(url, {
@@ -93,7 +102,10 @@ Keep your tone calm, reassuring, and concise so it can be spoken aloud immediate
       ? detectedObjects.join(", ")
       : "no major obstacles detected in direct path";
 
-  const fallbackText = `Scene scan complete. I can see: ${objectsText}. The central walking path is open. Proceed with caution.`;
+  const fallbackText =
+    language === "hi"
+      ? `स्कैन पूरा हुआ। सामने दिखा: ${objectsText}। आगे का रास्ता साफ़ है। सावधानी से चलें।`
+      : `Scene scan complete. I can see: ${objectsText}. The central walking path is open. Proceed with caution.`;
 
   return {
     summary: fallbackText,
@@ -102,11 +114,12 @@ Keep your tone calm, reassuring, and concise so it can be spoken aloud immediate
 }
 
 /**
- * Read Currency / Banknote or Document / Medicine text
+ * Read Currency / Banknote or Document / Medicine text (English + Hindi)
  */
 export async function readCurrencyAndText(
   imageBase64: string,
-  apiKey?: string
+  apiKey?: string,
+  language: "en" | "hi" | "auto" = "auto"
 ): Promise<CurrencyAndTextResult> {
   const resolvedKey =
     apiKey?.trim() ||
@@ -120,12 +133,18 @@ export async function readCurrencyAndText(
   if (resolvedKey) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedKey}`;
+      const langInstruction =
+        language === "hi"
+          ? "State findings in Hindi or bilingual (e.g. '500 Indian Rupees note / 500 रुपये का नोट')."
+          : "Support both English and Hindi. If Indian Rupee or Hindi text is detected, mention both English and Hindi (e.g. '500 Indian Rupee note - 500 रुपये का नोट').";
+
       const prompt = `You are NetraSense Smart Currency & Document Reader for visually impaired users.
 Inspect this image carefully.
+${langInstruction}
 1. CURRENCY: If you see banknotes, paper cash, or coins (e.g. Indian Rupees ₹10, ₹20, ₹50, ₹100, ₹200, ₹500, USD $1, $5, $10, $20, $50, $100, EUR, GBP):
-   State the exact currency and denomination first (e.g. '500 Indian Rupee note', '20 US Dollar bill').
-2. MEDICINE / LABELS / DOCUMENTS: If you see product packaging, prescription bottles, notices, or signs:
-   Read the main title, dosage/expiry date, or crucial sign text aloud clearly.
+   State the exact currency and denomination first (e.g. '500 Indian Rupee note / 500 रुपये का नोट').
+2. MEDICINE / LABELS / DOCUMENTS: If you see product packaging, prescription bottles, notices, or signs in English or Hindi:
+   Read the main title, medicine name, dosage/expiry date, or crucial sign text aloud clearly.
 3. Provide a spoken response under 25 words that speaks the most vital finding first.`;
 
       const response = await fetch(url, {

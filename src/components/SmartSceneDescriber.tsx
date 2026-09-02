@@ -32,6 +32,7 @@ export function SmartSceneDescriber({
   getFrameBase64,
   detectedObjects = [],
 }: SmartSceneDescriberProps) {
+  const [language, setLanguage] = useState<"en" | "hi">("en");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [activeAction, setActiveAction] = useState<"scene" | "currency" | null>(null);
   const [sceneResult, setSceneResult] = useState<SceneDescriptionResult | null>(null);
@@ -41,65 +42,75 @@ export function SmartSceneDescriber({
 
   const recognitionRef = useRef<any>(null);
 
-  // Trigger Scene Description
-  const handleDescribeScene = useCallback(async () => {
+  // Trigger Scene Description (English + Hindi)
+  const handleDescribeScene = useCallback(async (langOverride?: "en" | "hi") => {
+    const chosenLang = langOverride || language;
     const frame = getFrameBase64();
     if (!frame) {
-      toast.error("Please ensure the camera is active to analyze the scene.");
-      speak("Camera is not active. Please start camera first.");
+      const msg = chosenLang === "hi"
+        ? "कैमरा सक्रिय नहीं है। कृपया पहले कैमरा शुरू करें।"
+        : "Please ensure the camera is active to analyze the scene.";
+      toast.error(msg);
+      speak(msg);
       return;
     }
 
     setIsProcessing(true);
     setActiveAction("scene");
-    toast.info("Analyzing your surroundings...");
-    speak("Scanning surroundings...");
+    const scanMsg = chosenLang === "hi" ? "माहौल स्कैन हो रहा है..." : "Scanning surroundings...";
+    toast.info(scanMsg);
+    speak(scanMsg);
 
     try {
-      const result = await describeSurroundings(frame, undefined, detectedObjects);
+      const result = await describeSurroundings(frame, undefined, detectedObjects, chosenLang);
       setSceneResult(result);
       setCurrencyResult(null);
       speak(result.summary);
-      toast.success("Scene described!");
+      toast.success(chosenLang === "hi" ? "माहौल का विवरण तैयार!" : "Scene described!");
     } catch (err) {
       console.error(err);
-      toast.error("Could not describe scene.");
+      toast.error(chosenLang === "hi" ? "माहौल नहीं देख पाए।" : "Could not describe scene.");
     } finally {
       setIsProcessing(false);
       setActiveAction(null);
     }
-  }, [getFrameBase64, detectedObjects]);
+  }, [getFrameBase64, detectedObjects, language]);
 
-  // Trigger Currency / Document Reader
-  const handleReadCurrency = useCallback(async () => {
+  // Trigger Currency / Document Reader (English + Hindi)
+  const handleReadCurrency = useCallback(async (langOverride?: "en" | "hi") => {
+    const chosenLang = langOverride || language;
     const frame = getFrameBase64();
     if (!frame) {
-      toast.error("Please ensure the camera is active to read currency or text.");
-      speak("Camera is not active. Please start camera first.");
+      const msg = chosenLang === "hi"
+        ? "कैमरा सक्रिय नहीं है। कृपया पहले कैमरा शुरू करें।"
+        : "Please ensure the camera is active to read currency or text.";
+      toast.error(msg);
+      speak(msg);
       return;
     }
 
     setIsProcessing(true);
     setActiveAction("currency");
-    toast.info("Scanning for currency or text...");
-    speak("Scanning currency and text...");
+    const scanMsg = chosenLang === "hi" ? "पैसे और टेक्स्ट स्कैन हो रहे हैं..." : "Scanning currency and text...";
+    toast.info(scanMsg);
+    speak(scanMsg);
 
     try {
-      const result = await readCurrencyAndText(frame);
+      const result = await readCurrencyAndText(frame, undefined, chosenLang);
       setCurrencyResult(result);
       setSceneResult(null);
       speak(result.speech);
-      toast.success("Readout complete!");
+      toast.success(chosenLang === "hi" ? "पढ़ना पूरा हुआ!" : "Readout complete!");
     } catch (err) {
       console.error(err);
-      toast.error("Could not read currency/text.");
+      toast.error(chosenLang === "hi" ? "पैसे या टेक्स्ट नहीं पढ़ सके।" : "Could not read currency/text.");
     } finally {
       setIsProcessing(false);
       setActiveAction(null);
     }
-  }, [getFrameBase64]);
+  }, [getFrameBase64, language]);
 
-  // Voice Command Listener Setup (SpeechRecognition)
+  // Voice Command Listener Setup (SpeechRecognition - English + Hindi)
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -109,21 +120,42 @@ export function SmartSceneDescriber({
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = false;
-    recognition.lang = "en-US";
+    // en-IN recognizes Indian English, Hinglish, and bilingual queries smoothly
+    recognition.lang = language === "hi" ? "hi-IN" : "en-IN";
 
     recognition.onresult = (event: any) => {
       const lastResultIndex = event.results.length - 1;
       const transcript = event.results[lastResultIndex][0].transcript.toLowerCase().trim();
 
-      if (
+      const isHindiScene =
+        transcript.includes("aas paas") ||
+        transcript.includes("आसपास") ||
+        transcript.includes("kya hai") ||
+        transcript.includes("क्या है") ||
+        transcript.includes("dekho") ||
+        transcript.includes("mahaul") ||
+        transcript.includes("batao") ||
+        transcript.includes("aage kya");
+
+      const isEnglishScene =
         transcript.includes("describe") ||
         transcript.includes("surroundings") ||
         transcript.includes("what's around") ||
         transcript.includes("where am i") ||
-        transcript.includes("look around")
-      ) {
-        handleDescribeScene();
-      } else if (
+        transcript.includes("look around");
+
+      const isHindiCurrency =
+        transcript.includes("paise") ||
+        transcript.includes("पैसे") ||
+        transcript.includes("rupaye") ||
+        transcript.includes("रुपये") ||
+        transcript.includes("padho") ||
+        transcript.includes("पढ़ो") ||
+        transcript.includes("kya likha") ||
+        transcript.includes("dawai") ||
+        transcript.includes("दवाई");
+
+      const isEnglishCurrency =
         transcript.includes("currency") ||
         transcript.includes("money") ||
         transcript.includes("cash") ||
@@ -131,9 +163,16 @@ export function SmartSceneDescriber({
         transcript.includes("dollar") ||
         transcript.includes("read") ||
         transcript.includes("text") ||
-        transcript.includes("medicine")
-      ) {
-        handleReadCurrency();
+        transcript.includes("medicine");
+
+      if (isHindiScene) {
+        handleDescribeScene("hi");
+      } else if (isEnglishScene) {
+        handleDescribeScene(language === "hi" ? "hi" : "en");
+      } else if (isHindiCurrency) {
+        handleReadCurrency("hi");
+      } else if (isEnglishCurrency) {
+        handleReadCurrency(language === "hi" ? "hi" : "en");
       }
     };
 
@@ -157,11 +196,9 @@ export function SmartSceneDescriber({
     return () => {
       try {
         recognition.stop();
-      } catch {
-        // ignore
-      }
+      } catch {}
     };
-  }, [handleDescribeScene, handleReadCurrency, isListening]);
+  }, [handleDescribeScene, handleReadCurrency, isListening, language]);
 
   const toggleVoiceCommands = () => {
     if (!recognitionRef.current) {
@@ -214,29 +251,66 @@ export function SmartSceneDescriber({
           </div>
         </div>
 
-        {/* Hands-free Voice Toggle */}
-        <Button
-          type="button"
-          size="sm"
-          variant={isListening ? "default" : "outline"}
-          onClick={toggleVoiceCommands}
-          className={`gap-1.5 text-xs font-semibold ${
-            isListening ? "bg-emerald-600 text-white shadow-emerald-500/30 animate-pulse" : ""
-          }`}
-          aria-label={isListening ? "Voice commands active" : "Enable voice commands"}
-        >
-          {isListening ? (
-            <>
-              <Mic className="size-3.5" />
-              <span>Listening...</span>
-            </>
-          ) : (
-            <>
-              <MicOff className="size-3.5 text-muted-foreground" />
-              <span>Voice Control</span>
-            </>
-          )}
-        </Button>
+        {/* Language Selector & Hands-free Voice Toggle */}
+        <div className="flex items-center gap-2">
+          {/* EN / HI Language Switcher */}
+          <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                setLanguage("en");
+                speak("Language set to English");
+              }}
+              className={`px-2 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                language === "en"
+                  ? "bg-card text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title="English language mode"
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLanguage("hi");
+                speak("भाषा हिन्दी पर सेट हो गई है।");
+              }}
+              className={`px-2 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                language === "hi"
+                  ? "bg-card text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title="हिन्दी (Hindi language mode)"
+            >
+              हिन्दी (HI)
+            </button>
+          </div>
+
+          {/* Hands-free Voice Toggle */}
+          <Button
+            type="button"
+            size="sm"
+            variant={isListening ? "default" : "outline"}
+            onClick={toggleVoiceCommands}
+            className={`gap-1.5 text-xs font-semibold ${
+              isListening ? "bg-emerald-600 text-white shadow-emerald-500/30 animate-pulse" : ""
+            }`}
+            aria-label={isListening ? "Voice commands active" : "Enable voice commands"}
+          >
+            {isListening ? (
+              <>
+                <Mic className="size-3.5" />
+                <span>{language === "hi" ? "सुन रहे हैं..." : "Listening..."}</span>
+              </>
+            ) : (
+              <>
+                <MicOff className="size-3.5 text-muted-foreground" />
+                <span>{language === "hi" ? "ध्वनि नियंत्रण" : "Voice Control"}</span>
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Action Buttons */}
@@ -245,21 +319,29 @@ export function SmartSceneDescriber({
         <Button
           type="button"
           variant="secondary"
-          onClick={handleDescribeScene}
+          onClick={() => handleDescribeScene()}
           disabled={isProcessing}
           className="group relative flex h-auto flex-col items-start gap-1 rounded-xl border border-border/80 bg-surface/80 p-3.5 text-left transition-all hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98]"
         >
           <div className="flex w-full items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-foreground">
               <Eye className="size-4 text-amber-400 group-hover:scale-110 transition-transform" />
-              <span>Describe Surroundings</span>
+              <span>{language === "hi" ? "आसपास क्या है? (Describe)" : "Describe Surroundings"}</span>
             </div>
             {isProcessing && activeAction === "scene" && (
               <Loader2 className="size-3.5 animate-spin text-primary" />
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Say: <span className="font-semibold text-primary">"What's around me?"</span> to get a full room walkthrough.
+            {language === "hi" ? (
+              <>
+                बोलें: <span className="font-semibold text-primary">"आसपास क्या है?"</span> या <span className="font-semibold text-primary">"Aas paas kya hai"</span>
+              </>
+            ) : (
+              <>
+                Say: <span className="font-semibold text-primary">"What's around me?"</span> to get a full room walkthrough.
+              </>
+            )}
           </p>
         </Button>
 
@@ -267,14 +349,14 @@ export function SmartSceneDescriber({
         <Button
           type="button"
           variant="secondary"
-          onClick={handleReadCurrency}
+          onClick={() => handleReadCurrency()}
           disabled={isProcessing}
           className="group relative flex h-auto flex-col items-start gap-1 rounded-xl border border-border/80 bg-surface/80 p-3.5 text-left transition-all hover:border-emerald-500/50 hover:bg-emerald-500/5 active:scale-[0.98]"
         >
           <div className="flex w-full items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-foreground">
               <Banknote className="size-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-              <span>Read Currency / Text</span>
+              <span>{language === "hi" ? "पैसे व टेक्स्ट पढ़ें (Currency/Text)" : "Read Currency / Text"}</span>
             </div>
             {isProcessing && activeAction === "currency" && (
               <Loader2 className="size-3.5 animate-spin text-emerald-400" />
