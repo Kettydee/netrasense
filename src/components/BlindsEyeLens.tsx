@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CAMERA_STREAM_URL_KEY } from "@/components/CameraFeed";
 import { VoiceSelector } from "@/components/VoiceSelector";
+import { CameraDeviceSelector } from "@/components/CameraDeviceSelector";
 import { speak } from "@/lib/netrasense";
 
 interface YoloDetection {
@@ -72,6 +73,7 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
   const [browserDetections, setBrowserDetections] = useState<
     Array<{ label: string; direction: string; distance_cm: number }>
   >([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const [isLoadingBrowserModel, setIsLoadingBrowserModel] = useState<boolean>(true);
   const [lastSpoken, setLastSpoken] = useState<string>("");
   const announcedObjectsRef = useRef<Map<string, number>>(new Map());
@@ -222,13 +224,26 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
     [voiceAlerts],
   );
 
-  // Browser Camera Start/Stop
-  const startBrowserCamera = async () => {
+  // Browser Camera Start/Stop with Device Selection
+  const startBrowserCamera = async (overrideDeviceId?: string) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false,
-      });
+      if (videoRef.current && videoRef.current.srcObject) {
+        const oldStream = videoRef.current.srcObject as MediaStream;
+        oldStream.getTracks().forEach((track) => track.stop());
+      }
+
+      const deviceIdToUse = overrideDeviceId || selectedCameraId;
+      const constraints: MediaStreamConstraints = deviceIdToUse
+        ? { video: { deviceId: { exact: deviceIdToUse } }, audio: false }
+        : { video: { facingMode: "environment" }, audio: false };
+
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
@@ -236,6 +251,13 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
       }
     } catch (err) {
       console.error("Error accessing camera:", err);
+    }
+  };
+
+  const handleCameraSelect = async (deviceId: string) => {
+    setSelectedCameraId(deviceId);
+    if (isBrowserCameraActive) {
+      await startBrowserCamera(deviceId);
     }
   };
 
@@ -552,14 +574,22 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
                     Click &ldquo;Open Camera&rdquo; below to run in-browser object detection.
                   </p>
                 </div>
-                <Button
-                  size="sm"
-                  disabled={isLoadingBrowserModel}
-                  onClick={startBrowserCamera}
-                  className="mt-2 bg-white text-black hover:bg-white/90 font-bold shadow-md"
-                >
-                  {isLoadingBrowserModel ? "Loading AI..." : "Open Camera"}
-                </Button>
+                <div className="my-1 flex flex-col items-center gap-2">
+                  <CameraDeviceSelector
+                    onSelectCamera={handleCameraSelect}
+                    selectedCameraId={selectedCameraId}
+                    isStreaming={false}
+                    className="justify-center"
+                  />
+                  <Button
+                    size="sm"
+                    disabled={isLoadingBrowserModel}
+                    onClick={() => startBrowserCamera()}
+                    className="mt-1 bg-white text-black hover:bg-white/90 font-bold shadow-md"
+                  >
+                    {isLoadingBrowserModel ? "Loading AI..." : "Open Camera"}
+                  </Button>
+                </div>
               </div>
             )}
             <video
@@ -582,7 +612,12 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
 
       {/* Controls Bar for Browser Mode */}
       {engineMode === "browser" && isBrowserCameraActive && (
-        <div className="mt-3 flex justify-end">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <CameraDeviceSelector
+            onSelectCamera={handleCameraSelect}
+            selectedCameraId={selectedCameraId}
+            isStreaming={true}
+          />
           <Button size="sm" variant="destructive" onClick={stopBrowserCamera}>
             <CameraOff className="mr-1.5 size-4" /> Stop Camera
           </Button>
