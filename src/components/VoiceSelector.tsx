@@ -57,53 +57,55 @@ export function VoiceSelector({ onVoiceChange, className = "" }: VoiceSelectorPr
   };
 
   return (
-    <div className={`flex items-center gap-1.5 ${className}`}>
+    <div className={`flex items-center justify-center ${className}`}>
       <Select value={selectedVoice} onValueChange={handleSelect}>
         <SelectTrigger
-          className="h-8 w-[165px] sm:w-[185px] text-xs font-semibold rounded-lg border-border bg-muted/30 px-2.5 text-foreground hover:bg-muted/60 transition-colors focus:ring-1 focus:ring-primary"
+          className="h-8.5 w-[170px] sm:w-[195px] text-xs font-bold rounded-xl border border-slate-300 !bg-white !text-slate-900 shadow-sm hover:!bg-slate-100 transition-all focus:ring-2 focus:ring-primary flex items-center justify-center gap-2 px-3 mx-auto"
           aria-label="Select AI Voice"
         >
-          <div className="flex items-center gap-1.5 truncate">
-            <Bot className="size-3.5 text-primary shrink-0" />
+          <div className="flex items-center justify-center gap-1.5 truncate text-center mx-auto">
+            <Bot className="size-3.5 text-blue-600 shrink-0" />
             <SelectValue placeholder="Select AI Voice" />
           </div>
         </SelectTrigger>
-        <SelectContent className="max-h-72 w-[220px] rounded-xl border-border bg-popover text-popover-foreground shadow-xl z-50">
+        <SelectContent className="max-h-72 w-[225px] rounded-2xl border border-slate-200 !bg-white !text-slate-900 shadow-2xl z-50 p-1.5">
           <SelectGroup>
-            <SelectLabel className="text-[10px] font-extrabold tracking-widest text-muted-foreground uppercase px-2 py-1.5">
+            <SelectLabel className="text-[10px] font-black tracking-widest !text-slate-400 uppercase text-center py-1">
               AI Voice Personas
             </SelectLabel>
             {AI_VOICE_PROFILES.map((profile: AiVoiceProfile) => (
               <SelectItem
                 key={profile.id}
                 value={profile.id}
-                className="text-xs font-medium cursor-pointer py-1.5 px-2 rounded-lg"
+                className="!text-slate-900 hover:!bg-slate-100 focus:!bg-slate-100 cursor-pointer py-2 px-2.5 rounded-xl my-0.5"
               >
-                <div className="flex flex-col">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-foreground">{profile.name}</span>
-                    <span className="text-[10px] text-muted-foreground font-normal">
-                      {profile.gender === "female" ? "♀ Female" : "♂ Male"}
+                <div className="flex flex-col items-center justify-center text-center w-full">
+                  <div className="flex items-center justify-center gap-1 font-bold text-slate-900 text-xs">
+                    <span>{profile.name}</span>
+                    <span className="text-[10px] text-slate-500 font-normal">
+                      ({profile.gender === "female" ? "Female" : "Male"})
                     </span>
                   </div>
-                  <span className="text-[10px] text-muted-foreground">{profile.description}</span>
+                  <span className="text-[10px] text-slate-500 text-center">{profile.description}</span>
                 </div>
               </SelectItem>
             ))}
           </SelectGroup>
 
           {systemVoices.length > 0 && (
-            <SelectGroup className="mt-2 border-t border-border/60 pt-1">
-              <SelectLabel className="text-[10px] font-extrabold tracking-widest text-muted-foreground uppercase px-2 py-1.5">
+            <SelectGroup className="mt-2 border-t border-slate-200 pt-1.5">
+              <SelectLabel className="text-[10px] font-black tracking-widest !text-slate-400 uppercase text-center py-1">
                 Device Voices
               </SelectLabel>
               {systemVoices.map((voice) => (
                 <SelectItem
                   key={voice.name}
                   value={voice.name}
-                  className="text-xs font-medium cursor-pointer py-1 px-2 rounded-lg truncate"
+                  className="!text-slate-900 hover:!bg-slate-100 focus:!bg-slate-100 cursor-pointer py-1.5 px-2.5 rounded-xl my-0.5"
                 >
-                  <span className="truncate">{voice.name.replace(/^(Microsoft|Google)\s+/, "")}</span>
+                  <div className="text-center w-full truncate font-semibold text-xs text-slate-900">
+                    {voice.name.replace(/^(Microsoft|Google)\s+/, "")}
+                  </div>
                 </SelectItem>
               ))}
             </SelectGroup>
