@@ -427,11 +427,13 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
           </div>
         </div>
 
-        {/* Engine Toggle Buttons & AI Voice Selector */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* AI Voice Selector Dropdown */}
+        {/* Middle: AI Voice Selector Dropdown */}
+        <div className="flex items-center justify-center my-1 sm:my-0">
           <VoiceSelector />
+        </div>
 
+        {/* Right Side: Engine Toggle Buttons & Voice Mute */}
+        <div className="flex items-center gap-2">
           <div className="flex rounded-lg border border-border bg-muted/30 p-1">
             <Button
               size="sm"
