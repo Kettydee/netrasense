@@ -82,15 +82,15 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Action Button & Description */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h4 className="text-sm font-extrabold text-foreground flex items-center gap-1.5">
-            <Smile className="size-4 text-amber-400" />
+          <h4 className="text-base sm:text-lg font-black text-foreground flex items-center gap-2">
+            <Smile className="size-5 text-amber-400" />
             Face & Mood Identifier
           </h4>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Recognizes familiar caregivers & reads facial emotion and presence.
           </p>
         </div>
@@ -99,16 +99,16 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
           type="button"
           onClick={handleScanFaceAndMood}
           disabled={isScanning}
-          className="gap-2 font-bold text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-md"
+          className="h-11 px-5 rounded-2xl gap-2 font-black text-xs sm:text-sm bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-sm transition-all"
         >
           {isScanning ? (
             <>
-              <Loader2 className="size-3.5 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
               <span>Analyzing...</span>
             </>
           ) : (
             <>
-              <Sparkles className="size-3.5" />
+              <Sparkles className="size-4" />
               <span>Who is in front of me?</span>
             </>
           )}
@@ -117,28 +117,28 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
 
       {/* Result Display Card */}
       {result && (
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 shadow-sm animate-in fade-in-50 duration-300">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-amber-500/20 text-2xl border border-amber-500/30">
+        <div className="rounded-3xl border-2 border-amber-500/30 bg-amber-500/5 p-5 sm:p-6 shadow-sm animate-in fade-in-50 duration-300">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-500/20 text-3xl border border-amber-500/30 shadow-xs">
                 {result.moodEmoji}
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-extrabold text-foreground">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg font-black text-foreground">
                     {result.identifiedName ? result.identifiedName : "Unfamiliar Individual"}
                   </span>
                   {result.identifiedName ? (
-                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] font-bold">
-                      <Heart className="mr-1 size-2.5 fill-current" /> Recognized Caregiver
+                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[11px] font-bold px-2 py-0.5">
+                      <Heart className="mr-1 size-3 fill-current" /> Recognized Caregiver
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                    <Badge variant="outline" className="text-[11px] text-muted-foreground font-semibold px-2 py-0.5">
                       Guest
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs font-semibold text-amber-400 mt-0.5">
+                <p className="text-xs sm:text-sm font-semibold text-amber-400 mt-1">
                   Expression: <span className="font-bold text-foreground">{result.mood}</span> ·{" "}
                   {result.distanceEstimate}
                 </p>
@@ -147,50 +147,49 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
 
             <Button
               type="button"
-              size="sm"
               variant="outline"
               onClick={() => speak(result.speech)}
-              className="h-8 gap-1.5 text-xs font-semibold"
+              className="h-9 px-3.5 rounded-xl gap-2 text-xs font-bold"
               title="Repeat spoken description"
             >
-              <Volume2 className="size-3.5 text-primary" />
+              <Volume2 className="size-4 text-primary" />
               <span>Repeat</span>
             </Button>
           </div>
 
-          <div className="mt-3 rounded-xl border border-border/80 bg-card/60 p-3 text-xs leading-relaxed text-foreground">
-            <span className="font-bold text-primary">Spoken Readout: </span>
+          <div className="mt-4 rounded-2xl border border-border/80 bg-card/70 p-4 text-xs sm:text-sm leading-relaxed text-foreground shadow-xs">
+            <span className="font-black text-primary">Spoken Readout: </span>
             &ldquo;{result.speech}&rdquo;
           </div>
 
           {/* Quick Tag Button */}
           {!result.identifiedName && !isAddingTag && (
-            <div className="mt-3 flex justify-end">
+            <div className="mt-4 flex justify-end">
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
                 onClick={() => setIsAddingTag(true)}
-                className="text-xs text-primary hover:text-primary hover:bg-primary/10 gap-1.5"
+                className="text-xs sm:text-sm text-primary hover:text-primary hover:bg-primary/10 gap-2 font-bold"
               >
-                <UserPlus className="size-3.5" />
+                <UserPlus className="size-4" />
                 <span>Save this person&apos;s name</span>
               </Button>
             </div>
           )}
 
           {isAddingTag && (
-            <form onSubmit={handleAddFamiliarPerson} className="mt-3 flex gap-2">
+            <form onSubmit={handleAddFamiliarPerson} className="mt-4 flex gap-2.5">
               <input
                 type="text"
                 placeholder="Enter person's name (e.g. Dr. Sarah, Mom, Dave)"
                 value={newPersonName}
                 onChange={(e) => setNewPersonName(e.target.value)}
-                className="flex-1 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                className="flex-1 h-11 rounded-2xl border border-border bg-card px-4 text-xs sm:text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
                 autoFocus
               />
-              <Button type="submit" size="sm" className="font-bold text-xs gap-1">
-                <Check className="size-3.5" /> Save
+              <Button type="submit" className="h-11 px-5 rounded-2xl font-bold text-xs sm:text-sm gap-1.5">
+                <Check className="size-4" /> Save
               </Button>
             </form>
           )}
@@ -198,14 +197,14 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
       )}
 
       {/* Familiar Contacts Pill List */}
-      <div className="flex flex-wrap items-center gap-1.5 pt-1">
-        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mr-1">
-          Known People:
+      <div className="flex flex-wrap items-center gap-2 pt-2">
+        <span className="text-xs font-black text-muted-foreground uppercase tracking-wider mr-1">
+          Known Contacts:
         </span>
         {savedFaces.slice(0, 5).map((name) => (
           <span
             key={name}
-            className="rounded-lg border border-border bg-muted/40 px-2 py-0.5 text-[11px] font-semibold text-foreground"
+            className="rounded-xl border border-border/80 bg-card/80 px-3 py-1.5 text-xs font-bold text-foreground shadow-xs"
           >
             {name}
           </span>
