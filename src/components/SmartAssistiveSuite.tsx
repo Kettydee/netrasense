@@ -220,18 +220,18 @@ export function SmartAssistiveSuite({
       });
 
   return (
-    <div className={`mt-4 rounded-2xl border border-border/80 bg-card/60 p-4 shadow-sm backdrop-blur-sm ${className}`}>
+    <div className={`mt-6 rounded-3xl border border-border/80 bg-card/70 p-6 sm:p-7 shadow-sm backdrop-blur-sm ${className}`}>
       {/* Header with Title & Hands-Free Mic */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-primary/20 text-primary">
-            <Sparkles className="size-4.5 animate-pulse" />
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-5">
+        <div className="flex items-center gap-3.5">
+          <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/20 text-primary shadow-xs">
+            <Sparkles className="size-5.5 animate-pulse" />
           </div>
           <div>
-            <h3 className="text-sm font-extrabold tracking-tight text-foreground sm:text-base">
+            <h3 className="text-base font-black tracking-tight text-foreground sm:text-lg">
               Assistive Copilot Suite
             </h3>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
               Spatial Object Seeker, Face Emotion, Indoor Nav & Scene Reader
             </p>
           </div>
@@ -242,19 +242,19 @@ export function SmartAssistiveSuite({
           size="sm"
           variant={isListening ? "default" : "outline"}
           onClick={toggleVoiceCommands}
-          className={`h-8 gap-1.5 text-xs font-bold ${
+          className={`h-9 px-3.5 rounded-xl gap-2 text-xs font-bold transition-all shadow-xs ${
             isListening ? "bg-emerald-600 text-white shadow-emerald-500/30 animate-pulse" : ""
           }`}
           aria-label={isListening ? "Voice commands active" : "Enable voice commands"}
         >
           {isListening ? (
             <>
-              <Mic className="size-3.5" />
+              <Mic className="size-4" />
               <span>Listening...</span>
             </>
           ) : (
             <>
-              <MicOff className="size-3.5 text-muted-foreground" />
+              <MicOff className="size-4 text-muted-foreground" />
               <span>Voice Control</span>
             </>
           )}
@@ -262,62 +262,62 @@ export function SmartAssistiveSuite({
       </div>
 
       {/* Navigation Tab Bar */}
-      <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-1">
+      <div className="mt-5 mb-6 flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-muted/30 border border-border/50">
         <button
           type="button"
           onClick={() => setActiveTab("seek")}
-          className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTab === "seek"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+              ? "bg-primary text-primary-foreground shadow-md"
+              : "text-muted-foreground hover:text-foreground hover:bg-card/70"
           }`}
         >
-          <Compass className="size-3.5" />
+          <Compass className="size-4" />
           <span>Find Object (Sonar)</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("face")}
-          className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTab === "face"
-              ? "bg-amber-500 text-slate-950 shadow-sm"
-              : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+              ? "bg-amber-500 text-slate-950 shadow-md"
+              : "text-muted-foreground hover:text-foreground hover:bg-card/70"
           }`}
         >
-          <Smile className="size-3.5" />
+          <Smile className="size-4" />
           <span>Face & Mood</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("nav")}
-          className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTab === "nav"
-              ? "bg-sky-500 text-slate-950 shadow-sm"
-              : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+              ? "bg-sky-500 text-slate-950 shadow-md"
+              : "text-muted-foreground hover:text-foreground hover:bg-card/70"
           }`}
         >
-          <Navigation className="size-3.5" />
+          <Navigation className="size-4" />
           <span>Indoor Navigator</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("scene")}
-          className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTab === "scene"
-              ? "bg-emerald-600 text-white shadow-sm"
-              : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+              ? "bg-emerald-600 text-white shadow-md"
+              : "text-muted-foreground hover:text-foreground hover:bg-card/70"
           }`}
         >
-          <Eye className="size-3.5" />
+          <Eye className="size-4" />
           <span>Scene & Currency</span>
         </button>
       </div>
 
       {/* Tab Panels */}
-      <div className="mt-3.5">
+      <div className="mt-5">
         {/* TAB 1: FIND OBJECT (SONAR) */}
         {activeTab === "seek" && (
           <ObjectSeeker currentDetections={normalizedDetections} isCameraActive={true} />

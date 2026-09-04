@@ -140,86 +140,91 @@ export function ObjectSeeker({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Target Search & Selector */}
-      <div className="flex flex-col gap-3">
-        <form onSubmit={handleCustomSearch} className="flex gap-2">
+      <div className="flex flex-col gap-4">
+        <form onSubmit={handleCustomSearch} className="flex items-center gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="What item do you need? (e.g. keys, glasses, cane)"
+              placeholder="What item do you need? (e.g. keys, glasses, cane, water bottle)"
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
-              className="w-full rounded-xl border border-border bg-card pl-9 pr-3 py-2 text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full h-12 rounded-2xl border border-border bg-card pl-12 pr-4 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-xs transition-all"
             />
           </div>
-          <Button type="submit" size="sm" className="font-bold text-xs">
+          <Button type="submit" className="h-12 px-6 rounded-2xl font-black text-sm bg-primary hover:bg-primary/90 shadow-xs">
             Seek
           </Button>
         </form>
 
         {/* Quick Essential Pills */}
-        <div className="flex flex-wrap gap-1.5">
-          {COMMON_ESSENTIALS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => handleSelectPreset(item.id, item.label)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
-                selectedTarget === item.id
-                  ? "bg-primary text-primary-foreground shadow-xs scale-105"
-                  : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+        <div className="pt-1">
+          <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground/90 mb-2.5">
+            Common Essentials:
+          </p>
+          <div className="flex flex-wrap gap-2.5">
+            {COMMON_ESSENTIALS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => handleSelectPreset(item.id, item.label)}
+                className={`rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer border shadow-xs ${
+                  selectedTarget === item.id
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm scale-[1.02]"
+                    : "bg-card/90 border-border/80 text-foreground hover:bg-muted hover:border-primary/40"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Live Target Radar Status Box */}
       <div
-        className={`relative overflow-hidden rounded-2xl border p-4 transition-all duration-300 ${
+        className={`relative overflow-hidden rounded-3xl border-2 p-5 sm:p-6 transition-all duration-300 ${
           isLocked
-            ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
-            : "border-border/80 bg-surface/60"
+            ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_25px_rgba(16,185,129,0.18)]"
+            : "border-border/80 bg-surface/70"
         }`}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
             <div
-              className={`flex size-10 items-center justify-center rounded-xl border transition-colors ${
+              className={`flex size-13 sm:size-14 items-center justify-center rounded-2xl border transition-colors shadow-xs ${
                 isLocked
                   ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-400 animate-pulse"
                   : "border-border bg-muted/40 text-muted-foreground"
               }`}
             >
               {isLocked ? (
-                <Crosshair className="size-5 text-emerald-400" />
+                <Crosshair className="size-6 text-emerald-400" />
               ) : (
-                <Compass className="size-5" />
+                <Compass className="size-6" />
               )}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-extrabold text-foreground">
+              <div className="flex items-center gap-2.5">
+                <h4 className="text-base sm:text-lg font-black text-foreground">
                   Seeking:{" "}
                   <span className="capitalize text-primary">
                     {targetConfig?.label || selectedTarget}
                   </span>
                 </h4>
                 {isLocked ? (
-                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] font-black uppercase">
+                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[11px] font-black uppercase px-2 py-0.5">
                     Locked On
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[10px] text-muted-foreground uppercase">
+                  <Badge variant="outline" className="text-[11px] text-muted-foreground uppercase px-2 py-0.5 font-bold">
                     Scanning
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 {isLocked
                   ? `Target positioned ${direction.toUpperCase()} · ~${distanceCm ?? 100} cm away`
                   : "Point camera slowly around the room to locate item"}
@@ -231,25 +236,24 @@ export function ObjectSeeker({
           <div className="flex items-center gap-2">
             <Button
               type="button"
-              size="sm"
               variant={sonarEnabled ? "default" : "outline"}
               onClick={() => {
                 const next = !sonarEnabled;
                 setSonarEnabled(next);
                 if (next) playSonarPing(150);
               }}
-              className={`h-8 gap-1.5 text-xs font-bold ${
-                sonarEnabled ? "bg-cyan-600 hover:bg-cyan-500 text-white" : ""
+              className={`h-10 px-4 sm:px-5 rounded-xl gap-2 text-xs sm:text-sm font-bold shadow-xs ${
+                sonarEnabled ? "bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-500/20" : ""
               }`}
             >
               {sonarEnabled ? (
                 <>
-                  <Volume2 className="size-3.5 text-cyan-200 animate-pulse" />
+                  <Volume2 className="size-4 text-cyan-200 animate-pulse" />
                   <span>Sonar On</span>
                 </>
               ) : (
                 <>
-                  <VolumeX className="size-3.5 text-muted-foreground" />
+                  <VolumeX className="size-4 text-muted-foreground" />
                   <span>Sonar Off</span>
                 </>
               )}
@@ -259,9 +263,9 @@ export function ObjectSeeker({
 
         {/* Directional Walkway Indicator */}
         {isLocked && (
-          <div className="mt-3.5 flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-2.5 text-xs">
-            <div className="flex items-center gap-2 font-bold text-emerald-300">
-              <CheckCircle2 className="size-4 shrink-0 text-emerald-400" />
+          <div className="mt-4 flex items-center justify-between rounded-2xl border border-emerald-500/30 bg-emerald-950/25 p-3.5 sm:p-4 text-xs sm:text-sm">
+            <div className="flex items-center gap-2.5 font-bold text-emerald-300">
+              <CheckCircle2 className="size-5 shrink-0 text-emerald-400" />
               <span>
                 {distanceCm && distanceCm <= 45
                   ? "Reaching distance! Item is right in front of you."
@@ -272,7 +276,7 @@ export function ObjectSeeker({
                       : "Turn slightly right to face the target."}
               </span>
             </div>
-            <span className="font-mono text-xs font-black text-emerald-400">
+            <span className="font-mono text-xs sm:text-sm font-black text-emerald-400">
               {distanceCm ? `${distanceCm} cm` : "IN VIEW"}
             </span>
           </div>

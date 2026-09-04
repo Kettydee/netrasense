@@ -89,27 +89,32 @@ export function IndoorNavigator({ getFrameBase64 }: IndoorNavigatorProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Destination Picker */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-extrabold text-foreground flex items-center gap-1.5">
-            <Navigation className="size-4 text-sky-400" />
-            Indoor Landmark Pathfinder
-          </h4>
+          <div>
+            <h4 className="text-base sm:text-lg font-black text-foreground flex items-center gap-2">
+              <Navigation className="size-5 text-sky-400" />
+              Indoor Landmark Pathfinder
+            </h4>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              Select an indoor destination for turn-by-turn waypoint walking directions.
+            </p>
+          </div>
           {isNavigating && (
             <Button
               size="sm"
               variant="outline"
               onClick={handleStopNavigation}
-              className="h-7 text-xs font-bold text-rose-400 hover:text-rose-500"
+              className="h-8 px-3 rounded-xl text-xs font-bold text-rose-400 hover:text-rose-500"
             >
               End Trip
             </Button>
           )}
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2.5 pt-1">
           {DESTINATIONS.map((dest) => {
             const Icon = dest.icon;
             const isSelected = destination === dest.label;
@@ -119,13 +124,13 @@ export function IndoorNavigator({ getFrameBase64 }: IndoorNavigatorProps) {
                 type="button"
                 onClick={() => startNavigation(dest.label)}
                 disabled={isAnalyzing}
-                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer border shadow-xs ${
                   isSelected && isNavigating
-                    ? "bg-sky-500 text-slate-950 shadow-sm scale-105"
-                    : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+                    ? "bg-sky-500 text-slate-950 border-sky-400 shadow-md scale-[1.02]"
+                    : "bg-card/90 border-border/80 text-foreground hover:bg-muted hover:border-sky-400/40"
                 }`}
               >
-                <Icon className="size-3.5" />
+                <Icon className="size-4" />
                 <span>{dest.label}</span>
               </button>
             );
@@ -135,23 +140,23 @@ export function IndoorNavigator({ getFrameBase64 }: IndoorNavigatorProps) {
 
       {/* Active Navigation Card */}
       {isNavigating && (
-        <div className="rounded-2xl border border-sky-500/30 bg-sky-500/5 p-4 shadow-sm animate-in fade-in-50 duration-300">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-500/20 pb-3">
-            <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-sky-500/20 text-sky-400 font-black text-xs border border-sky-500/30">
+        <div className="rounded-3xl border-2 border-sky-500/30 bg-sky-500/5 p-5 sm:p-6 shadow-sm animate-in fade-in-50 duration-300">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-sky-500/20 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-sky-500/20 text-sky-400 font-black text-sm border border-sky-500/30 shadow-xs">
                 #{currentStep}
               </div>
               <div>
-                <span className="text-xs font-extrabold text-foreground">
+                <span className="text-sm sm:text-base font-black text-foreground">
                   Navigating to: <span className="text-sky-400">{destination}</span>
                 </span>
-                <p className="text-[11px] text-muted-foreground">Turn-by-turn waypoint guidance</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Turn-by-turn waypoint guidance</p>
               </div>
             </div>
 
             {navResult && (
               <Badge
-                className={`text-[10px] font-black uppercase tracking-wider ${
+                className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 ${
                   navResult.clearanceStatus === "Safe"
                     ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
                     : navResult.clearanceStatus === "Caution"
@@ -165,43 +170,42 @@ export function IndoorNavigator({ getFrameBase64 }: IndoorNavigatorProps) {
           </div>
 
           {/* Current Step Guidance */}
-          <div className="mt-3.5">
+          <div className="mt-4">
             {navResult ? (
-              <div className="space-y-3">
-                <div className="flex items-start gap-2.5 rounded-xl border border-border/80 bg-card p-3">
-                  <Footprints className="size-5 shrink-0 text-sky-400 mt-0.5" />
+              <div className="space-y-4">
+                <div className="flex items-start gap-3.5 rounded-2xl border border-border/80 bg-card/80 p-4 shadow-xs">
+                  <Footprints className="size-6 shrink-0 text-sky-400 mt-0.5" />
                   <div>
-                    <span className="text-xs font-extrabold text-sky-400 uppercase tracking-wider">
+                    <span className="text-xs font-black text-sky-400 uppercase tracking-wider">
                       Current Action
                     </span>
-                    <p className="text-sm font-bold text-foreground mt-0.5 leading-snug">
+                    <p className="text-sm sm:text-base font-bold text-foreground mt-1 leading-snug">
                       &ldquo;{navResult.instruction}&rdquo;
                     </p>
                   </div>
                 </div>
 
                 {navResult.isArrived ? (
-                  <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3 text-emerald-400 font-bold text-xs">
-                    <Flag className="size-4 shrink-0" />
+                  <div className="flex items-center gap-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-emerald-400 font-bold text-sm">
+                    <Flag className="size-5 shrink-0" />
                     <span>Destination reached! You have arrived safely at {destination}.</span>
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                     <Button
                       type="button"
-                      size="sm"
                       onClick={handleNextStep}
                       disabled={isAnalyzing}
-                      className="gap-2 font-bold text-xs bg-sky-500 hover:bg-sky-600 text-slate-950 shadow-md"
+                      className="h-11 px-5 rounded-2xl gap-2 font-black text-xs sm:text-sm bg-sky-500 hover:bg-sky-600 text-slate-950 shadow-sm transition-all"
                     >
                       {isAnalyzing ? (
                         <>
-                          <Loader2 className="size-3.5 animate-spin" />
+                          <Loader2 className="size-4 animate-spin" />
                           <span>Checking Pathway...</span>
                         </>
                       ) : (
                         <>
-                          <CheckCircle2 className="size-3.5" />
+                          <CheckCircle2 className="size-4" />
                           <span>Am I on track? / Next Step</span>
                         </>
                       )}
@@ -209,19 +213,18 @@ export function IndoorNavigator({ getFrameBase64 }: IndoorNavigatorProps) {
 
                     <Button
                       type="button"
-                      size="sm"
                       variant="ghost"
                       onClick={() => executeNavStep(currentStep)}
-                      className="text-xs text-muted-foreground hover:text-foreground gap-1.5"
+                      className="h-10 px-3.5 rounded-xl text-xs sm:text-sm text-muted-foreground hover:text-foreground gap-2 font-semibold"
                     >
-                      <RefreshCw className="size-3" /> Re-scan Step
+                      <RefreshCw className="size-3.5" /> Re-scan Step
                     </Button>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-center py-6 text-center text-xs text-muted-foreground gap-2">
-                <Loader2 className="size-4 animate-spin text-sky-400" />
+              <div className="flex items-center justify-center py-8 text-center text-xs sm:text-sm text-muted-foreground gap-2.5">
+                <Loader2 className="size-5 animate-spin text-sky-400" />
                 <span>Scanning room layout and landmarks...</span>
               </div>
             )}
