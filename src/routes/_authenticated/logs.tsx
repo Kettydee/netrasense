@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Search } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
-import { fetchTelemetry } from "@/lib/queries";
+import { fetchTelemetry, fetchTelemetryPage } from "@/lib/queries";
 import { THREAT_LEVELS, threatStyles, toCsv } from "@/lib/netrasense";
 
 export const Route = createFileRoute("/_authenticated/logs")({
@@ -38,29 +38,53 @@ export const Route = createFileRoute("/_authenticated/logs")({
   component: LogsPage,
 });
 
+const PAGE_SIZE_OPTIONS = ["10", "25", "50", "100"];
+
 function LogsPage() {
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const [search, setSearch] = useState("");
   const [level, setLevel] = useState("all");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
 
-  const telemetryQuery = useQuery({
+  // Paginated data for the table
+  const pageQuery = useQuery({
+    queryKey: ["telemetry-page", userId, page, pageSize],
+    enabled: !!userId,
+    queryFn: () => fetchTelemetryPage(page, pageSize),
+  });
+
+  // Full dataset for summary stats and CSV export
+  const fullQuery = useQuery({
     queryKey: ["telemetry", userId, "all"],
     enabled: !!userId,
     queryFn: () => fetchTelemetry(500),
   });
 
+  // Client-side filter on the current page
   const rows = useMemo(() => {
-    const all = telemetryQuery.data ?? [];
+    const all = pageQuery.data?.rows ?? [];
+    if (level === "all" && !search.trim()) return all;
     return all.filter(
       (r) =>
         (level === "all" || r.threat_level === level) &&
         r.detected_object.toLowerCase().includes(search.trim().toLowerCase()),
     );
-  }, [telemetryQuery.data, level, search]);
+  }, [pageQuery.data, level, search]);
+
+  const totalCount = pageQuery.data?.totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   function exportCsv() {
-    const blob = new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8" });
+    // Export from full dataset (client-side filtered)
+    const allData = fullQuery.data ?? [];
+    const filtered = allData.filter(
+      (r) =>
+        (level === "all" || r.threat_level === level) &&
+        r.detected_object.toLowerCase().includes(search.trim().toLowerCase()),
+    );
+    const blob = new Blob([toCsv(filtered)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -69,34 +93,35 @@ function LogsPage() {
     URL.revokeObjectURL(url);
   }
 
+  // Summary stats from full dataset
   const criticalCount = useMemo(
     () =>
-      (telemetryQuery.data ?? []).filter(
+      (fullQuery.data ?? []).filter(
         (r) => r.threat_level === "Collision" || r.threat_level === "Alarming",
       ).length,
-    [telemetryQuery.data],
+    [fullQuery.data],
   );
 
   const avgDistance = useMemo(() => {
-    const data = telemetryQuery.data ?? [];
+    const data = fullQuery.data ?? [];
     if (data.length === 0) return 0;
     const sum = data.reduce((acc, r) => acc + Number(r.distance_cm), 0);
     return Math.round(sum / data.length);
-  }, [telemetryQuery.data]);
+  }, [fullQuery.data]);
 
   const mostDetected = useMemo(() => {
-    const data = telemetryQuery.data ?? [];
+    const data = fullQuery.data ?? [];
     if (data.length === 0) return "—";
     const counts: Record<string, number> = {};
     for (const r of data) {
       counts[r.detected_object] = (counts[r.detected_object] ?? 0) + 1;
     }
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
-  }, [telemetryQuery.data]);
+  }, [fullQuery.data]);
 
   const normalCount = useMemo(
-    () => (telemetryQuery.data ?? []).filter((r) => r.threat_level === "Normal").length,
-    [telemetryQuery.data],
+    () => (fullQuery.data ?? []).filter((r) => r.threat_level === "Normal").length,
+    [fullQuery.data],
   );
 
   return (
@@ -108,7 +133,7 @@ function LogsPage() {
       <div className="mb-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <div className="surface-card p-4">
           <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Records</p>
-          <p className="mt-1 text-2xl font-black">{telemetryQuery.data?.length ?? 0}</p>
+          <p className="mt-1 text-2xl font-black">{fullQuery.data?.length ?? 0}</p>
         </div>
         <div className="surface-card p-4">
           <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">High Risk</p>
@@ -129,7 +154,7 @@ function LogsPage() {
         <div className="surface-card p-4">
           <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Detection Rate</p>
           <p className="mt-1 text-2xl font-black">
-            {telemetryQuery.data?.length ? Math.round((criticalCount / telemetryQuery.data.length) * 100) : 0}<span className="text-sm text-muted-foreground">%</span>
+            {fullQuery.data?.length ? Math.round((criticalCount / fullQuery.data.length) * 100) : 0}<span className="text-sm text-muted-foreground">%</span>
           </p>
         </div>
       </div>
@@ -151,13 +176,13 @@ function LogsPage() {
                 className="pl-9"
                 placeholder="Stairs, vehicle, pole…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(0); }}
               />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="log-level">Threat classification</Label>
-            <Select value={level} onValueChange={setLevel}>
+            <Select value={level} onValueChange={(v) => { setLevel(v); setPage(0); }}>
               <SelectTrigger id="log-level">
                 <SelectValue />
               </SelectTrigger>
@@ -171,7 +196,7 @@ function LogsPage() {
               </SelectContent>
             </Select>
           </div>
-          <Button variant="outline" onClick={exportCsv} disabled={rows.length === 0}>
+          <Button variant="outline" onClick={exportCsv} disabled={fullQuery.data?.length === 0}>
             <Download aria-hidden="true" className="size-4" />
             Export CSV
           </Button>
@@ -179,10 +204,29 @@ function LogsPage() {
       </section>
 
       <section aria-labelledby="table-heading" className="surface-card overflow-hidden">
-        <h2 id="table-heading" className="border-b border-border p-5 text-lg font-bold">
-          {rows.length} record{rows.length === 1 ? "" : "s"}
-        </h2>
-        {telemetryQuery.isLoading ? (
+        <div className="flex items-center justify-between border-b border-border p-5">
+          <h2 id="table-heading" className="text-lg font-bold">
+            {totalCount} record{totalCount === 1 ? "" : "s"}
+          </h2>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="page-size" className="text-xs text-muted-foreground whitespace-nowrap">Rows per page</Label>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => { setPageSize(Number(v)); setPage(0); }}
+            >
+              <SelectTrigger id="page-size" className="w-20 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <SelectItem key={n} value={n}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {pageQuery.isLoading ? (
           <div className="space-y-3 p-5">
             {[0, 1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-10 rounded-md" />
@@ -198,21 +242,11 @@ function LogsPage() {
               <caption className="sr-only">Historical obstacle detection records</caption>
               <thead className="bg-muted/40 border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th scope="col" className="px-5 py-3.5">
-                    Timestamp
-                  </th>
-                  <th scope="col" className="px-5 py-3.5">
-                    Detected Object
-                  </th>
-                  <th scope="col" className="px-5 py-3.5">
-                    Distance
-                  </th>
-                  <th scope="col" className="px-5 py-3.5">
-                    Threat Level
-                  </th>
-                  <th scope="col" className="px-5 py-3.5">
-                    Action Taken
-                  </th>
+                  <th scope="col" className="px-5 py-3.5">Timestamp</th>
+                  <th scope="col" className="px-5 py-3.5">Detected Object</th>
+                  <th scope="col" className="px-5 py-3.5">Distance</th>
+                  <th scope="col" className="px-5 py-3.5">Threat Level</th>
+                  <th scope="col" className="px-5 py-3.5">Action Taken</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
@@ -254,6 +288,84 @@ function LogsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalCount > 0 && (
+          <div className="flex items-center justify-between border-t border-border px-5 py-3">
+            <p className="text-xs text-muted-foreground">
+              Page {page + 1} of {totalPages}
+              {search.trim() || level !== "all" ? " (filtered)" : ""}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 0}
+                onClick={() => setPage(0)}
+                aria-label="First page"
+              >
+                <ChevronLeft className="size-3" />
+                <ChevronLeft className="size-3 -ml-2" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 0}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="size-3" />
+                Prev
+              </Button>
+
+              {/* Page number buttons */}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum: number;
+                if (totalPages <= 5) {
+                  pageNum = i;
+                } else if (page < 3) {
+                  pageNum = i;
+                } else if (page >= totalPages - 2) {
+                  pageNum = totalPages - 5 + i;
+                } else {
+                  pageNum = page - 2 + i;
+                }
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={pageNum === page ? "default" : "outline"}
+                    size="sm"
+                    className="w-9 px-0"
+                    onClick={() => setPage(pageNum)}
+                  >
+                    {pageNum + 1}
+                  </Button>
+                );
+              })}
+
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages - 1}
+                onClick={() => setPage((p) => p + 1)}
+                aria-label="Next page"
+              >
+                Next
+                <ChevronRight className="size-3" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages - 1}
+                onClick={() => setPage(totalPages - 1)}
+                aria-label="Last page"
+              >
+                <ChevronRight className="size-3" />
+                <ChevronRight className="size-3 -ml-2" />
+              </Button>
+            </div>
           </div>
         )}
       </section>

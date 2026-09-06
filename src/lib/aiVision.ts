@@ -1,5 +1,55 @@
 export const GEMINI_API_KEY_STORAGE_KEY = "netrasense:gemini_api_key";
 
+/** Resolve the backend server URL for Gemini proxy requests. */
+function getServerUrl(): string {
+  if (typeof window === "undefined") return "http://localhost:5000";
+  const stored = window.localStorage.getItem("netrasense:sensorServerUrl")?.trim();
+  if (stored) return stored.replace(/\/$/, "");
+  return "http://localhost:5000";
+}
+
+/**
+ * Send a Gemini request through the server proxy (key never touches the browser).
+ * Falls back to direct API call if proxy is unavailable.
+ */
+async function callGeminiViaProxy(contents: unknown[], generationConfig: unknown): Promise<unknown> {
+  const res = await fetch(`${getServerUrl()}/api/gemini-proxy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contents, generationConfig }),
+  });
+  if (!res.ok) throw new Error(`Gemini proxy returned ${res.status}`);
+  return res.json();
+}
+
+/** Store the Gemini API key on the server (not in browser localStorage). */
+export async function setGeminiApiKeyOnServer(apiKey: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${getServerUrl()}/api/gemini-config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_key: apiKey }),
+    });
+    if (res.ok) {
+      const data = await res.json() as { has_key: boolean };
+      return data.has_key;
+    }
+  } catch { /* proxy unavailable */ }
+  return false;
+}
+
+/** Check if the server has a Gemini API key stored. */
+export async function hasGeminiApiKeyOnServer(): Promise<boolean> {
+  try {
+    const res = await fetch(`${getServerUrl()}/api/gemini-config`);
+    if (res.ok) {
+      const data = await res.json() as { has_key: boolean };
+      return data.has_key;
+    }
+  } catch { /* proxy unavailable */ }
+  return false;
+}
+
 export interface SceneDescriptionResult {
   summary: string;
   roomType?: string;
@@ -28,19 +78,13 @@ export async function describeSurroundings(
   detectedObjects?: string[],
   language: "en" | "hi" | "auto" = "auto"
 ): Promise<SceneDescriptionResult> {
-  const resolvedKey =
-    apiKey?.trim() ||
-    (typeof window !== "undefined"
-      ? window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY)?.trim()
-      : "") ||
-    "";
-
   // Clean Base64 format
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
-  if (resolvedKey) {
+  // Try server proxy first (key stays server-side)
+  const hasKey = await hasGeminiApiKeyOnServer();
+  if (hasKey) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedKey}`;
       const langInstruction =
         language === "hi"
           ? "Respond in conversational Hindi or natural Hinglish that can be spoken aloud naturally (e.g. 'Aapke saamne ek mez hai aur daayein taraf kursi hai. Aage ka raasta khula hai.')."
@@ -57,39 +101,19 @@ Focus on:
 3. Any obstacles, people, or hazards with their clock position or direction (e.g. 'a chair at 10 o'clock / daayein taraf kursi', 'a table straight ahead / saamne mez').
 Keep your tone calm, reassuring, and concise so it can be spoken aloud immediately.`;
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                {
-                  inlineData: {
-                    mimeType: "image/jpeg",
-                    data: base64Data,
-                  },
-                },
-              ],
-            },
+      const response = await callGeminiViaProxy(
+        [{
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType: "image/jpeg", data: base64Data } },
           ],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 250,
-          },
-        }),
-      });
+        }],
+        { temperature: 0.2, maxOutputTokens: 250 },
+      );
 
-      if (response.ok) {
-        const data = await response.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (text) {
-          return {
-            summary: text,
-            source: "gemini",
-          };
-        }
+      const text = (response as any)?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (text) {
+        return { summary: text, source: "gemini" };
       }
     } catch (err) {
       console.warn("Gemini scene describer error, using spatial fallback:", err);
@@ -121,18 +145,11 @@ export async function readCurrencyAndText(
   apiKey?: string,
   language: "en" | "hi" | "auto" = "auto"
 ): Promise<CurrencyAndTextResult> {
-  const resolvedKey =
-    apiKey?.trim() ||
-    (typeof window !== "undefined"
-      ? window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY)?.trim()
-      : "") ||
-    "";
-
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
-  if (resolvedKey) {
+  const hasKey = await hasGeminiApiKeyOnServer();
+  if (hasKey) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedKey}`;
       const langInstruction =
         language === "hi"
           ? "State findings in Hindi or bilingual (e.g. '500 Indian Rupees note / 500 रुपये का नोट')."
@@ -147,40 +164,14 @@ ${langInstruction}
    Read the main title, medicine name, dosage/expiry date, or crucial sign text aloud clearly.
 3. Provide a spoken response under 25 words that speaks the most vital finding first.`;
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                {
-                  inlineData: {
-                    mimeType: "image/jpeg",
-                    data: base64Data,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 200,
-          },
-        }),
-      });
+      const response = await callGeminiViaProxy(
+        [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/jpeg", data: base64Data } }] }],
+        { temperature: 0.1, maxOutputTokens: 200 },
+      );
 
-      if (response.ok) {
-        const data = await response.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (text) {
-          return {
-            speech: text,
-            extractedText: text,
-            source: "gemini",
-          };
-        }
+      const text = (response as any)?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (text) {
+        return { speech: text, extractedText: text, source: "gemini" };
       }
     } catch (err) {
       console.warn("Gemini currency/text reader error:", err);
@@ -215,18 +206,11 @@ export async function identifyFaceAndMood(
   apiKey?: string,
   language: "en" | "hi" | "auto" = "auto"
 ): Promise<FaceMoodResult> {
-  const resolvedKey =
-    apiKey?.trim() ||
-    (typeof window !== "undefined"
-      ? window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY)?.trim()
-      : "") ||
-    "";
-
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
-  if (resolvedKey) {
+  const hasKey = await hasGeminiApiKeyOnServer();
+  if (hasKey) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedKey}`;
       const contactsContext =
         familiarContacts.length > 0
           ? `Known caregivers and contacts: ${familiarContacts.join(", ")}.`
@@ -252,47 +236,25 @@ Rules:
 - If unfamiliar, say "An unfamiliar person is..." in speech.
 - Respond ONLY with the JSON object, without markdown formatting.`;
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                {
-                  inlineData: {
-                    mimeType: "image/jpeg",
-                    data: base64Data,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 250,
-          },
-        }),
-      });
+      const response = await callGeminiViaProxy(
+        [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/jpeg", data: base64Data } }] }],
+        { temperature: 0.1, maxOutputTokens: 250 },
+      );
 
-      if (response.ok) {
-        const data = await response.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-        const cleanJson = rawText.replace(/^```(json)?\s*/i, "").replace(/\s*```$/, "").trim();
-        const parsed = JSON.parse(cleanJson);
+      const rawText = (response as any)?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+      const cleanJson = rawText.replace(/^```(json)?\s*/i, "").replace(/\s*```$/, "").trim();
+      const parsed = JSON.parse(cleanJson);
 
-        return {
-          speech: parsed.speech || "A person is in front of you.",
-          peopleCount: parsed.peopleCount ?? 1,
-          identifiedName: parsed.identifiedName || undefined,
-          mood: parsed.mood || "Attentive",
-          moodEmoji: parsed.moodEmoji || "👤",
-          distanceEstimate: parsed.distanceEstimate || "1 to 2 meters ahead",
-          actionDescription: parsed.actionDescription || "In front of camera",
-          source: "gemini",
-        };
-      }
+      return {
+        speech: parsed.speech || "A person is in front of you.",
+        peopleCount: parsed.peopleCount ?? 1,
+        identifiedName: parsed.identifiedName || undefined,
+        mood: parsed.mood || "Attentive",
+        moodEmoji: parsed.moodEmoji || "👤",
+        distanceEstimate: parsed.distanceEstimate || "1 to 2 meters ahead",
+        actionDescription: parsed.actionDescription || "In front of camera",
+        source: "gemini",
+      };
     } catch (err) {
       console.warn("Gemini face/mood identifier error, using fallback:", err);
     }
@@ -327,18 +289,11 @@ export async function navigateIndoorPath(
   currentStep: number = 1,
   apiKey?: string
 ): Promise<IndoorNavResult> {
-  const resolvedKey =
-    apiKey?.trim() ||
-    (typeof window !== "undefined"
-      ? window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY)?.trim()
-      : "") ||
-    "";
-
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
-  if (resolvedKey) {
+  const hasKey = await hasGeminiApiKeyOnServer();
+  if (hasKey) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedKey}`;
       const prompt = `You are NetraSense AI, an indoor assistive waypoint navigator for a visually impaired user.
 The user wants to reach: "${destination}".
 Current navigation step: ${currentStep}.
@@ -358,45 +313,23 @@ Rules:
 - Prioritize user safety: if an obstacle is in the path, alert them first.
 - Return ONLY valid JSON, no markdown backticks.`;
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                {
-                  inlineData: {
-                    mimeType: "image/jpeg",
-                    data: base64Data,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 250,
-          },
-        }),
-      });
+      const response = await callGeminiViaProxy(
+        [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/jpeg", data: base64Data } }] }],
+        { temperature: 0.1, maxOutputTokens: 250 },
+      );
 
-      if (response.ok) {
-        const data = await response.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-        const cleanJson = rawText.replace(/^```(json)?\s*/i, "").replace(/\s*```$/, "").trim();
-        const parsed = JSON.parse(cleanJson);
+      const rawText = (response as any)?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+      const cleanJson = rawText.replace(/^```(json)?\s*/i, "").replace(/\s*```$/, "").trim();
+      const parsed = JSON.parse(cleanJson);
 
-        return {
-          instruction: parsed.instruction || `Step ${currentStep}: Move forward carefully towards ${destination}.`,
-          isArrived: !!parsed.isArrived,
-          clearanceStatus: parsed.clearanceStatus || "Safe",
-          obstaclesInPath: parsed.obstaclesInPath || [],
-          keyLandmarks: parsed.keyLandmarks || [],
-          source: "gemini",
-        };
-      }
+      return {
+        instruction: parsed.instruction || `Step ${currentStep}: Move forward carefully towards ${destination}.`,
+        isArrived: !!parsed.isArrived,
+        clearanceStatus: parsed.clearanceStatus || "Safe",
+        obstaclesInPath: parsed.obstaclesInPath || [],
+        keyLandmarks: parsed.keyLandmarks || [],
+        source: "gemini",
+      };
     } catch (err) {
       console.warn("Gemini indoor navigator error:", err);
     }

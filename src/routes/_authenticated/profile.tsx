@@ -52,12 +52,12 @@ function ProfilePage() {
     queryFn: () => fetchProfile(userId),
   });
   const [form, setForm] = useState({
-    full_name: "John Doe",
-    age: "28",
+    full_name: "",
+    age: "",
     blood_group: "O+",
     impairment_level: "Partial" as ImpairmentLevel,
-    home_address: "123 Navigation Way, Innovation Hub",
-    emergency_medical_notes: "No known drug allergies. Wears audio feedback headset.",
+    home_address: "",
+    emergency_medical_notes: "",
   });
 
   useEffect(() => {
@@ -76,13 +76,12 @@ function ProfilePage() {
     const p = profileQuery.data;
     if (!p) return;
     setForm({
-      full_name: p.full_name ?? "John Doe",
-      age: p.age ? String(p.age) : "28",
+      full_name: p.full_name ?? "",
+      age: p.age ? String(p.age) : "",
       blood_group: p.blood_group ?? "O+",
       impairment_level: (p.impairment_level ?? "Partial") as ImpairmentLevel,
-      home_address: p.home_address ?? "123 Navigation Way, Innovation Hub",
-      emergency_medical_notes:
-        p.emergency_medical_notes ?? "No known drug allergies. Wears audio feedback headset.",
+      home_address: p.home_address ?? "",
+      emergency_medical_notes: p.emergency_medical_notes ?? "",
     });
   }, [profileQuery.data]);
 
@@ -99,7 +98,7 @@ function ProfilePage() {
         full_name: form.full_name,
         age: form.age ? Number(form.age) : null,
         blood_group: form.blood_group,
-        impairment_level: form.impairment_level,
+        impairment_level: form.impairment_level || null,
         home_address: form.home_address,
         emergency_medical_notes: form.emergency_medical_notes,
       });
@@ -137,7 +136,7 @@ function ProfilePage() {
                   <Input
                     id="p-name"
                     required
-                    placeholder="e.g. John Doe"
+                    placeholder="Enter your full name"
                     value={form.full_name}
                     onChange={(e) => setForm({ ...form, full_name: e.target.value })}
                   />
@@ -150,7 +149,7 @@ function ProfilePage() {
                     min={1}
                     max={120}
                     required
-                    placeholder="e.g. 28"
+                    placeholder="Enter your age"
                     value={form.age}
                     onChange={(e) => setForm({ ...form, age: e.target.value })}
                   />
@@ -211,7 +210,7 @@ function ProfilePage() {
                 <Input
                   id="p-address"
                   required
-                  placeholder="e.g. 123 Navigation Way, Innovation Hub"
+                  placeholder="Enter your home address"
                   value={form.home_address}
                   onChange={(e) => setForm({ ...form, home_address: e.target.value })}
                 />
@@ -228,7 +227,7 @@ function ProfilePage() {
                 <Textarea
                   id="p-notes"
                   rows={4}
-                  placeholder="e.g. No known drug allergies. Wears audio feedback headset."
+                  placeholder="Allergies, medications, conditions — important for emergency responders"
                   value={form.emergency_medical_notes}
                   onChange={(e) => setForm({ ...form, emergency_medical_notes: e.target.value })}
                 />
