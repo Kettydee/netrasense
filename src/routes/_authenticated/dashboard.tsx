@@ -40,8 +40,7 @@ import {
   NO_DISTANCE_PLACEHOLDER,
 } from "@/lib/netrasense";
 import {
-  fetchSensorTelemetry,
-  fetchHardwareStatus,
+  fetchUnifiedStatus,
   hardwareThreatToUiLevel,
   type HardwareStatus,
   type EnsembleBreakdown,
@@ -406,29 +405,31 @@ function DashboardPage() {
     enabled: !!userId && !userId.startsWith("demo-"),
     queryFn: () => fetchDailyStats(userId),
   });
-  const sensorQuery = useQuery({
-    queryKey: ["arduino-sensor"],
-    queryFn: fetchSensorTelemetry,
-    refetchInterval: 500,
+  // Single unified poll: /api/status returns hardware + sensor + ensemble
+  const DEFAULT_STATUS: import("@/lib/sensor").UnifiedStatusResponse = {
+    hardware: {
+      system: { status: "NO HARDWARE" as const, sensor_heartbeat_timeout_s: 3 },
+      arduino: { connected: false, port: null, last_error: null, status: "DISCONNECTED" as const, last_update: 0, total_readings: 0 },
+      ultrasonic: { active: false, distance_cm: null, threat_level: null, device_id: null, timestamp: null, status: "NOT ACTIVE" as const },
+      camera: { connected: false, fps: 0, source: null, last_frame_timestamp: null, last_error: null, status: "DISCONNECTED" as const },
+      ai: { loaded: false, processing: false, model: null, status: "NOT READY" as const },
+    },
+    sensor_data: null,
+    ensemble: null,
+    fps: 0,
+    mode: "all",
+    detections: [],
+  };
+
+  const statusQuery = useQuery({
+    queryKey: ["unified-status"],
+    queryFn: fetchUnifiedStatus,
+    refetchInterval: 750,  // Single poll at 750ms replaces the old 500ms + 1000ms dual polls
     retry: false,
+    placeholderData: () => DEFAULT_STATUS,
   });
 
-  const hardwareQuery = useQuery<HardwareStatus>({
-    queryKey: ["hardware-status"],
-    queryFn: fetchHardwareStatus,
-    refetchInterval: 1000,
-    retry: false,
-    // If the server is unreachable, return a fully-disconnected default.
-    placeholderData: () => ({
-      system: { status: "NO HARDWARE", sensor_heartbeat_timeout_s: 3 },
-      arduino: { connected: false, port: null, last_error: null, status: "DISCONNECTED", last_update: 0, total_readings: 0 },
-      ultrasonic: { active: false, distance_cm: null, threat_level: null, device_id: null, timestamp: null, status: "NOT ACTIVE" },
-      camera: { connected: false, fps: 0, source: null, last_frame_timestamp: null, last_error: null, status: "DISCONNECTED" },
-      ai: { loaded: false, processing: false, model: null, status: "NOT READY" },
-    }),
-  });
-
-  const hw = hardwareQuery.data;  // shorthand
+  const hw = statusQuery.data?.hardware;  // shorthand
 
   const todayStats = statsQuery.data?.find((s) => s.date === today);
   const yesterdayStats = statsQuery.data?.find((s) => s.date === yesterday);
@@ -479,38 +480,44 @@ function DashboardPage() {
 
         // Persist daily stats to database for registered users
         if (userId && !userId.startsWith("demo-")) {
-          supabase
-            .from("telemetry_stream")
-            .insert({
-              user_id: userId,
-              detected_object: newIncident.detected_object,
-              distance_cm: event.distance_cm,
-              threat_level: event.threat_level,
-              action_taken: "AI Vision spatial detection",
-            })
-            .then(() => {
-              queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
-            });
+          void Promise.resolve(
+            supabase
+              .from("telemetry_stream")
+              .insert({
+                user_id: userId,
+                detected_object: newIncident.detected_object,
+                distance_cm: event.distance_cm,
+                threat_level: event.threat_level,
+                action_taken: "AI Vision spatial detection",
+              })
+          ).then(() => {
+            queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
+          }).catch(() => {
+            // Silently ignore — telemetry insert is best-effort
+          });
 
           const totalDodged = (todayStats?.obstacles_avoided ?? 0) + (isObstacle ? 1 : 0);
           const totalDistM = Number(todayStats?.safe_distance_walked_m ?? 0) + 15;
           const totalMins = (todayStats?.active_session_minutes ?? 0) + 1;
 
-          supabase
-            .from("daily_stats")
-            .upsert(
-              {
-                user_id: userId,
-                date: today,
-                obstacles_avoided: totalDodged,
-                safe_distance_walked_m: totalDistM,
-                active_session_minutes: totalMins,
-              },
-              { onConflict: "user_id,date" },
-            )
-            .then(() => {
-              queryClient.invalidateQueries({ queryKey: ["daily-stats", userId] });
-            });
+          void Promise.resolve(
+            supabase
+              .from("daily_stats")
+              .upsert(
+                {
+                  user_id: userId,
+                  date: today,
+                  obstacles_avoided: totalDodged,
+                  safe_distance_walked_m: totalDistM,
+                  active_session_minutes: totalMins,
+                },
+                { onConflict: "user_id,date" },
+              )
+          ).then(() => {
+            queryClient.invalidateQueries({ queryKey: ["daily-stats", userId] });
+          }).catch(() => {
+            // Silently ignore — daily stats upsert is best-effort
+          });
         }
       }
     },
@@ -555,8 +562,8 @@ function DashboardPage() {
   const arduinoStatus = hw?.arduino.status ?? "DISCONNECTED";
   const systemStatus = hw?.system.status ?? "NO HARDWARE";
 
-  // Ensemble signal breakdown (from /api/latest via sensorQuery)
-  const ensemble: EnsembleBreakdown | undefined = sensorQuery.data?.ensemble;
+  // Ensemble signal breakdown (from unified /api/status)
+  const ensemble: EnsembleBreakdown | undefined = statusQuery.data?.ensemble ?? undefined;
 
   // Determine if we have ANY valid sensor data right now
   const hasSensorData = ultrasonicActive && ultrasonicDistance !== null;

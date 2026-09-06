@@ -53,6 +53,12 @@ const EMPTY: FormState = {
   notify_on_collision: true,
 };
 
+/** Accept digits, spaces, dashes, parens, plus — at least 7 chars. */
+function isValidPhone(phone: string): boolean {
+  const cleaned = phone.replace(/[\s\-().+]/g, "");
+  return cleaned.length >= 7 && cleaned.length <= 15 && /^\d+$/.test(cleaned);
+}
+
 function ContactsPage() {
   const { user } = useAuth();
   const userId = user?.id ?? "";
@@ -61,6 +67,9 @@ function ContactsPage() {
   const [editing, setEditing] = useState<Contact | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [busy, setBusy] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
 
   const contactsQuery = useQuery({
     queryKey: ["contacts", userId],
@@ -86,9 +95,18 @@ function ContactsPage() {
     setOpen(true);
   }
 
+  function handlePhoneChange(value: string) {
+    setForm({ ...form, phone_number: value });
+    if (phoneError && isValidPhone(value)) setPhoneError("");
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!userId) return;
+    if (!isValidPhone(form.phone_number)) {
+      setPhoneError("Please enter a valid phone number (7–15 digits)");
+      return;
+    }
     setBusy(true);
     const payload = { ...form, user_id: userId };
     const { error } = editing
@@ -104,14 +122,18 @@ function ContactsPage() {
     setOpen(false);
   }
 
-  async function handleDelete(contact: Contact) {
-    const { error } = await supabase.from("emergency_contacts").delete().eq("id", contact.id);
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleteBusy(true);
+    const { error } = await supabase.from("emergency_contacts").delete().eq("id", deleteTarget.id);
+    setDeleteBusy(false);
     if (error) {
       toast.error("Could not delete the contact.");
       return;
     }
     void queryClient.invalidateQueries({ queryKey: ["contacts", userId] });
-    toast.success(`${contact.contact_name} removed.`);
+    toast.success(`${deleteTarget.contact_name} removed.`);
+    setDeleteTarget(null);
   }
 
   const contacts = contactsQuery.data ?? [];
@@ -191,7 +213,7 @@ function ContactsPage() {
                   <PencilLine aria-hidden="true" className="size-4" />
                   Edit
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => void handleDelete(c)}>
+                <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(c)}>
                   <Trash2 aria-hidden="true" className="size-4" />
                   Delete
                 </Button>
@@ -200,6 +222,27 @@ function ContactsPage() {
           ))}
         </ul>
       )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove emergency contact?</DialogTitle>
+            <DialogDescription>
+              This will permanently remove <strong>{deleteTarget?.contact_name}</strong> from your emergency contacts. You can re-add them later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleteBusy}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => void handleDelete()} disabled={deleteBusy}>
+              {deleteBusy && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
+              Remove contact
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
@@ -237,8 +280,12 @@ function ContactsPage() {
                 required
                 placeholder="e.g. +1 (555) 234-5678"
                 value={form.phone_number}
-                onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                aria-invalid={!!phoneError}
               />
+              {phoneError && (
+                <p className="text-xs text-destructive font-medium" role="alert">{phoneError}</p>
+              )}
             </div>
             <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
               <Label htmlFor="c-primary">Primary contact</Label>

@@ -149,7 +149,7 @@ export function speak(text: string, overrideVoiceId?: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
   const savedVoiceId = overrideVoiceId || window.localStorage.getItem(AI_VOICE_STORAGE_KEY) || "nova";
-  const profile = AI_VOICE_PROFILES.find((p) => p.id === savedVoiceId) || AI_VOICE_PROFILES[0];
+  const profile: AiVoiceProfile = AI_VOICE_PROFILES.find((p) => p.id === savedVoiceId) ?? AI_VOICE_PROFILES[0]!;
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.pitch = profile.pitch;
@@ -184,11 +184,11 @@ export function speak(text: string, overrideVoiceId?: string) {
     let matchedVoice: SpeechSynthesisVoice | null = null;
 
     if (profile.id === "swara" || hasHindiScript) {
-      matchedVoice = hindiVoice || femaleVoice;
+      matchedVoice = hindiVoice ?? femaleVoice ?? null;
     } else if (profile.id === "echo") {
-      matchedVoice = maleVoice;
+      matchedVoice = maleVoice ?? null;
     } else {
-      matchedVoice = femaleVoice;
+      matchedVoice = femaleVoice ?? null;
     }
 
     if (matchedVoice) {

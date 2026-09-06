@@ -39,8 +39,8 @@ export function VoiceSelector({ onVoiceChange, className = "" }: VoiceSelectorPr
     }
   };
 
-  const currentProfile =
-    AI_VOICE_PROFILES.find((p) => p.id === selectedVoice) || AI_VOICE_PROFILES[0];
+  const currentProfile: AiVoiceProfile =
+    AI_VOICE_PROFILES.find((p) => p.id === selectedVoice) ?? AI_VOICE_PROFILES[0]!;
 
   return (
     <div className={`flex items-center justify-center ${className}`}>

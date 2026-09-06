@@ -97,9 +97,18 @@ function SettingsPage() {
               <Switch
                 id="s-normal"
                 checked={announceNormal}
-                onCheckedChange={(v) => {
+                onCheckedChange={async (v) => {
                   setAnnounceNormal(v);
                   persist("announceNormal", v ? "on" : "off");
+                  // Wire to Python AnnouncementTracker
+                  try {
+                    const serverUrl = window.localStorage.getItem("netrasense:sensorServerUrl") || "http://localhost:5000";
+                    await fetch(`${serverUrl.replace(/\/$/, "")}/api/config`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ announce_normal: v }),
+                    });
+                  } catch { /* server offline — setting saved locally */ }
                 }}
               />
             </div>
@@ -251,10 +260,17 @@ function SettingsPage() {
                 <Button
                   variant="outline"
                   className="shrink-0"
-                  onClick={() => {
+                  onClick={async () => {
                     const next = geminiApiKey.trim();
-                    window.localStorage.setItem(GEMINI_API_KEY_STORAGE_KEY, next);
-                    speak(next ? "Gemini API key saved." : "Gemini API key cleared.");
+                    const { setGeminiApiKeyOnServer } = await import("@/lib/aiVision");
+                    const ok = await setGeminiApiKeyOnServer(next);
+                    if (ok) {
+                      speak(next ? "Gemini API key saved securely on server." : "Gemini API key cleared.");
+                    } else {
+                      // Fallback: save locally if server is unavailable
+                      window.localStorage.setItem(GEMINI_API_KEY_STORAGE_KEY, next);
+                      speak(next ? "Gemini API key saved locally." : "Gemini API key cleared.");
+                    }
                   }}
                 >
                   Save API Key
