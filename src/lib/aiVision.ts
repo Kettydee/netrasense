@@ -30,14 +30,13 @@ const GEMINI_MODELS = [
   "gemini-2.0-flash",
   "gemini-2.5-flash-lite",
   "gemini-1.5-flash",
-  "gemini-3.6-flash",
 ];
 
 /**
  * Universal Gemini API caller:
  * 1. Prioritizes direct Google Generative Language API if an API key exists in Settings / localStorage / Env.
  *    (This works anywhere in the world on https://netrasense.vercel.app with zero backend requirement).
- *    Uses multi-model fallback (gemini-2.5-flash -> gemini-2.0-flash -> gemini-2.5-flash-lite) to beat rate limits.
+ *    Uses multi-model fallback (gemini-2.5-flash -> gemini-2.0-flash -> gemini-2.5-flash-lite -> gemini-1.5-flash) to beat rate limits.
  * 2. If no client-side key or if direct call fails, tries the local vision server proxy.
  */
 export async function callGemini(
@@ -52,6 +51,12 @@ export async function callGemini(
 
     for (const model of GEMINI_MODELS) {
       try {
+        // Strip thinkingConfig for models that don't support it (only 2.5 supports it)
+        const modelGenConfig = { ...(generationConfig as any) };
+        if (!model.startsWith("gemini-2.5")) {
+          delete modelGenConfig.thinkingConfig;
+        }
+
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${resolvedKey}`;
         const res = await fetch(url, {
           method: "POST",
@@ -61,7 +66,7 @@ export async function callGemini(
           },
           body: JSON.stringify({
             contents,
-            generationConfig,
+            generationConfig: modelGenConfig,
             safetySettings: [
               { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
               { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -91,6 +96,7 @@ export async function callGemini(
         }
 
         lastError = new Error(`HTTP_${res.status}: ${errText}`);
+        continue;
       } catch (directErr: any) {
         if (directErr?.message?.includes("INVALID_KEY")) {
           throw directErr;
