@@ -42,6 +42,16 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
   const [profiles, setProfiles] = useState<EnrolledFaceProfile[]>([]);
   const [newPersonName, setNewPersonName] = useState<string>("");
   const [isAddingTag, setIsAddingTag] = useState<boolean>(false);
+  const [cooldown, setCooldown] = useState<number>(0);
+
+  // Cooldown countdown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const interval = setInterval(() => {
+      setCooldown((c) => Math.max(0, c - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldown]);
 
   // Load enrolled face profiles from localStorage + sync with local server
   const refreshContacts = useCallback(async () => {
@@ -76,6 +86,11 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
   }, [refreshContacts]);
 
   const handleScanFaceAndMood = useCallback(async () => {
+    if (cooldown > 0) {
+      toast.info(`Please wait ${cooldown}s before scanning again.`);
+      return;
+    }
+
     const frame = getFrameBase64();
     if (!frame) {
       toast.error("Camera is inactive. Please start camera first.");
@@ -95,12 +110,16 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
       speak(res.speech);
       if (res.identifiedName) {
         toast.success(`Recognized ${res.identifiedName} (${res.confidence ? res.confidence + "%" : "Verified"})!`);
+        setCooldown(3); // brief 3s pacing
       } else if (res.mood === "Cooling Down" || res.actionDescription === "Rate limit active") {
-        toast.warning("AI rate limit active. Please wait a moment before rescanning.");
+        toast.warning("AI rate limit active. 10s cooldown started.");
+        setCooldown(10); // 10s cooldown for rate limit recovery
       } else if (res.peopleCount > 0) {
         toast.info("Unfamiliar person detected.");
+        setCooldown(3);
       } else {
         toast.warning("No face detected in camera frame.");
+        setCooldown(2);
       }
     } catch (err) {
       console.error(err);
@@ -108,7 +127,7 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
     } finally {
       setIsScanning(false);
     }
-  }, [getFrameBase64, profiles]);
+  }, [getFrameBase64, profiles, cooldown]);
 
   const handleAddFamiliarPerson = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,13 +209,18 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
           <Button
             type="button"
             onClick={handleScanFaceAndMood}
-            disabled={isScanning || isEnrolling}
-            className="h-11 px-5 rounded-2xl gap-2 font-black text-xs sm:text-sm bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-sm transition-all cursor-pointer"
+            disabled={isScanning || isEnrolling || cooldown > 0}
+            className="h-11 px-5 rounded-2xl gap-2 font-black text-xs sm:text-sm bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-sm transition-all cursor-pointer disabled:opacity-60"
           >
             {isScanning ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
                 <span>Analyzing Biometrics...</span>
+              </>
+            ) : cooldown > 0 ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                <span>Wait {cooldown}s...</span>
               </>
             ) : (
               <>
