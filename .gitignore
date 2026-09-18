@@ -31,10 +31,17 @@ dist-ssr
 *.sln
 *.sw?
 
-# Python & AI weights
+# Python & AI weights & Local Biometrics
 __pycache__/
 *.pyc
 *.pt
 *.onnx
 *.engine
+*.h5
+*.npy
 .venv/
+captures/
+dataset/
+server/dataset/
+server/known_faces/
+!server/known_faces/.gitkeep

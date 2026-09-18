@@ -15,6 +15,11 @@ import threading
 from pathlib import Path
 from typing import Optional
 
+# Ensure server package path is in sys.path
+_SERVER_DIR = Path(__file__).resolve().parent
+if str(_SERVER_DIR) not in sys.path:
+    sys.path.insert(0, str(_SERVER_DIR))
+
 import cv2
 from flask import Flask, Response, jsonify, request
 from flask_cors import CORS
@@ -27,6 +32,7 @@ from serial_sensor import ArduinoSerialReader
 from ensemble import EnsembleClassifier
 from dataset_collector import DatasetCollector
 from dataset_cleaner import DatasetCleaner
+from face_engine import FaceEngine
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -702,6 +708,89 @@ def dataset_clean():
         })
     except Exception as exc:
         return jsonify({"error": f"Cleaning failed: {exc}"}), 500
+
+
+# ── Face & Mood Biometric Endpoints (ArcFace & DeepFace) ─────────────
+_face_engine_instance: Optional[FaceEngine] = None
+_face_engine_lock = threading.Lock()
+
+
+def get_face_engine() -> FaceEngine:
+    """Lazy thread-safe initialization for FaceEngine."""
+    global _face_engine_instance
+    with _face_engine_lock:
+        if _face_engine_instance is None:
+            _face_engine_instance = FaceEngine()
+        return _face_engine_instance
+
+
+@app.route('/api/face/save', methods=['POST'])
+@app.route('/api/face/enroll', methods=['POST'])
+def api_face_enroll():
+    """Enroll a caregiver or familiar contact with one-shot ArcFace embedding."""
+    body = request.get_json(silent=True) or {}
+    name = body.get("name", "").strip()
+    frame_data = body.get("frame", "")
+
+    if not name:
+        return jsonify({"success": False, "error": "Name is required"}), 400
+    if not frame_data:
+        return jsonify({"success": False, "error": "Camera frame is required"}), 400
+
+    engine = get_face_engine()
+    frame_bgr = engine.decode_base64_frame(frame_data)
+    if frame_bgr is None:
+        return jsonify({"success": False, "error": "Could not decode image frame"}), 400
+
+    result = engine.enroll_face(name, frame_bgr)
+    status_code = 200 if result.get("success") else 400
+    return jsonify(result), status_code
+
+
+@app.route('/api/face/identify', methods=['POST'])
+def api_face_identify():
+    """Biometric ArcFace identification and emotion analysis for camera frame."""
+    body = request.get_json(silent=True) or {}
+    frame_data = body.get("frame", "")
+
+    if not frame_data:
+        return jsonify({"success": False, "error": "Camera frame is required"}), 400
+
+    engine = get_face_engine()
+    frame_bgr = engine.decode_base64_frame(frame_data)
+    if frame_bgr is None:
+        return jsonify({"success": False, "error": "Could not decode image frame"}), 400
+
+    result = engine.recognize_face_and_mood(frame_bgr)
+    return jsonify(result)
+
+
+@app.route('/api/face/list', methods=['GET'])
+def api_face_list():
+    """Return all enrolled familiar contacts."""
+    engine = get_face_engine()
+    faces = engine.list_enrolled()
+    return jsonify({
+        "success": True,
+        "faces": faces,
+        "count": len(faces)
+    })
+
+
+@app.route('/api/face/delete', methods=['POST', 'DELETE'])
+@app.route('/api/face/<name>', methods=['DELETE'])
+def api_face_delete(name: Optional[str] = None):
+    """Delete an enrolled contact by name."""
+    if not name:
+        body = request.get_json(silent=True) or {}
+        name = body.get("name", "")
+
+    if not name:
+        return jsonify({"success": False, "error": "Name is required"}), 400
+
+    engine = get_face_engine()
+    ok = engine.delete_person(name)
+    return jsonify({"success": ok, "name": name})
 
 
 def main():

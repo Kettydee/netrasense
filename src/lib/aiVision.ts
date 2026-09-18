@@ -219,15 +219,80 @@ export interface FaceMoodResult {
   speech: string;
   peopleCount: number;
   identifiedName?: string;
+  confidence?: number;
+  distanceScore?: number;
   mood: string;
   moodEmoji: string;
   distanceEstimate: string;
   actionDescription: string;
-  source: "gemini" | "spatial_fallback";
+  source: "arcface_deepface" | "gemini" | "spatial_fallback";
+}
+
+/**
+ * Enroll a person's face into the ArcFace biometric database
+ */
+export async function enrollFaceBiometric(
+  name: string,
+  imageBase64: string,
+  serverUrl: string = "http://localhost:5000",
+): Promise<{ success: boolean; message?: string; error?: string; samplesCount?: number }> {
+  try {
+    const res = await fetch(`${serverUrl}/api/face/save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, frame: imageBase64 }),
+    });
+    const data = await res.json();
+    return data;
+  } catch (err: any) {
+    return {
+      success: false,
+      error: `Could not reach Vision Server at ${serverUrl}. Please ensure 'python server/vision_server.py' is running.`,
+    };
+  }
+}
+
+/**
+ * Fetch all enrolled biometric contacts from local server
+ */
+export async function fetchEnrolledFaces(
+  serverUrl: string = "http://localhost:5000",
+): Promise<Array<{ name: string; enrolled_at: string; samples_count: number; image_file?: string }>> {
+  try {
+    const res = await fetch(`${serverUrl}/api/face/list`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      return data.faces || [];
+    }
+  } catch {
+    // server offline
+  }
+  return [];
+}
+
+/**
+ * Delete an enrolled person by name from ArcFace biometric database
+ */
+export async function deleteEnrolledFace(
+  name: string,
+  serverUrl: string = "http://localhost:5000",
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${serverUrl}/api/face/delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    return Boolean(data.success);
+  } catch {
+    return false;
+  }
 }
 
 /**
  * Identify Familiar Faces & Mood / Expression ("Who is in front of me?")
+ * Uses local ArcFace biometric engine if server is running, with Gemini fallback.
  */
 export async function identifyFaceAndMood(
   imageBase64: string,
@@ -235,8 +300,37 @@ export async function identifyFaceAndMood(
   apiKey?: string,
   language: "en" | "hi" | "auto" = "auto",
 ): Promise<FaceMoodResult> {
-  const resolvedKey = getResolvedGeminiApiKey(apiKey);
+  // 1. Prioritize ArcFace Biometric Vision Server for instant, 1-shot offline recognition
+  try {
+    const localResp = await fetch("http://localhost:5000/api/face/identify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ frame: imageBase64 }),
+    });
 
+    if (localResp.ok) {
+      const data = await localResp.json();
+      if (data.success) {
+        return {
+          speech: data.speech || "Person detected.",
+          peopleCount: data.peopleCount ?? 1,
+          identifiedName: data.identifiedName || undefined,
+          confidence: data.confidence,
+          distanceScore: data.distanceScore,
+          mood: data.mood || "Attentive",
+          moodEmoji: data.moodEmoji || "👤",
+          distanceEstimate: data.distanceEstimate || "1 to 2 meters ahead",
+          actionDescription: data.actionDescription || "In front of camera",
+          source: "arcface_deepface",
+        };
+      }
+    }
+  } catch {
+    // Vision server offline or unreachable; fall back to Gemini API
+  }
+
+  // 2. Fallback: Gemini Multimodal AI
+  const resolvedKey = getResolvedGeminiApiKey(apiKey);
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
   if (resolvedKey) {
