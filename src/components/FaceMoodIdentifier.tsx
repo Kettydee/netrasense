@@ -363,7 +363,7 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
             Enrolled Contacts ({profiles.length}):
           </span>
           <span className="text-[11px] text-muted-foreground">
-            Biometric storage: <code className="text-amber-400 font-mono">1-Shot Visual Embeddings</code>
+            Biometric Engine: <code className="text-amber-400 font-mono">1-Shot 512D Vectors</code>
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
