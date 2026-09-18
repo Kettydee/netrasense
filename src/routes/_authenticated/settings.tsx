@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from '@tanstack/react-router'
 import { Moon, Radio, Sparkles, Sun, Video, Volume2 } from "lucide-react";
+import { toast } from "sonner";
 import { GEMINI_API_KEY_STORAGE_KEY } from "@/lib/aiVision";
 
 import { AppShell } from "@/components/AppShell";
@@ -259,18 +260,16 @@ function SettingsPage() {
                 />
                 <Button
                   variant="outline"
-                  className="shrink-0"
+                  className="shrink-0 cursor-pointer"
                   onClick={async () => {
                     const next = geminiApiKey.trim();
-                    const { setGeminiApiKeyOnServer } = await import("@/lib/aiVision");
-                    const ok = await setGeminiApiKeyOnServer(next);
-                    if (ok) {
-                      speak(next ? "Gemini API key saved securely on server." : "Gemini API key cleared.");
-                    } else {
-                      // Fallback: save locally if server is unavailable
-                      window.localStorage.setItem(GEMINI_API_KEY_STORAGE_KEY, next);
-                      speak(next ? "Gemini API key saved locally." : "Gemini API key cleared.");
-                    }
+                    window.localStorage.setItem(GEMINI_API_KEY_STORAGE_KEY, next);
+                    try {
+                      const { setGeminiApiKeyOnServer } = await import("@/lib/aiVision");
+                      await setGeminiApiKeyOnServer(next);
+                    } catch {}
+                    toast.success(next ? "Gemini API key saved!" : "Gemini API key cleared.");
+                    speak(next ? "Gemini API key saved." : "Gemini API key cleared.");
                   }}
                 >
                   Save API Key

@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Trash2,
   Camera,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,11 +21,15 @@ import {
   enrollFaceBiometric,
   fetchEnrolledFaces,
   deleteEnrolledFace,
+  getStoredFaceProfiles,
+  saveStoredFaceProfile,
+  deleteStoredFaceProfile,
+  compressFaceImage,
+  type EnrolledFaceProfile,
   type FaceMoodResult,
+  FAMILIAR_CONTACTS_KEY,
 } from "@/lib/aiVision";
 import { speak } from "@/lib/netrasense";
-
-const FAMILIAR_CONTACTS_KEY = "netrasense:familiar_faces";
 
 interface FaceMoodIdentifierProps {
   getFrameBase64: () => string | null;
@@ -34,35 +39,35 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isEnrolling, setIsEnrolling] = useState<boolean>(false);
   const [result, setResult] = useState<FaceMoodResult | null>(null);
-  const [savedFaces, setSavedFaces] = useState<string[]>([]);
+  const [profiles, setProfiles] = useState<EnrolledFaceProfile[]>([]);
   const [newPersonName, setNewPersonName] = useState<string>("");
   const [isAddingTag, setIsAddingTag] = useState<boolean>(false);
 
-  // Load enrolled faces from server and synchronize with localStorage
+  // Load enrolled face profiles from localStorage + sync with local server
   const refreshContacts = useCallback(async () => {
+    const localProfiles = getStoredFaceProfiles();
+    setProfiles(localProfiles);
+
+    // Also check local python vision server if available
     try {
       const serverFaces = await fetchEnrolledFaces();
       if (serverFaces && serverFaces.length > 0) {
-        const names = serverFaces.map((f) => f.name);
-        setSavedFaces(names);
-        localStorage.setItem(FAMILIAR_CONTACTS_KEY, JSON.stringify(names));
-        return;
+        // If server has faces not in localStorage, note them
+        const existingNames = new Set(localProfiles.map((p) => p.name.toLowerCase()));
+        for (const sf of serverFaces) {
+          if (!existingNames.has(sf.name.toLowerCase())) {
+            saveStoredFaceProfile({
+              id: crypto.randomUUID(),
+              name: sf.name,
+              imageBase64: "",
+              enrolledAt: sf.enrolled_at || new Date().toLocaleDateString(),
+            });
+          }
+        }
+        setProfiles(getStoredFaceProfiles());
       }
     } catch {
       // server offline
-    }
-
-    try {
-      const stored = localStorage.getItem(FAMILIAR_CONTACTS_KEY);
-      if (stored) {
-        setSavedFaces(JSON.parse(stored));
-      } else {
-        const defaults = ["Dr. Sarah (Caregiver)", "Priya (Family)", "Alex (Friend)"];
-        setSavedFaces(defaults);
-        localStorage.setItem(FAMILIAR_CONTACTS_KEY, JSON.stringify(defaults));
-      }
-    } catch {
-      setSavedFaces(["Dr. Sarah", "Priya"]);
     }
   }, []);
 
@@ -83,15 +88,16 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
     speak("Scanning face and mood...");
 
     try {
-      const res = await identifyFaceAndMood(frame, savedFaces);
+      const names = profiles.map((p) => p.name);
+      const res = await identifyFaceAndMood(frame, names);
       setResult(res);
       speak(res.speech);
       if (res.identifiedName) {
-        toast.success(`Recognized ${res.identifiedName} (${res.confidence ? res.confidence + '%' : 'Verified'})!`);
+        toast.success(`Recognized ${res.identifiedName} (${res.confidence ? res.confidence + "%" : "Verified"})!`);
       } else if (res.peopleCount > 0) {
         toast.info("Unfamiliar person detected.");
       } else {
-        toast.warning("No face in frame.");
+        toast.warning("No face detected in camera frame.");
       }
     } catch (err) {
       console.error(err);
@@ -99,7 +105,7 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
     } finally {
       setIsScanning(false);
     }
-  }, [getFrameBase64, savedFaces]);
+  }, [getFrameBase64, profiles]);
 
   const handleAddFamiliarPerson = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,46 +120,41 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
     }
 
     setIsEnrolling(true);
-    toast.info(`Extracting ArcFace biometric features for "${name}"...`);
+    toast.info(`Capturing biometric reference photo for "${name}"...`);
     speak(`Analyzing and enrolling ${name}...`);
 
     try {
-      const enrollRes = await enrollFaceBiometric(name, frame);
-      if (enrollRes.success) {
-        toast.success(`Enrolled "${name}" into biometric memory!`);
-        speak(`Successfully saved ${name} to your recognized contacts.`);
-        const updated = Array.from(new Set([...savedFaces, name]));
-        setSavedFaces(updated);
-        localStorage.setItem(FAMILIAR_CONTACTS_KEY, JSON.stringify(updated));
-        setNewPersonName("");
-        setIsAddingTag(false);
-      } else {
-        toast.error(enrollRes.error || "Could not detect a clear face to enroll.");
-        speak(enrollRes.error || "No clear face detected. Please face the camera directly.");
-      }
-    } catch (err) {
-      console.error("Enrollment failed:", err);
-      // Fallback: save to localStorage list
-      const updated = Array.from(new Set([...savedFaces, name]));
-      setSavedFaces(updated);
-      localStorage.setItem(FAMILIAR_CONTACTS_KEY, JSON.stringify(updated));
-      toast.success(`Saved "${name}" to local contacts.`);
+      // 1. Compress face frame to ~280px for fast, lightweight local storage & Gemini payloads
+      const compressed = await compressFaceImage(frame, 280);
+
+      // 2. Save profile with reference photo in localStorage
+      saveStoredFaceProfile({
+        id: crypto.randomUUID(),
+        name,
+        imageBase64: compressed,
+        enrolledAt: new Date().toLocaleDateString(),
+      });
+
+      // 3. Also sync to local Python ArcFace server if online
+      enrollFaceBiometric(name, frame).catch(() => {});
+
+      refreshContacts();
+      toast.success(`Enrolled "${name}" with biometric face reference!`);
+      speak(`Successfully saved ${name} to your recognized biometric contacts.`);
       setNewPersonName("");
       setIsAddingTag(false);
+    } catch (err) {
+      console.error("Enrollment failed:", err);
+      toast.error("Could not enroll face.");
     } finally {
       setIsEnrolling(false);
     }
   };
 
   const handleDeletePerson = async (name: string) => {
-    try {
-      await deleteEnrolledFace(name);
-    } catch {
-      // offline
-    }
-    const updated = savedFaces.filter((f) => f !== name);
-    setSavedFaces(updated);
-    localStorage.setItem(FAMILIAR_CONTACTS_KEY, JSON.stringify(updated));
+    deleteStoredFaceProfile(name);
+    deleteEnrolledFace(name).catch(() => {});
+    refreshContacts();
     toast.info(`Removed "${name}".`);
   };
 
@@ -177,7 +178,7 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
             variant="outline"
             size="sm"
             onClick={() => setIsAddingTag(!isAddingTag)}
-            className="h-11 px-4 rounded-2xl gap-2 font-bold text-xs border-amber-500/30 hover:bg-amber-500/10 text-foreground"
+            className="h-11 px-4 rounded-2xl gap-2 font-bold text-xs border-amber-500/30 hover:bg-amber-500/10 text-foreground cursor-pointer"
           >
             <UserPlus className="size-4 text-amber-400" />
             <span>Enroll Face</span>
@@ -187,7 +188,7 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
             type="button"
             onClick={handleScanFaceAndMood}
             disabled={isScanning || isEnrolling}
-            className="h-11 px-5 rounded-2xl gap-2 font-black text-xs sm:text-sm bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-sm transition-all"
+            className="h-11 px-5 rounded-2xl gap-2 font-black text-xs sm:text-sm bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-sm transition-all cursor-pointer"
           >
             {isScanning ? (
               <>
@@ -212,11 +213,11 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
         >
           <div className="flex items-center gap-2 text-amber-400 text-xs font-bold shrink-0">
             <Camera className="size-4" />
-            <span>Capture Face:</span>
+            <span>Face Camera & Enter Name:</span>
           </div>
           <input
             type="text"
-            placeholder="Enter caregiver / friend's name (e.g. Mom, Dr. Sarah, Alex)"
+            placeholder="Enter caregiver / friend's name (e.g. Khirabdi, Dave, Mom)"
             value={newPersonName}
             onChange={(e) => setNewPersonName(e.target.value)}
             disabled={isEnrolling}
@@ -227,7 +228,7 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
             <Button
               type="submit"
               disabled={isEnrolling || !newPersonName.trim()}
-              className="h-10 px-4 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 gap-1.5"
+              className="h-10 px-4 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 gap-1.5 cursor-pointer"
             >
               {isEnrolling ? (
                 <>
@@ -244,7 +245,7 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
               variant="ghost"
               size="sm"
               onClick={() => setIsAddingTag(false)}
-              className="h-10 px-3 rounded-xl text-xs text-muted-foreground"
+              className="h-10 px-3 rounded-xl text-xs text-muted-foreground cursor-pointer"
             >
               Cancel
             </Button>
@@ -269,9 +270,7 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
                     <>
                       <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[11px] font-bold px-2 py-0.5">
                         <ShieldCheck className="mr-1 size-3 text-emerald-400" />
-                        {result.source === "arcface_deepface"
-                          ? "ArcFace Biometric Match"
-                          : "Recognized Contact"}
+                        Biometric Match
                       </Badge>
                       {result.confidence !== undefined && result.confidence > 0 && (
                         <Badge
@@ -299,7 +298,7 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
               type="button"
               variant="outline"
               onClick={() => speak(result.speech)}
-              className="h-9 px-3.5 rounded-xl gap-2 text-xs font-bold"
+              className="h-9 px-3.5 rounded-xl gap-2 text-xs font-bold cursor-pointer"
               title="Repeat spoken description"
             >
               <Volume2 className="size-4 text-primary" />
@@ -320,7 +319,7 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
                 size="sm"
                 variant="ghost"
                 onClick={() => setIsAddingTag(true)}
-                className="text-xs sm:text-sm text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 gap-2 font-bold"
+                className="text-xs sm:text-sm text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 gap-2 font-bold cursor-pointer"
               >
                 <UserPlus className="size-4" />
                 <span>Save this person&apos;s face</span>
@@ -330,35 +329,45 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
         </div>
       )}
 
-      {/* Familiar Contacts Pill List */}
+      {/* Enrolled Contacts Pill List */}
       <div className="space-y-2 pt-2">
         <div className="flex items-center justify-between">
           <span className="text-xs font-black text-muted-foreground uppercase tracking-wider">
-            Enrolled Contacts ({savedFaces.length}):
+            Enrolled Contacts ({profiles.length}):
           </span>
           <span className="text-[11px] text-muted-foreground">
-            Biometric storage: <code className="text-amber-400 font-mono">ArcFace (512D)</code>
+            Biometric storage: <code className="text-amber-400 font-mono">1-Shot Visual Embeddings</code>
           </span>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {savedFaces.length === 0 ? (
+        <div className="flex flex-wrap items-center gap-2.5">
+          {profiles.length === 0 ? (
             <span className="text-xs text-muted-foreground italic">
-              No contacts enrolled yet. Click &ldquo;Enroll Face&rdquo; to add caregivers or family.
+              No contacts enrolled yet. Click &ldquo;Enroll Face&rdquo; to add caregivers or family with camera.
             </span>
           ) : (
-            savedFaces.map((name) => (
+            profiles.map((p) => (
               <span
-                key={name}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-card/80 pl-3 pr-2 py-1.5 text-xs font-bold text-foreground shadow-xs"
+                key={p.name}
+                className="inline-flex items-center gap-2 rounded-xl border border-border/80 bg-card/80 pl-2 pr-2.5 py-1.5 text-xs font-bold text-foreground shadow-xs"
               >
-                <UserCheck className="size-3.5 text-emerald-400" />
-                <span>{name}</span>
+                {p.imageBase64 ? (
+                  <img
+                    src={p.imageBase64}
+                    alt={p.name}
+                    className="size-6 rounded-full object-cover border border-amber-500/30"
+                  />
+                ) : (
+                  <div className="size-6 rounded-full bg-amber-500/15 flex items-center justify-center text-amber-400 border border-amber-500/20">
+                    <User className="size-3.5" />
+                  </div>
+                )}
+                <span>{p.name}</span>
                 <button
                   type="button"
-                  onClick={() => handleDeletePerson(name)}
-                  title={`Remove ${name}`}
-                  aria-label={`Remove ${name}`}
-                  className="size-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors ml-1"
+                  onClick={() => handleDeletePerson(p.name)}
+                  title={`Remove ${p.name}`}
+                  aria-label={`Remove ${p.name}`}
+                  className="size-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors ml-1 cursor-pointer"
                 >
                   &times;
                 </button>
