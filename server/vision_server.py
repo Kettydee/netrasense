@@ -23,6 +23,8 @@ if str(_SERVER_DIR) not in sys.path:
 import cv2
 from flask import Flask, Response, jsonify, request
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from engine import HardwareProbe, ModelLoader
 from tts_module import TTSEngine
@@ -33,15 +35,47 @@ from ensemble import EnsembleClassifier
 from dataset_collector import DatasetCollector
 from dataset_cleaner import DatasetCleaner
 from face_engine import FaceEngine
+from ensemble_model import MultiModalEnsembleModel
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+
+# ── CORS origin whitelist ────────────────────────────────────────────
+# Reads from the NETRASENSE_CORS_ORIGINS env var (comma-separated).
+# Defaults to localhost origins for development safety.
+_default_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+]
+_env_origins = os.environ.get("NETRASENSE_CORS_ORIGINS", "").strip()
+allowed_origins = (
+    [o.strip() for o in _env_origins.split(",") if o.strip()]
+    if _env_origins
+    else _default_origins
+)
+CORS(app, resources={r"/*": {"origins": allowed_origins, "supports_credentials": True}})
+
+# ── Rate limiter (in-memory, no Redis required) ────────────────────
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=["200 per minute"],
+    storage_uri="memory://",
+)
+
+# Lists of origins for the manual after-request header fallback
+_allowed_origins_str = ", ".join(allowed_origins)
 
 @app.after_request
-def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+def add_security_headers(response):
+    origin = request.headers.get("Origin", "")
+    if origin in allowed_origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
     return response
 
 # ── Sensor heartbeat timeout (seconds) ───────────────────────────────
@@ -61,6 +95,7 @@ state = {
     "mode": "all",
     "confidence": 0.45,
     "audio_enabled": True,
+    "announce_normal": False,
     "threat_level": "Normal",
     "closest_obstacle": None,
     "ensemble": None,
@@ -357,6 +392,10 @@ def generate_frames():
             (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2
         )
 
+        # Store raw frame for dataset capture endpoint
+        with state_lock:
+            state["raw_frame"] = frame
+
         # Update latest state
         highest_threat = "Normal"
         closest_dist = 999
@@ -432,6 +471,7 @@ def generate_frames():
 
 
 @app.route('/')
+@limiter.exempt
 def index():
     return jsonify({
         "service": "NetraSense YOLO Vision Bridge",
@@ -448,6 +488,7 @@ def index():
 
 
 @app.route('/video_feed')
+@limiter.exempt  # MJPEG stream — not a typical HTTP request
 def video_feed():
     """Live MJPEG video stream with YOLO bounding boxes and distance annotations."""
     return Response(
@@ -457,6 +498,7 @@ def video_feed():
 
 
 @app.route('/api/latest')
+@limiter.limit("60 per minute")  # Polled every 500ms by dashboard
 def api_latest():
     """Returns current detection telemetry, threat analysis, and hardware status.
 
@@ -496,17 +538,16 @@ def api_latest():
         })
 
 
-from dataset_collector import DatasetCollector
-from ensemble_model import MultiModalEnsembleModel
-
-dataset_collector = DatasetCollector(base_dir="dataset")
-ensemble_model = MultiModalEnsembleModel()
-
 
 @app.route('/api/capture', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")  # Manual dataset capture
 def api_capture():
     """Capture current live frame and log to structured dataset with metadata."""
     with state_lock:
+        collector = state.get("dataset_collector")
+        if collector is None:
+            return jsonify({"success": False, "error": "Dataset collection not enabled. Start with --dataset-dir"}), 400
+
         raw_frame = state.get("raw_frame")
         if raw_frame is None:
             return jsonify({"success": False, "error": "No camera frame available"}), 400
@@ -520,7 +561,7 @@ def api_capture():
         threat_level = state.get("threat_level", "Normal")
 
         # Save to structured dataset
-        res = dataset_collector.save_sample(
+        res = collector.save_sample(
             frame=raw_frame,
             detections=detections,
             ultrasonic_cm=ultrasonic_cm,
@@ -531,6 +572,7 @@ def api_capture():
 
 
 @app.route('/api/fuse', methods=['POST', 'GET'])
+@limiter.limit("30 per minute")
 def api_fuse():
     """Execute multi-modal sensor fusion across Ultrasonic, YOLO, and Depth signals."""
     with state_lock:
@@ -540,7 +582,8 @@ def api_fuse():
 
         detections = state.get("latest_detections", [])
 
-        fusion_res = ensemble_model.fuse(
+        _ensemble_model = MultiModalEnsembleModel()
+        fusion_res = _ensemble_model.fuse(
             ultrasonic_distance_cm=ultrasonic_cm,
             yolo_detections=detections,
             depth_meters=depth_m
@@ -558,6 +601,7 @@ def api_fuse():
 
 
 @app.route('/api/config', methods=['GET', 'POST'])
+@limiter.limit("20 per minute")  # Config changes are infrequent
 def api_config():
     """Get or update vision engine configuration."""
     with state_lock:
@@ -566,25 +610,35 @@ def api_config():
             if "confidence" in data:
                 conf = float(data["confidence"])
                 state["confidence"] = conf
-                state["pipeline"].set_confidence(conf)
+                if state.get("pipeline"):
+                    state["pipeline"].set_confidence(conf)
             if "mode" in data:
                 mode = str(data["mode"])
                 state["mode"] = mode
-                state["pipeline"].set_mode(mode)
+                if state.get("pipeline"):
+                    state["pipeline"].set_mode(mode)
             if "audio_enabled" in data:
                 aud = bool(data["audio_enabled"])
                 state["audio_enabled"] = aud
                 if state["tts"]:
                     state["tts"].enabled = aud
+            if "announce_normal" in data:
+                ann = bool(data["announce_normal"])
+                state["announce_normal"] = ann
+                tracker = state.get("tracker")
+                if tracker:
+                    tracker.set_announce_normal(ann)
 
         return jsonify({
             "confidence": state["confidence"],
             "mode": state["mode"],
             "audio_enabled": state["audio_enabled"],
+            "announce_normal": state["announce_normal"],
         })
 
 
 @app.route('/api/hardware-status')
+@limiter.limit("60 per minute")  # Polled every 1s by dashboard
 def api_hardware_status():
     """Standalone endpoint returning the authoritative hardware status.
 
@@ -595,11 +649,40 @@ def api_hardware_status():
         return jsonify(_build_hardware_status())
 
 
+@app.route('/api/status')
+@limiter.limit("120 per minute")  # Primary dashboard poll — replaces both /api/hardware-status and /api/latest
+def api_status():
+    """Unified status endpoint: hardware + sensor + ensemble in one response.
+
+    This replaces the need to poll both /api/hardware-status and
+    /api/latest separately, halving the network requests from the
+    dashboard.
+    """
+    with state_lock:
+        hw = _build_hardware_status()
+        ensemble_result = state.get("ensemble_result")
+        fresh_sensor = hw["ultrasonic"]["active"]
+        sensor_data = state["sensor_data"] if fresh_sensor else None
+        fps = state["fps"]
+        mode = state["mode"]
+        detections = state["latest_detections"]
+
+    return jsonify({
+        "hardware": hw,
+        "sensor_data": sensor_data,
+        "ensemble": ensemble_result,
+        "fps": fps,
+        "mode": mode,
+        "detections": detections,
+    })
+
+
 # ── Server start time for uptime tracking ────────────────────────────
 _SERVER_START_TIME = time.monotonic()
 
 
 @app.route('/api/health')
+@limiter.limit("12 per minute")  # Health checks, not frequent
 def api_health():
     """Comprehensive health check endpoint.
 
@@ -670,7 +753,54 @@ def _format_uptime(seconds: float) -> str:
         return f"{s}s"
 
 
+# ── Gemini API key (stored server-side, never exposed in browser localStorage) ──
+_gemini_api_key: Optional[str] = os.environ.get("GEMINI_API_KEY")
+
+
+@app.route('/api/gemini-config', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")
+def api_gemini_config():
+    """Store/retrieve the Gemini API key server-side.
+
+    GET  — returns {"has_key": true/false} (never returns the actual key).
+    POST — stores the key in server memory (from the settings page).
+    """
+    global _gemini_api_key
+    if request.method == 'POST':
+        data = request.get_json(silent=True) or {}
+        key = (data.get("api_key") or "").strip()
+        _gemini_api_key = key if key else None
+        return jsonify({"has_key": bool(_gemini_api_key)})
+
+    return jsonify({"has_key": bool(_gemini_api_key)})
+
+
+@app.route('/api/gemini-proxy', methods=['POST'])
+@limiter.limit("30 per minute")
+def api_gemini_proxy():
+    """Proxy Gemini API calls through the server to avoid exposing the key in the browser.
+
+    POST body: { "contents": [...], "generationConfig": {...} }
+    Returns the Gemini API response directly.
+    """
+    if not _gemini_api_key:
+        return jsonify({"error": "No Gemini API key configured"}), 400
+
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "Invalid request body"}), 400
+
+    try:
+        import requests as http_requests
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={_gemini_api_key}"
+        resp = http_requests.post(url, json=data, timeout=30)
+        return jsonify(resp.json()), resp.status_code
+    except Exception as exc:
+        return jsonify({"error": f"Gemini proxy failed: {exc}"}), 502
+
+
 @app.route('/api/dataset/clean', methods=['POST'])
+@limiter.limit("2 per minute")  # Expensive operation, rarely needed
 def dataset_clean():
     """Run the dataset cleaning pipeline on the configured dataset directory.
 
@@ -815,8 +945,14 @@ def main():
     parser.add_argument("--sensor-min-distance-cm", type=float, default=2.0, help="Reject sensor readings below this value")
     parser.add_argument("--sensor-max-distance-cm", type=float, default=400.0, help="Reject sensor readings above this value")
     parser.add_argument("--dataset-dir", type=str, default=None, help="Enable dataset collection; save frames + metadata to this directory")
+    parser.add_argument("--allowed-origins", type=str, default=None, help="Comma-separated CORS allowed origins (overrides NETRASENSE_CORS_ORIGINS env)")
 
     args = parser.parse_args()
+
+    # Override CORS origins from CLI if provided
+    if args.allowed_origins:
+        global allowed_origins
+        allowed_origins = [o.strip() for o in args.allowed_origins.split(",") if o.strip()]
     init_vision_engine(args)
 
     print(f"\nNetraSense YOLO Stream running at http://localhost:{args.port}/video_feed")

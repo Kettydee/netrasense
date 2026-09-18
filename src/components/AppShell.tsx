@@ -19,7 +19,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
-import { fetchSensorTelemetry } from "@/lib/sensor";
+import { fetchUnifiedStatus } from "@/lib/sensor";
 
 // --- Precision Framed Eye Logo Component ---
 function NetraSenseFramedEye({ className = "h-8.5 w-auto" }: { className?: string }) {
@@ -140,19 +140,17 @@ export function AppShell({ title, description, children, actions }: AppShellProp
     window.location.href = "/contacts";
   };
 
-  const sensorQuery = useQuery({
-    queryKey: ["sensor-status-sidebar"],
-    queryFn: fetchSensorTelemetry,
+  const statusQuery = useQuery({
+    queryKey: ["appshell-status"],
+    queryFn: fetchUnifiedStatus,
     refetchInterval: 4000,
     retry: false,
   });
 
   // Use hardware_status from the API for accurate connection state.
-  // Falls back to the flat sensor_status for backward compat.
-  const hwStatus = sensorQuery.data?.hardware_status?.arduino;
-  const isSensorConnected = hwStatus
-    ? hwStatus.connected
-    : !!sensorQuery.data?.sensor_status.connected;
+  const hwStatus = statusQuery.data?.hardware?.arduino;
+  const isSensorConnected = hwStatus ? hwStatus.connected : false;
+  const isServerReachable = statusQuery.data !== undefined;
 
   return (
     <div className="flex min-h-screen bg-background text-foreground overflow-x-hidden transition-colors">
@@ -328,6 +326,21 @@ export function AppShell({ title, description, children, actions }: AppShellProp
 
       {/* --- MAIN CONTENT VIEWPORT --- */}
       <main className="flex-1 overflow-y-auto px-6 py-8 transition-all duration-300 ease-in-out max-w-full">
+        {/* Server unreachable banner */}
+        {!isServerReachable && (
+          <div
+            className="mb-4 flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-600 dark:text-amber-400 animate-pulse"
+            role="alert"
+          >
+            <span className="size-2.5 shrink-0 rounded-full bg-amber-500 animate-pulse" />
+            <span>
+              Python server unreachable — sensor data, camera feed and AI are offline.
+              <span className="ml-2 font-normal text-amber-600/70 dark:text-amber-400/70">
+                Start with: <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">python vision_server.py</code>
+              </span>
+            </span>
+          </div>
+        )}
         <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-border/50 pb-4" data-print-hidden>
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
