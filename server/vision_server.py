@@ -29,7 +29,10 @@ from serial_sensor import ArduinoSerialReader
 from ensemble import EnsembleClassifier
 from dataset_collector import DatasetCollector
 from dataset_cleaner import DatasetCleaner
+<<<<<<< HEAD
 from ensemble_model import MultiModalEnsembleModel
+=======
+>>>>>>> 524515b3e30d0b6100f27441264c9b9906c25826
 
 app = Flask(__name__)
 
@@ -532,6 +535,7 @@ def api_latest():
         })
 
 
+<<<<<<< HEAD
 
 @app.route('/api/capture', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")  # Manual dataset capture
@@ -542,6 +546,19 @@ def api_capture():
         if collector is None:
             return jsonify({"success": False, "error": "Dataset collection not enabled. Start with --dataset-dir"}), 400
 
+=======
+from dataset_collector import DatasetCollector
+from ensemble_model import MultiModalEnsembleModel
+
+dataset_collector = DatasetCollector(base_dir="dataset")
+ensemble_model = MultiModalEnsembleModel()
+
+
+@app.route('/api/capture', methods=['GET', 'POST'])
+def api_capture():
+    """Capture current live frame and log to structured dataset with metadata."""
+    with state_lock:
+>>>>>>> 524515b3e30d0b6100f27441264c9b9906c25826
         raw_frame = state.get("raw_frame")
         if raw_frame is None:
             return jsonify({"success": False, "error": "No camera frame available"}), 400
@@ -555,7 +572,11 @@ def api_capture():
         threat_level = state.get("threat_level", "Normal")
 
         # Save to structured dataset
+<<<<<<< HEAD
         res = collector.save_sample(
+=======
+        res = dataset_collector.save_sample(
+>>>>>>> 524515b3e30d0b6100f27441264c9b9906c25826
             frame=raw_frame,
             detections=detections,
             ultrasonic_cm=ultrasonic_cm,
@@ -566,7 +587,10 @@ def api_capture():
 
 
 @app.route('/api/fuse', methods=['POST', 'GET'])
+<<<<<<< HEAD
 @limiter.limit("30 per minute")
+=======
+>>>>>>> 524515b3e30d0b6100f27441264c9b9906c25826
 def api_fuse():
     """Execute multi-modal sensor fusion across Ultrasonic, YOLO, and Depth signals."""
     with state_lock:
@@ -576,8 +600,12 @@ def api_fuse():
 
         detections = state.get("latest_detections", [])
 
+<<<<<<< HEAD
         _ensemble_model = MultiModalEnsembleModel()
         fusion_res = _ensemble_model.fuse(
+=======
+        fusion_res = ensemble_model.fuse(
+>>>>>>> 524515b3e30d0b6100f27441264c9b9906c25826
             ultrasonic_distance_cm=ultrasonic_cm,
             yolo_detections=detections,
             depth_meters=depth_m
@@ -643,6 +671,7 @@ def api_hardware_status():
         return jsonify(_build_hardware_status())
 
 
+<<<<<<< HEAD
 @app.route('/api/status')
 @limiter.limit("120 per minute")  # Primary dashboard poll — replaces both /api/hardware-status and /api/latest
 def api_status():
@@ -671,12 +700,17 @@ def api_status():
     })
 
 
+=======
+>>>>>>> 524515b3e30d0b6100f27441264c9b9906c25826
 # ── Server start time for uptime tracking ────────────────────────────
 _SERVER_START_TIME = time.monotonic()
 
 
 @app.route('/api/health')
+<<<<<<< HEAD
 @limiter.limit("12 per minute")  # Health checks, not frequent
+=======
+>>>>>>> 524515b3e30d0b6100f27441264c9b9906c25826
 def api_health():
     """Comprehensive health check endpoint.
 
@@ -747,6 +781,7 @@ def _format_uptime(seconds: float) -> str:
         return f"{s}s"
 
 
+<<<<<<< HEAD
 # ── Gemini API key (stored server-side, never exposed in browser localStorage) ──
 _gemini_api_key: Optional[str] = os.environ.get("GEMINI_API_KEY")
 
@@ -786,7 +821,7 @@ def api_gemini_proxy():
 
     try:
         import requests as http_requests
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_gemini_api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={_gemini_api_key}"
         resp = http_requests.post(url, json=data, timeout=30)
         return jsonify(resp.json()), resp.status_code
     except Exception as exc:
@@ -795,6 +830,9 @@ def api_gemini_proxy():
 
 @app.route('/api/dataset/clean', methods=['POST'])
 @limiter.limit("2 per minute")  # Expensive operation, rarely needed
+=======
+@app.route('/api/dataset/clean', methods=['POST'])
+>>>>>>> 524515b3e30d0b6100f27441264c9b9906c25826
 def dataset_clean():
     """Run the dataset cleaning pipeline on the configured dataset directory.
 
@@ -856,7 +894,10 @@ def main():
     parser.add_argument("--sensor-min-distance-cm", type=float, default=2.0, help="Reject sensor readings below this value")
     parser.add_argument("--sensor-max-distance-cm", type=float, default=400.0, help="Reject sensor readings above this value")
     parser.add_argument("--dataset-dir", type=str, default=None, help="Enable dataset collection; save frames + metadata to this directory")
+<<<<<<< HEAD
     parser.add_argument("--allowed-origins", type=str, default=None, help="Comma-separated CORS allowed origins (overrides NETRASENSE_CORS_ORIGINS env)")
+=======
+>>>>>>> 524515b3e30d0b6100f27441264c9b9906c25826
 
     args = parser.parse_args()
 
