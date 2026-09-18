@@ -19,6 +19,18 @@ export interface CurrencyAndTextResult {
   source: "gemini" | "spatial_fallback";
 }
 
+export function getResolvedGeminiApiKey(apiKey?: string): string {
+  const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+  return (
+    apiKey?.trim() ||
+    (typeof window !== "undefined"
+      ? window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY)?.trim()
+      : "") ||
+    envKey?.trim() ||
+    ""
+  );
+}
+
 /**
  * Describe Surroundings ("What's around me?") using Gemini Multimodal Vision
  */
@@ -26,21 +38,16 @@ export async function describeSurroundings(
   imageBase64: string,
   apiKey?: string,
   detectedObjects?: string[],
-  language: "en" | "hi" | "auto" = "auto"
+  language: "en" | "hi" | "auto" = "auto",
 ): Promise<SceneDescriptionResult> {
-  const resolvedKey =
-    apiKey?.trim() ||
-    (typeof window !== "undefined"
-      ? window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY)?.trim()
-      : "") ||
-    "";
+  const resolvedKey = getResolvedGeminiApiKey(apiKey);
 
   // Clean Base64 format
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
   if (resolvedKey) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${resolvedKey}`;
       const langInstruction =
         language === "hi"
           ? "Respond in conversational Hindi or natural Hinglish that can be spoken aloud naturally (e.g. 'Aapke saamne ek mez hai aur daayein taraf kursi hai. Aage ka raasta khula hai.')."
@@ -59,7 +66,10 @@ Keep your tone calm, reassuring, and concise so it can be spoken aloud immediate
 
       const response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": resolvedKey,
+        },
         body: JSON.stringify({
           contents: [
             {
@@ -77,6 +87,7 @@ Keep your tone calm, reassuring, and concise so it can be spoken aloud immediate
           generationConfig: {
             temperature: 0.2,
             maxOutputTokens: 250,
+            thinkingConfig: { thinkingBudget: 0 },
           },
         }),
       });
@@ -90,9 +101,12 @@ Keep your tone calm, reassuring, and concise so it can be spoken aloud immediate
             source: "gemini",
           };
         }
+      } else {
+        const errBody = await response.text().catch(() => "");
+        console.error(`Gemini scene describer HTTP ${response.status}:`, errBody);
       }
     } catch (err) {
-      console.warn("Gemini scene describer error, using spatial fallback:", err);
+      console.error("Gemini scene describer request failed:", err);
     }
   }
 
@@ -119,20 +133,15 @@ Keep your tone calm, reassuring, and concise so it can be spoken aloud immediate
 export async function readCurrencyAndText(
   imageBase64: string,
   apiKey?: string,
-  language: "en" | "hi" | "auto" = "auto"
+  language: "en" | "hi" | "auto" = "auto",
 ): Promise<CurrencyAndTextResult> {
-  const resolvedKey =
-    apiKey?.trim() ||
-    (typeof window !== "undefined"
-      ? window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY)?.trim()
-      : "") ||
-    "";
+  const resolvedKey = getResolvedGeminiApiKey(apiKey);
 
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
   if (resolvedKey) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${resolvedKey}`;
       const langInstruction =
         language === "hi"
           ? "State findings in Hindi or bilingual (e.g. '500 Indian Rupees note / 500 रुपये का नोट')."
@@ -149,7 +158,10 @@ ${langInstruction}
 
       const response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": resolvedKey,
+        },
         body: JSON.stringify({
           contents: [
             {
@@ -167,6 +179,7 @@ ${langInstruction}
           generationConfig: {
             temperature: 0.1,
             maxOutputTokens: 200,
+            thinkingConfig: { thinkingBudget: 0 },
           },
         }),
       });
@@ -181,16 +194,23 @@ ${langInstruction}
             source: "gemini",
           };
         }
+      } else {
+        const errBody = await response.text().catch(() => "");
+        console.error(`Gemini currency/text reader HTTP ${response.status}:`, errBody);
       }
     } catch (err) {
-      console.warn("Gemini currency/text reader error:", err);
+      console.error("Gemini currency/text reader request failed:", err);
     }
   }
 
   // Smart fallback response
   return {
-    speech: "Smart reader ready. To enable instant AI currency denomination and document reading, add a free Gemini API Key in Settings.",
-    extractedText: "Add Gemini API Key in Settings for full optical currency & text recognition.",
+    speech: resolvedKey
+      ? "Currency reader couldn't reach Gemini. Check the browser console for the error, and confirm the API key in Settings is valid."
+      : "Smart reader ready. To enable instant AI currency denomination and document reading, add a free Gemini API Key in Settings.",
+    extractedText: resolvedKey
+      ? "Gemini request failed - see console for details."
+      : "Add Gemini API Key in Settings for full optical currency & text recognition.",
     source: "spatial_fallback",
   };
 }
@@ -213,20 +233,15 @@ export async function identifyFaceAndMood(
   imageBase64: string,
   familiarContacts: string[] = [],
   apiKey?: string,
-  language: "en" | "hi" | "auto" = "auto"
+  language: "en" | "hi" | "auto" = "auto",
 ): Promise<FaceMoodResult> {
-  const resolvedKey =
-    apiKey?.trim() ||
-    (typeof window !== "undefined"
-      ? window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY)?.trim()
-      : "") ||
-    "";
+  const resolvedKey = getResolvedGeminiApiKey(apiKey);
 
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
   if (resolvedKey) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${resolvedKey}`;
       const contactsContext =
         familiarContacts.length > 0
           ? `Known caregivers and contacts: ${familiarContacts.join(", ")}.`
@@ -254,7 +269,10 @@ Rules:
 
       const response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": resolvedKey,
+        },
         body: JSON.stringify({
           contents: [
             {
@@ -272,6 +290,7 @@ Rules:
           generationConfig: {
             temperature: 0.1,
             maxOutputTokens: 250,
+            thinkingConfig: { thinkingBudget: 0 },
           },
         }),
       });
@@ -279,7 +298,10 @@ Rules:
       if (response.ok) {
         const data = await response.json();
         const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-        const cleanJson = rawText.replace(/^```(json)?\s*/i, "").replace(/\s*```$/, "").trim();
+        const cleanJson = rawText
+          .replace(/^```(json)?\s*/i, "")
+          .replace(/\s*```$/, "")
+          .trim();
         const parsed = JSON.parse(cleanJson);
 
         return {
@@ -292,9 +314,12 @@ Rules:
           actionDescription: parsed.actionDescription || "In front of camera",
           source: "gemini",
         };
+      } else {
+        const errBody = await response.text().catch(() => "");
+        console.error(`Gemini face/mood identifier HTTP ${response.status}:`, errBody);
       }
     } catch (err) {
-      console.warn("Gemini face/mood identifier error, using fallback:", err);
+      console.error("Gemini face/mood identifier request failed:", err);
     }
   }
 
@@ -325,20 +350,15 @@ export async function navigateIndoorPath(
   imageBase64: string,
   destination: string,
   currentStep: number = 1,
-  apiKey?: string
+  apiKey?: string,
 ): Promise<IndoorNavResult> {
-  const resolvedKey =
-    apiKey?.trim() ||
-    (typeof window !== "undefined"
-      ? window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY)?.trim()
-      : "") ||
-    "";
+  const resolvedKey = getResolvedGeminiApiKey(apiKey);
 
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
   if (resolvedKey) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${resolvedKey}`;
       const prompt = `You are NetraSense AI, an indoor assistive waypoint navigator for a visually impaired user.
 The user wants to reach: "${destination}".
 Current navigation step: ${currentStep}.
@@ -360,7 +380,10 @@ Rules:
 
       const response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": resolvedKey,
+        },
         body: JSON.stringify({
           contents: [
             {
@@ -378,6 +401,7 @@ Rules:
           generationConfig: {
             temperature: 0.1,
             maxOutputTokens: 250,
+            thinkingConfig: { thinkingBudget: 0 },
           },
         }),
       });
@@ -385,20 +409,28 @@ Rules:
       if (response.ok) {
         const data = await response.json();
         const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-        const cleanJson = rawText.replace(/^```(json)?\s*/i, "").replace(/\s*```$/, "").trim();
+        const cleanJson = rawText
+          .replace(/^```(json)?\s*/i, "")
+          .replace(/\s*```$/, "")
+          .trim();
         const parsed = JSON.parse(cleanJson);
 
         return {
-          instruction: parsed.instruction || `Step ${currentStep}: Move forward carefully towards ${destination}.`,
+          instruction:
+            parsed.instruction ||
+            `Step ${currentStep}: Move forward carefully towards ${destination}.`,
           isArrived: !!parsed.isArrived,
           clearanceStatus: parsed.clearanceStatus || "Safe",
           obstaclesInPath: parsed.obstaclesInPath || [],
           keyLandmarks: parsed.keyLandmarks || [],
           source: "gemini",
         };
+      } else {
+        const errBody = await response.text().catch(() => "");
+        console.error(`Gemini indoor navigator HTTP ${response.status}:`, errBody);
       }
     } catch (err) {
-      console.warn("Gemini indoor navigator error:", err);
+      console.error("Gemini indoor navigator request failed:", err);
     }
   }
 
