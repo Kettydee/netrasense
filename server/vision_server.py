@@ -792,7 +792,7 @@ def api_gemini_proxy():
 
     try:
         import requests as http_requests
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={_gemini_api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_gemini_api_key}"
         resp = http_requests.post(url, json=data, timeout=30)
         return jsonify(resp.json()), resp.status_code
     except Exception as exc:

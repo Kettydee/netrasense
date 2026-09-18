@@ -89,11 +89,14 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
 
     try {
       const names = profiles.map((p) => p.name);
-      const res = await identifyFaceAndMood(frame, names);
+      const compressedFrame = await compressFaceImage(frame, 480);
+      const res = await identifyFaceAndMood(compressedFrame, names);
       setResult(res);
       speak(res.speech);
       if (res.identifiedName) {
         toast.success(`Recognized ${res.identifiedName} (${res.confidence ? res.confidence + "%" : "Verified"})!`);
+      } else if (res.mood === "Cooling Down" || res.actionDescription === "Rate limit active") {
+        toast.warning("AI rate limit active. Please wait a moment before rescanning.");
       } else if (res.peopleCount > 0) {
         toast.info("Unfamiliar person detected.");
       } else {

@@ -25,38 +25,82 @@ export function getResolvedGeminiApiKey(explicitKey?: string): string {
   return "";
 }
 
+const GEMINI_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-1.5-flash",
+  "gemini-3.6-flash",
+];
+
 /**
  * Universal Gemini API caller:
  * 1. Prioritizes direct Google Generative Language API if an API key exists in Settings / localStorage / Env.
  *    (This works anywhere in the world on https://netrasense.vercel.app with zero backend requirement).
+ *    Uses multi-model fallback (gemini-2.5-flash -> gemini-2.0-flash -> gemini-2.5-flash-lite) to beat rate limits.
  * 2. If no client-side key or if direct call fails, tries the local vision server proxy.
  */
 export async function callGemini(
   contents: unknown[],
-  generationConfig: unknown = { temperature: 0.1, maxOutputTokens: 300 },
+  generationConfig: unknown = { temperature: 0.1, maxOutputTokens: 600 },
   apiKey?: string,
 ): Promise<any> {
   const resolvedKey = getResolvedGeminiApiKey(apiKey);
 
   if (resolvedKey) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${resolvedKey}`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": resolvedKey,
-        },
-        body: JSON.stringify({ contents, generationConfig }),
-      });
+    let lastError: any = null;
 
-      if (res.ok) {
-        return await res.json();
+    for (const model of GEMINI_MODELS) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${resolvedKey}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": resolvedKey,
+          },
+          body: JSON.stringify({
+            contents,
+            generationConfig,
+            safetySettings: [
+              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+            ],
+          }),
+        });
+
+        if (res.ok) {
+          return await res.json();
+        }
+
+        const errText = await res.text().catch(() => "");
+        console.warn(`Direct Gemini model ${model} failed (${res.status}):`, errText);
+
+        if (res.status === 401 || res.status === 403) {
+          const keyErr = new Error(`INVALID_KEY (${res.status}): ${errText}`);
+          (keyErr as any).status = res.status;
+          throw keyErr;
+        }
+
+        if (res.status === 429) {
+          // Rate limit exhausted on this model — seamlessly try next model in the fallback chain!
+          lastError = new Error(`RATE_LIMIT (429) on ${model}`);
+          continue;
+        }
+
+        lastError = new Error(`HTTP_${res.status}: ${errText}`);
+      } catch (directErr: any) {
+        if (directErr?.message?.includes("INVALID_KEY")) {
+          throw directErr;
+        }
+        lastError = directErr;
       }
-      const errText = await res.text().catch(() => "");
-      console.warn(`Direct Gemini API failed (${res.status}):`, errText);
-    } catch (directErr) {
-      console.warn("Direct Gemini fetch error, trying local proxy fallback:", directErr);
+    }
+
+    if (lastError && String(lastError.message).includes("RATE_LIMIT")) {
+      throw lastError;
     }
   }
 
@@ -74,7 +118,11 @@ export async function callGemini(
     // proxy unavailable
   }
 
-  throw new Error("No active Gemini API Key found. Please add your free Gemini API Key in Settings.");
+  throw new Error(
+    resolvedKey
+      ? "AI vision service is momentarily busy or rate-limited. Please try again shortly."
+      : "No active Gemini API Key found. Please add your free Gemini API Key in Settings."
+  );
 }
 
 /** Check if any Gemini API key is available (client-side or local server). */
@@ -417,32 +465,38 @@ export async function identifyFaceAndMood(
   }
 
   // 2. Multimodal Visual Biometric Comparison using Gemini
-  const liveBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
   const storedProfiles = getStoredFaceProfiles();
 
   try {
+    // Compress live frame to ~480px max for fast upload, low latency, and zero payload rejection
+    const compressedLiveUrl = await compressFaceImage(imageBase64, 480);
+    const liveBase64 = compressedLiveUrl.replace(/^data:image\/\w+;base64,/, "");
+
     const parts: any[] = [];
 
     if (storedProfiles.length > 0) {
-      const promptText = `You are NetraSense AI, an intelligent biometric face and emotion identifier for a visually impaired user.
+      const promptText = `You are NetraSense AI, an intelligent assistive biometric face and emotion identifier for visually impaired users.
 The user is looking through their camera.
 Below are the enrolled reference face photos of known contacts:
 ${storedProfiles.map((p, i) => `${i + 1}. "${p.name}"`).join("\n")}
 
 BIOMETRIC RECOGNITION RULES:
 1. Carefully compare the human face in the LIVE CAMERA IMAGE against each of the enrolled reference photos.
-2. Compare facial features, bone structure, eye shape, nose shape, and mouth.
-3. If the person in the LIVE CAMERA IMAGE is clearly the same person as one of the enrolled reference photos, set "identifiedName" to that person's exact name and set "confidence" to an integer between 85 and 99.
-4. If the person does NOT match any enrolled reference photo, set "identifiedName" to null and "confidence" to 0.
-5. If no human face is visible in the live camera image, set "peopleCount" to 0.
-6. Identify their facial expression/mood (e.g. "Smiling warmly", "Attentive and calm", "Surprised", "Looking concerned") and provide a matching emoji.
-7. Estimate their distance (e.g. "1.2 meters ahead").
-8. Generate a reassuring speech readout under 25 words:
+2. TOLERANCE FOR NATURAL VARIATION:
+   - Account for natural variations in lighting, head tilt, camera angle, distance, and facial expressions (e.g. smiling vs neutral).
+   - Base recognition on core biometric facial landmarks: eyes, nose shape, smile/mouth, jawline, and general facial structure.
+   - If the person in the LIVE CAMERA IMAGE is reasonably the same person as one of the enrolled reference photos, match them to that person's exact name.
+   - Assign "confidence" as an integer between 80 and 99 reflecting how confident the match is.
+3. If the person clearly does NOT match any enrolled reference photo (unfamiliar visitor/stranger), set "identifiedName" to null and "confidence" to 0.
+4. If no human face is visible in the live camera image at all, set "peopleCount" to 0, "identifiedName" to null, and "confidence" to 0.
+5. Identify their facial expression/mood (e.g. "Smiling warmly", "Attentive and calm", "Engaged", "Surprised", "Looking concerned") and provide a matching emoji.
+6. Estimate their distance (e.g. "1.2 meters ahead").
+7. Generate a concise spoken sentence under 25 words:
    - If recognized: "[Name] is [distance] ahead, [expression]."
    - If unfamiliar: "An unfamiliar person is [distance] ahead, looking [expression]."
    - If no face: "No person detected in front of the camera."
 
-Respond ONLY with this JSON object (no markdown, no backticks):
+Respond with a valid JSON object matching this schema:
 {
   "peopleCount": 1,
   "identifiedName": "Name" or null,
@@ -459,8 +513,10 @@ Respond ONLY with this JSON object (no markdown, no backticks):
       // Add each enrolled reference face photo
       storedProfiles.forEach((p) => {
         const cleanRef = p.imageBase64.replace(/^data:image\/\w+;base64,/, "");
-        parts.push({ text: `Enrolled Reference Photo for "${p.name}":` });
-        parts.push({ inlineData: { mimeType: "image/jpeg", data: cleanRef } });
+        if (cleanRef) {
+          parts.push({ text: `Enrolled Reference Photo for "${p.name}":` });
+          parts.push({ inlineData: { mimeType: "image/jpeg", data: cleanRef } });
+        }
       });
 
       // Add the live camera frame to identify
@@ -468,10 +524,10 @@ Respond ONLY with this JSON object (no markdown, no backticks):
       parts.push({ inlineData: { mimeType: "image/jpeg", data: liveBase64 } });
     } else {
       // No enrolled photos yet, just detect face presence and mood
-      const promptText = `You are NetraSense AI, an intelligent face and emotion identifier for a visually impaired user.
+      const promptText = `You are NetraSense AI, an intelligent assistive face and emotion identifier for visually impaired users.
 Analyze the person in this camera image.
 Determine if a person is in front of the camera, read their facial expression/mood, and estimate their distance.
-Respond ONLY with this JSON object (no markdown, no backticks):
+Respond with a valid JSON object matching this schema:
 {
   "peopleCount": 1,
   "identifiedName": null,
@@ -488,13 +544,33 @@ Respond ONLY with this JSON object (no markdown, no backticks):
 
     const response = await callGemini(
       [{ parts }],
-      { temperature: 0.1, maxOutputTokens: 300, thinkingConfig: { thinkingBudget: 0 } },
+      {
+        responseMimeType: "application/json",
+        temperature: 0.1,
+        maxOutputTokens: 1000,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
       apiKey,
     );
 
     const rawText = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-    const cleanJson = rawText.replace(/^```(json)?\s*/i, "").replace(/\s*```$/, "").trim();
-    const parsed = JSON.parse(cleanJson);
+    if (!rawText) {
+      throw new Error("EMPTY_AI_RESPONSE");
+    }
+
+    let jsonStr = rawText.replace(/^```(json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const match = jsonStr.match(/\{[\s\S]*\}/);
+    if (match) {
+      jsonStr = match[0];
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      jsonStr = jsonStr.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
+      parsed = JSON.parse(jsonStr);
+    }
 
     return {
       speech: parsed.speech || "A person is in front of you.",
@@ -507,8 +583,33 @@ Respond ONLY with this JSON object (no markdown, no backticks):
       actionDescription: parsed.actionDescription || "In front of camera",
       source: "gemini",
     };
-  } catch (err) {
+  } catch (err: any) {
     console.error("Gemini face/mood identifier failed:", err);
+    const msg = String(err?.message || err);
+
+    if (msg.includes("RATE_LIMIT") || msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {
+      return {
+        speech: "Face scan rate limit reached. Please wait a few seconds before trying again.",
+        peopleCount: 1,
+        mood: "Cooling Down",
+        moodEmoji: "⏳",
+        distanceEstimate: "1 to 2 meters ahead",
+        actionDescription: "Rate limit active",
+        source: "spatial_fallback",
+      };
+    }
+
+    if (msg.includes("INVALID_KEY") || msg.includes("401") || msg.includes("403")) {
+      return {
+        speech: "Your Gemini API key appears invalid or expired. Please check your key in Settings.",
+        peopleCount: 0,
+        mood: "Key Error",
+        moodEmoji: "🔑",
+        distanceEstimate: "N/A",
+        actionDescription: "Check Settings",
+        source: "spatial_fallback",
+      };
+    }
   }
 
   const hasKey = Boolean(getResolvedGeminiApiKey(apiKey));
