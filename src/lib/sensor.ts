@@ -135,6 +135,30 @@ export async function fetchSensorTelemetry(): Promise<SensorApiResponse> {
   return (await response.json()) as SensorApiResponse;
 }
 
+// ── Unified /api/status types ──────────────────────────────────────
+export type UnifiedStatusResponse = {
+  hardware: HardwareStatus;
+  sensor_data: SensorReading | null;
+  ensemble: EnsembleBreakdown | null;
+  fps: number;
+  mode: string;
+  detections: Array<Record<string, unknown>>;
+};
+
+/**
+ * Fetch unified hardware + sensor + ensemble status in a single request.
+ * Replaces the need to poll both /api/hardware-status and /api/latest.
+ */
+export async function fetchUnifiedStatus(): Promise<UnifiedStatusResponse> {
+  const url = `${resolveSensorServerUrl()}/api/status`;
+  const response = await fetch(url, {
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) throw new Error("Sensor service is unavailable");
+  return (await response.json()) as UnifiedStatusResponse;
+}
+
 /**
  * Fetch ONLY the hardware status object.  Useful for lightweight polls
  * that don't need the full detection payload.

@@ -298,6 +298,16 @@ class VisionPipeline:
                 motion_state=motion_state,
             ))
 
+        # ── Prune stale track entries to prevent unbounded growth ──
+        # Entries older than 5 seconds are for objects that left the frame.
+        now = time.time()
+        stale_keys = [
+            k for k, (_, _, t) in self._prev_tracks.items()
+            if (now - t) > 5.0
+        ]
+        for k in stale_keys:
+            del self._prev_tracks[k]
+
         return detections
 
     def _estimate_depth(self, frame: np.ndarray) -> Optional[np.ndarray]:
@@ -334,10 +344,12 @@ class AnnouncementTracker:
         absence_reset: float = 2.5,
         speak_interval: float = 1.5,
         min_duration: float = 0.3,
+        announce_normal: bool = False,
     ) -> None:
         self._absence_reset = absence_reset
         self._speak_interval = speak_interval
         self._min_duration = min_duration
+        self._announce_normal = announce_normal
         
         self._first_seen: dict[str, float] = {}
         self._last_seen: dict[str, float] = {}
@@ -345,6 +357,10 @@ class AnnouncementTracker:
         
         self._pending: list[str] = []
         self._last_speak_time: float = time.time()
+
+    def set_announce_normal(self, value: bool) -> None:
+        """Toggle whether Normal-level detections are announced aloud."""
+        self._announce_normal = value
 
     def update(self, detections: list[Detection]) -> Optional[str]:
         now = time.time()
@@ -363,6 +379,11 @@ class AnnouncementTracker:
 
             # If visible long enough and not yet announced, queue for speech once
             if track_key not in self._announced and (now - self._first_seen[track_key]) >= self._min_duration:
+                # Skip Normal-level announcements when announce_normal is off
+                if det.threat_level == "Normal" and not self._announce_normal:
+                    self._announced.add(track_key)
+                    continue
+
                 if det.threat_level in ("Collision", "Alarming"):
                     speech = f"CRITICAL: {det.label} on the {det.direction}"
                 else:
