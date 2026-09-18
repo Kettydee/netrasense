@@ -467,12 +467,61 @@ export async function identifyFaceAndMood(
       }
     }
   } catch {
-    // Local vision server offline; proceed to visual Multimodal Gemini Face Recognition
+    // Local vision server offline
   }
 
-  // 2. Multimodal Visual Biometric Comparison using Gemini
+  // 2. In-Browser 512D Biometric Vector Matcher (Instant, Offline, Zero Rate Limits!)
   const storedProfiles = getStoredFaceProfiles();
+  try {
+    const { matchFaceInBrowser } = await import("./browserFaceMatcher");
+    const localMatch = await matchFaceInBrowser(imageBase64, storedProfiles);
 
+    if (localMatch.faceDetected) {
+      if (localMatch.matchedProfile) {
+        const p = localMatch.matchedProfile;
+        const speech = `${p.name} is ${localMatch.distanceEstimate}, ${localMatch.mood.toLowerCase()} at you.`;
+        return {
+          speech,
+          peopleCount: 1,
+          identifiedName: p.name,
+          confidence: localMatch.confidence,
+          mood: localMatch.mood,
+          moodEmoji: localMatch.moodEmoji,
+          distanceEstimate: localMatch.distanceEstimate,
+          actionDescription: "In front of camera",
+          source: "gemini",
+        };
+      } else if (storedProfiles.length > 0) {
+        return {
+          speech: `An unfamiliar person is ${localMatch.distanceEstimate}, looking ${localMatch.mood.toLowerCase()}.`,
+          peopleCount: 1,
+          identifiedName: undefined,
+          confidence: 0,
+          mood: localMatch.mood,
+          moodEmoji: localMatch.moodEmoji,
+          distanceEstimate: localMatch.distanceEstimate,
+          actionDescription: "In front of camera",
+          source: "gemini",
+        };
+      } else {
+        return {
+          speech: `One person detected ${localMatch.distanceEstimate}, looking ${localMatch.mood.toLowerCase()}. Click Enroll Face to save their biometric profile.`,
+          peopleCount: 1,
+          identifiedName: undefined,
+          confidence: 0,
+          mood: localMatch.mood,
+          moodEmoji: localMatch.moodEmoji,
+          distanceEstimate: localMatch.distanceEstimate,
+          actionDescription: "In front of camera",
+          source: "gemini",
+        };
+      }
+    }
+  } catch (localErr) {
+    console.warn("Local biometric matcher fallback:", localErr);
+  }
+
+  // 3. Multimodal Visual Biometric Comparison using Gemini (Cloud Accelerator)
   try {
     // Compress live frame to ~480px max for fast upload, low latency, and zero payload rejection
     const compressedLiveUrl = await compressFaceImage(imageBase64, 480);
@@ -618,16 +667,13 @@ Respond with a valid JSON object matching this schema:
     }
   }
 
-  const hasKey = Boolean(getResolvedGeminiApiKey(apiKey));
   return {
-    speech: hasKey
-      ? "Face scan complete. Could not identify face clearly. Please face the camera directly in good lighting."
-      : "To recognize faces and read expressions on the live web, please add your free Gemini API Key in Settings.",
-    peopleCount: 1,
-    mood: hasKey ? "Uncertain" : "Setup Needed",
+    speech: "No person detected in front of the camera. Please center your face in the camera view.",
+    peopleCount: 0,
+    mood: "Ready",
     moodEmoji: "👤",
-    distanceEstimate: "1.5 meters",
-    actionDescription: "In view",
+    distanceEstimate: "N/A",
+    actionDescription: "Point camera towards face",
     source: "spatial_fallback",
   };
 }
