@@ -315,7 +315,7 @@ export interface CurrencyAndTextResult {
 export interface FaceMoodResult {
   speech: string;
   peopleCount: number;
-  identifiedName?: string;
+  identifiedName?: string | undefined;
   confidence?: number;
   distanceScore?: number;
   mood: string;

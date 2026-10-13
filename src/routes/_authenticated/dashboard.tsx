@@ -45,6 +45,7 @@ import {
   type HardwareStatus,
   type EnsembleBreakdown,
 } from "@/lib/sensor";
+import { webSerialManager, type WebSerialReading } from "@/lib/webSerial";
 import type { VisionTelemetryEvent } from "@/components/BlindsEyeLens";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -336,6 +337,23 @@ function DashboardPage() {
   const lastSpokenId = useRef<string | null>(null);
   const userId = user?.id ?? "";
 
+  const [webSerialData, setWebSerialData] = useState<WebSerialReading | null>(null);
+  const [isWebSerialConnected, setIsWebSerialConnected] = useState(false);
+
+  useEffect(() => {
+    webSerialManager.onReading((data) => {
+      setWebSerialData(data);
+    });
+    webSerialManager.onStatus((connected, error) => {
+      setIsWebSerialConnected(connected);
+      if (connected) {
+        toast.success("Connected directly to Arduino USB!");
+      } else if (error) {
+        toast.error(`Arduino USB: ${error}`);
+      }
+    });
+  }, []);
+
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
 
@@ -549,40 +567,48 @@ function DashboardPage() {
 
   const latest: Telemetry | undefined = telemetryQuery.data?.[0];
 
-  // ── Derive live state from authoritative hardware status ──────────
-  const arduinoConnected = hw?.arduino.connected ?? false;
-  const ultrasonicActive = hw?.ultrasonic.active ?? false;
-  const ultrasonicDistance = hw?.ultrasonic.distance_cm;
-  const ultrasonicThreatHw = hw?.ultrasonic.threat_level;
+  // ── Derive live state from authoritative hardware status + Web Serial USB fallback ──────────
+  const isArduinoLive = isWebSerialConnected || (hw?.arduino.connected ?? false);
+  const isUltrasonicLive = isWebSerialConnected || (hw?.ultrasonic.active ?? false);
+  const arduinoConnected = isArduinoLive;
+  const ultrasonicActive = isUltrasonicLive;
+  const ultrasonicDistance = isWebSerialConnected ? (webSerialData?.distance_cm ?? null) : hw?.ultrasonic.distance_cm;
+  const ultrasonicThreatHw = isWebSerialConnected ? (webSerialData?.threat_level ?? null) : hw?.ultrasonic.threat_level;
   const cameraConnected = hw?.camera.connected ?? false;
   const aiLoaded = hw?.ai.loaded ?? false;
   const aiProcessing = hw?.ai.processing ?? false;
   const cameraStatus = hw?.camera.status ?? "DISCONNECTED";
   const aiStatus = hw?.ai.status ?? "NOT READY";
-  const arduinoStatus = hw?.arduino.status ?? "DISCONNECTED";
-  const systemStatus = hw?.system.status ?? "NO HARDWARE";
+  const arduinoStatus = isWebSerialConnected ? "CONNECTED (USB)" : (hw?.arduino.status ?? "DISCONNECTED");
+  const systemStatus = isWebSerialConnected ? "ONLINE" : (hw?.system.status ?? "NO HARDWARE");
 
   // Ensemble signal breakdown (from unified /api/status)
   const ensemble: EnsembleBreakdown | undefined = statusQuery.data?.ensemble ?? undefined;
 
   // Determine if we have ANY valid hardware ultrasonic sensor data right now
   const rawHwDistance =
-    (hw?.ultrasonic.active && hw.ultrasonic.distance_cm !== null)
-      ? hw.ultrasonic.distance_cm
-      : statusQuery.data?.sensor_data?.distance_cm !== undefined && statusQuery.data?.sensor_data?.distance_cm !== null
-        ? Number(statusQuery.data.sensor_data.distance_cm)
-        : statusQuery.data?.ensemble?.ultrasonic?.distance_cm !== undefined && statusQuery.data?.ensemble?.ultrasonic?.distance_cm !== null
-          ? Number(statusQuery.data.ensemble.ultrasonic.distance_cm)
-          : null;
+    (isWebSerialConnected && webSerialData?.distance_cm !== undefined)
+      ? webSerialData.distance_cm
+      : (hw?.ultrasonic.active && hw.ultrasonic.distance_cm !== null)
+        ? hw.ultrasonic.distance_cm
+        : statusQuery.data?.sensor_data?.distance_cm !== undefined && statusQuery.data?.sensor_data?.distance_cm !== null
+          ? Number(statusQuery.data.sensor_data.distance_cm)
+          : statusQuery.data?.ensemble?.ultrasonic?.distance_cm !== undefined && statusQuery.data?.ensemble?.ultrasonic?.distance_cm !== null
+            ? Number(statusQuery.data.ensemble.ultrasonic.distance_cm)
+            : null;
 
   const rawHwThreat =
-    hw?.ultrasonic.threat_level ??
-    statusQuery.data?.sensor_data?.threat_level ??
-    statusQuery.data?.ensemble?.ultrasonic?.threat_level ??
-    null;
+    (isWebSerialConnected && webSerialData?.threat_level)
+      ? webSerialData.threat_level
+      : hw?.ultrasonic.threat_level ??
+        statusQuery.data?.sensor_data?.threat_level ??
+        statusQuery.data?.ensemble?.ultrasonic?.threat_level ??
+        null;
 
   // Determine if we have ANY valid sensor data right now
-  const hasSensorData = (ultrasonicActive || !!statusQuery.data?.sensor_data || !!statusQuery.data?.ensemble?.ultrasonic) && rawHwDistance !== null;
+  const hasSensorData =
+    (isWebSerialConnected && webSerialData !== null) ||
+    ((hw?.ultrasonic.active || !!statusQuery.data?.sensor_data || !!statusQuery.data?.ensemble?.ultrasonic) && rawHwDistance !== null);
 
   // Distance: real value only when sensor is active
   const liveDistance = hasSensorData ? Math.round(rawHwDistance!) : null;
@@ -794,7 +820,7 @@ function DashboardPage() {
                   }`}
                 >
                   <Radio aria-hidden="true" className="size-3.5" />
-                  {ultrasonicActive ? "SENSOR LIVE" : "SENSOR NOT ACTIVE"}
+                  {ultrasonicActive ? (isWebSerialConnected ? "SENSOR LIVE (USB)" : "SENSOR LIVE") : "SENSOR NOT ACTIVE"}
                 </span>
                 <span
                   className={`rounded-xl px-3.5 py-1.5 text-xs font-black uppercase tracking-wider border ${
@@ -886,22 +912,44 @@ function DashboardPage() {
               >
                 DEVICE STATUS
               </h2>
-              <span
-                className={`flex items-center gap-1.5 text-xs font-bold ${
-                  systemStatus === "ONLINE"
-                    ? "text-emerald-400"
-                    : "text-zinc-400"
-                }`}
-              >
+              <div className="flex items-center gap-2">
+                {isWebSerialConnected ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 border-rose-500/40 text-rose-400 hover:bg-rose-500/10 text-xs px-2.5 font-bold"
+                    onClick={() => webSerialManager.disconnect()}
+                  >
+                    Disconnect USB
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 text-xs px-2.5 font-bold flex items-center gap-1 shadow-sm"
+                    onClick={() => webSerialManager.connect()}
+                    title="Direct in-browser USB connection (Zero Python / Zero Terminal needed)"
+                  >
+                    🔌 Connect USB Glasses
+                  </Button>
+                )}
                 <span
-                  className={`size-2 rounded-full ${
+                  className={`flex items-center gap-1.5 text-xs font-bold ${
                     systemStatus === "ONLINE"
-                      ? "bg-emerald-400 animate-pulse"
-                      : "bg-zinc-400"
+                      ? "text-emerald-400"
+                      : "text-zinc-400"
                   }`}
-                />
-                {systemStatus === "ONLINE" ? "ONLINE" : "NO HARDWARE"}
-              </span>
+                >
+                  <span
+                    className={`size-2 rounded-full ${
+                      systemStatus === "ONLINE"
+                        ? "bg-emerald-400 animate-pulse"
+                        : "bg-zinc-400"
+                    }`}
+                  />
+                  {systemStatus === "ONLINE" ? (isWebSerialConnected ? "ONLINE (USB)" : "ONLINE") : "NO HARDWARE"}
+                </span>
+              </div>
             </div>
 
             <ul className="mt-3 divide-y divide-border/60 text-sm">
@@ -910,7 +958,7 @@ function DashboardPage() {
                 <span className="text-muted-foreground font-medium">Arduino Serial</span>
                 <span
                   className={`font-mono text-xs font-bold ${
-                    arduinoStatus === "CONNECTED"
+                    arduinoStatus.includes("CONNECTED")
                       ? "text-emerald-400"
                       : "text-zinc-400"
                   }`}
@@ -928,7 +976,7 @@ function DashboardPage() {
                       : "text-zinc-400"
                   }`}
                 >
-                  {hw?.ultrasonic.status ?? "NOT ACTIVE"}
+                  {isWebSerialConnected ? "ACTIVE (USB)" : (hw?.ultrasonic.status ?? "NOT ACTIVE")}
                 </span>
               </li>
               {/* Camera Stream */}
@@ -969,9 +1017,11 @@ function DashboardPage() {
               <li className="flex items-center justify-between py-2">
                 <span className="text-muted-foreground font-medium">Last Telemetry Sync</span>
                 <span className="font-mono text-xs text-muted-foreground">
-                  {hasSensorData
-                    ? `${((Date.now() / 1000 - (hw?.ultrasonic.timestamp ? new Date(hw.ultrasonic.timestamp).getTime() / 1000 : 0)) || 0).toFixed(1)}s ago`
-                    : "No data"}
+                  {isWebSerialConnected
+                    ? "Live (USB 0.1s)"
+                    : hasSensorData
+                      ? `${((Date.now() / 1000 - (hw?.ultrasonic.timestamp ? new Date(hw.ultrasonic.timestamp).getTime() / 1000 : 0)) || 0).toFixed(1)}s ago`
+                      : "No data"}
                 </span>
               </li>
             </ul>
