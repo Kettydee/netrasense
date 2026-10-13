@@ -46,8 +46,11 @@ _default_origins = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://localhost:5174",
+    "http://localhost:8080",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:8080",
+    "https://netrasense.vercel.app",
 ]
 _env_origins = os.environ.get("NETRASENSE_CORS_ORIGINS", "").strip()
 allowed_origins = (
@@ -498,7 +501,7 @@ def video_feed():
 
 
 @app.route('/api/latest')
-@limiter.limit("60 per minute")  # Polled every 500ms by dashboard
+@limiter.exempt  # Polled continuously by dashboard
 def api_latest():
     """Returns current detection telemetry, threat analysis, and hardware status.
 
@@ -638,7 +641,7 @@ def api_config():
 
 
 @app.route('/api/hardware-status')
-@limiter.limit("60 per minute")  # Polled every 1s by dashboard
+@limiter.exempt  # Polled continuously by dashboard
 def api_hardware_status():
     """Standalone endpoint returning the authoritative hardware status.
 
@@ -650,7 +653,7 @@ def api_hardware_status():
 
 
 @app.route('/api/status')
-@limiter.limit("120 per minute")  # Primary dashboard poll — replaces both /api/hardware-status and /api/latest
+@limiter.exempt  # Primary dashboard poll — replaces both /api/hardware-status and /api/latest
 def api_status():
     """Unified status endpoint: hardware + sensor + ensemble in one response.
 
@@ -939,7 +942,7 @@ def main():
     parser.add_argument("--speak-interval", type=float, default=2.0, help="Interval between speech announcements")
     parser.add_argument("--absence-reset", type=float, default=1.5, help="Absence reset time")
     parser.add_argument("--min-duration", type=float, default=0.4, help="Min continuous detection time")
-    parser.add_argument("--serial-port", type=str, default=None, help="Arduino serial path, or auto; disabled when omitted")
+    parser.add_argument("--serial-port", type=str, default="auto", help="Arduino serial path, or auto (default: auto)")
     parser.add_argument("--serial-baudrate", type=int, default=9600, help="Arduino serial baud rate")
     parser.add_argument("--sensor-device-id", type=str, default="NETRA-001", help="ID added to sensor records")
     parser.add_argument("--sensor-min-distance-cm", type=float, default=2.0, help="Reject sensor readings below this value")

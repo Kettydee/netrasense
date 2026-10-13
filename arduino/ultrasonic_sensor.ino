@@ -1,30 +1,135 @@
 /*
- * NetraSense HC-SR04 + Buzzer USB serial sender/receiver
+ * NetraSense Safe Acoustic Sonar Controller
+ * 
+ * Gentle, Non-Ear-Piercing Proximity Radar:
+ *   - Under 1 Meter (< 100 cm):
+ *       RAPID PULSES: beep - pause - beep - pause (60ms on, 55ms off, 1200 Hz).
+ *       Safe for piezo buzzers — NO solid continuous ringing!
+ *   - 1 Meter to 2 Meters (100 cm - 200 cm):
+ *       MODERATE PULSES: beep - pause - beep (70ms on, 160ms off, 950 Hz).
+ *   - 2 Meters to 3 Meters (200 cm - 300 cm):
+ *       SLOW GENTLE BEEPS: (80ms on, 450ms off, 800 Hz).
+ *   - Above 3 Meters / Clear Pathway (>= 300 cm):
+ *       COMPLETELY SILENT (OFF).
  *
- * Wiring:
- *   VCC  -> 5V
- *   GND  -> GND
- *   TRIG -> D9
- *   ECHO -> D10
- *   BUZZER -> D11 (piezo buzzer)
- *
- * For 3.3 V boards, use a voltage divider on the ECHO pin.
- *
- * Serial protocol (JSON, newline-delimited):
- *   Arduino -> Python: {"distance_cm": 73.0}
- *   Python -> Arduino: {"buzzer": "ALARM"}  (or NORMAL/WARNING/CRITICAL/OFF)
+ * Pin Connections:
+ *   HC-SR04 VCC  -> Arduino 5V
+ *   HC-SR04 GND  -> Arduino GND
+ *   HC-SR04 TRIG -> Arduino Digital Pin 9 (D9)
+ *   HC-SR04 ECHO -> Arduino Digital Pin 10 (D10)
+ *   BUZZER (+)   -> Arduino Digital Pin 11 (D11)
+ *   BUZZER (-)   -> Arduino GND
  */
 
 const byte TRIG_PIN = 9;
 const byte ECHO_PIN = 10;
 const byte BUZZER_PIN = 11;
-const unsigned long ECHO_TIMEOUT_US = 25000UL;
-const unsigned long SAMPLE_INTERVAL_MS = 100UL;
 
-// Buzzer timing (ms)
+// Ultrasonic parameters
+const unsigned long ECHO_TIMEOUT_US = 24000UL;
+const unsigned long SAMPLE_RATE_MS = 75UL;
+
+// Buzzer timing
 unsigned long lastBuzzerToggle = 0;
+unsigned long lastSampleTime = 0;
 bool buzzerState = false;
-int buzzerPattern = 0;  // 0=off, 1=slow, 2=fast, 3=continuous
+int buzzerPattern = 0; // 0=Silent, 1=Slow, 2=Moderate, 3=Rapid
+
+// Comfortable, non-screeching tone frequency (Hz)
+unsigned int currentToneFreq = 950;
+
+void buzzerOn(unsigned int freq) {
+  digitalWrite(BUZZER_PIN, HIGH);
+  tone(BUZZER_PIN, freq);
+}
+
+void buzzerOff() {
+  noTone(BUZZER_PIN);
+  digitalWrite(BUZZER_PIN, LOW);
+}
+
+// Distance measurement
+float measureDistanceCm() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(4);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  unsigned long durationUs = pulseIn(ECHO_PIN, HIGH, ECHO_TIMEOUT_US);
+
+  if (durationUs == 0) {
+    return 400.0f; // Clear open space
+  }
+
+  float dist = (float)durationUs * 0.0343f / 2.0f;
+
+  if (dist < 2.0f || dist > 380.0f) {
+    return 400.0f;
+  }
+
+  return dist;
+}
+
+// Non-blocking pulsed buzzer state machine (ALWAYS has pauses — NO continuous tone!)
+void updateBuzzer(unsigned long now) {
+  switch (buzzerPattern) {
+    case 0: // SILENT (> 3m or Clear)
+      if (buzzerState) {
+        buzzerOff();
+        buzzerState = false;
+      }
+      break;
+
+    case 1: // SLOW GENTLE BEEPS (2m - 3m): 80ms on, 450ms pause
+      if (buzzerState) {
+        if (now - lastBuzzerToggle >= 80) {
+          buzzerOff();
+          buzzerState = false;
+          lastBuzzerToggle = now;
+        }
+      } else {
+        if (now - lastBuzzerToggle >= 450) {
+          buzzerOn(currentToneFreq);
+          buzzerState = true;
+          lastBuzzerToggle = now;
+        }
+      }
+      break;
+
+    case 2: // MODERATE BEEPS (1m - 2m): 70ms on, 160ms pause
+      if (buzzerState) {
+        if (now - lastBuzzerToggle >= 70) {
+          buzzerOff();
+          buzzerState = false;
+          lastBuzzerToggle = now;
+        }
+      } else {
+        if (now - lastBuzzerToggle >= 160) {
+          buzzerOn(currentToneFreq);
+          buzzerState = true;
+          lastBuzzerToggle = now;
+        }
+      }
+      break;
+
+    case 3: // RAPID URGENT BEEPS (< 1m): 60ms on, 55ms pause (beep-pause-beep-pause)
+      if (buzzerState) {
+        if (now - lastBuzzerToggle >= 60) {
+          buzzerOff();
+          buzzerState = false;
+          lastBuzzerToggle = now;
+        }
+      } else {
+        if (now - lastBuzzerToggle >= 55) {
+          buzzerOn(currentToneFreq);
+          buzzerState = true;
+          lastBuzzerToggle = now;
+        }
+      }
+      break;
+  }
+}
 
 void setup() {
   Serial.begin(9600);
@@ -32,96 +137,38 @@ void setup() {
   pinMode(ECHO_PIN, INPUT);
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(TRIG_PIN, LOW);
-  digitalWrite(BUZZER_PIN, LOW);
-}
-
-// Read serial commands from Python (non-blocking)
-void readSerialCommand() {
-  if (Serial.available() <= 0) return;
-
-  String line = Serial.readStringUntil('\n');
-  line.trim();
-  if (line.length() == 0) return;
-
-  // Parse simple JSON: {"buzzer": "ALARM"}
-  int idx = line.indexOf("\"buzzer\"");
-  if (idx < 0) return;
-
-  idx = line.indexOf(':', idx);
-  if (idx < 0) return;
-
-  int start = line.indexOf('\"', idx + 1);
-  int end = line.indexOf('\"', start + 1);
-  if (start < 0 || end < 0) return;
-
-  String value = line.substring(start + 1, end);
-  value.toUpperCase();
-
-  if (value == "CRITICAL") {
-    buzzerPattern = 3;  // continuous
-  } else if (value == "ALARM") {
-    buzzerPattern = 2;  // fast beep (100ms on/off)
-  } else if (value == "WARNING") {
-    buzzerPattern = 1;  // slow beep (300ms on/off)
-  } else {
-    buzzerPattern = 0;  // off (NORMAL or OFF)
-  }
-}
-
-// Update buzzer based on current pattern
-void updateBuzzer() {
-  unsigned long now = millis();
-
-  switch (buzzerPattern) {
-    case 0:  // OFF
-      digitalWrite(BUZZER_PIN, LOW);
-      buzzerState = false;
-      break;
-
-    case 1:  // SLOW BEEP (300ms)
-      if (now - lastBuzzerToggle >= 300) {
-        buzzerState = !buzzerState;
-        digitalWrite(BUZZER_PIN, buzzerState ? HIGH : LOW);
-        lastBuzzerToggle = now;
-      }
-      break;
-
-    case 2:  // FAST BEEP (100ms)
-      if (now - lastBuzzerToggle >= 100) {
-        buzzerState = !buzzerState;
-        digitalWrite(BUZZER_PIN, buzzerState ? HIGH : LOW);
-        lastBuzzerToggle = now;
-      }
-      break;
-
-    case 3:  // CONTINUOUS
-      digitalWrite(BUZZER_PIN, HIGH);
-      buzzerState = true;
-      break;
-  }
+  buzzerOff();
 }
 
 void loop() {
-  // Read commands from Python
-  readSerialCommand();
+  unsigned long now = millis();
 
-  // Ultrasonic measurement
-  digitalWrite(TRIG_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG_PIN, LOW);
+  // 1. Periodic ultrasonic distance measurement
+  if (now - lastSampleTime >= SAMPLE_RATE_MS) {
+    lastSampleTime = now;
 
-  const unsigned long durationUs = pulseIn(ECHO_PIN, HIGH, ECHO_TIMEOUT_US);
-  if (durationUs > 0) {
-    const float distanceCm = durationUs * 0.0343f / 2.0f;
+    float distanceCm = measureDistanceCm();
+
+    // Broadcast live telemetry over USB to Dashboard
     Serial.print("{\"distance_cm\":");
     Serial.print(distanceCm, 1);
     Serial.println("}");
+
+    // 2. Safe, pleasant sound frequencies & rhythms:
+    if (distanceCm >= 300.0f) {
+      buzzerPattern = 0; // > 3 Meters -> Completely SILENT
+    } else if (distanceCm >= 200.0f) {
+      buzzerPattern = 1; // 2m - 3m -> Slow beeps
+      currentToneFreq = 800; // Gentle 800 Hz
+    } else if (distanceCm >= 100.0f) {
+      buzzerPattern = 2; // 1m - 2m -> Moderate beeps
+      currentToneFreq = 980; // Clear 980 Hz
+    } else {
+      buzzerPattern = 3; // < 1 Meter -> Rapid urgent beep-pause-beep
+      currentToneFreq = 1200; // Crisp 1200 Hz (NOT screeching)
+    }
   }
 
-  // Update buzzer state
-  updateBuzzer();
-
-  delay(SAMPLE_INTERVAL_MS);
+  // 3. Maintain millisecond-accurate pulsing
+  updateBuzzer(now);
 }

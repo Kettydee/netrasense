@@ -565,19 +565,35 @@ function DashboardPage() {
   // Ensemble signal breakdown (from unified /api/status)
   const ensemble: EnsembleBreakdown | undefined = statusQuery.data?.ensemble ?? undefined;
 
+  // Determine if we have ANY valid hardware ultrasonic sensor data right now
+  const rawHwDistance =
+    (hw?.ultrasonic.active && hw.ultrasonic.distance_cm !== null)
+      ? hw.ultrasonic.distance_cm
+      : statusQuery.data?.sensor_data?.distance_cm !== undefined && statusQuery.data?.sensor_data?.distance_cm !== null
+        ? Number(statusQuery.data.sensor_data.distance_cm)
+        : statusQuery.data?.ensemble?.ultrasonic?.distance_cm !== undefined && statusQuery.data?.ensemble?.ultrasonic?.distance_cm !== null
+          ? Number(statusQuery.data.ensemble.ultrasonic.distance_cm)
+          : null;
+
+  const rawHwThreat =
+    hw?.ultrasonic.threat_level ??
+    statusQuery.data?.sensor_data?.threat_level ??
+    statusQuery.data?.ensemble?.ultrasonic?.threat_level ??
+    null;
+
   // Determine if we have ANY valid sensor data right now
-  const hasSensorData = ultrasonicActive && ultrasonicDistance !== null;
+  const hasSensorData = (ultrasonicActive || !!statusQuery.data?.sensor_data || !!statusQuery.data?.ensemble?.ultrasonic) && rawHwDistance !== null;
 
   // Distance: real value only when sensor is active
-  const liveDistance = hasSensorData ? Math.round(ultrasonicDistance!) : null;
+  const liveDistance = hasSensorData ? Math.round(rawHwDistance!) : null;
 
   // Threat level: real value only when sensor is active
-  const sensorLevel = hasSensorData && ultrasonicThreatHw
-    ? hardwareThreatToUiLevel(ultrasonicThreatHw)
+  const sensorLevel = hasSensorData && rawHwThreat
+    ? hardwareThreatToUiLevel(rawHwThreat)
     : null;
   const level = sensorLevel ?? "Normal"; // fallback for type safety; hasData flag controls display
-  const liveThreatLabel = hasSensorData && ultrasonicThreatHw
-    ? ultrasonicThreatHw
+  const liveThreatLabel = hasSensorData && rawHwThreat
+    ? rawHwThreat
     : NO_DATA_SENTINEL;
 
   useEffect(() => {
@@ -664,16 +680,20 @@ function DashboardPage() {
   );
 
   const isLiveVisionActive = !!(liveVision && now - liveVision.timestamp < 4500);
-  const currentDistance = isLiveVisionActive
-    ? liveVision.distance_cm
-    : latest
-      ? Math.round(Number(latest.distance_cm))
-      : MAX_DISTANCE_CM;
-  const currentObject = isLiveVisionActive
-    ? liveVision.object
-    : latest
-      ? latest.detected_object
-      : null;
+  const currentDistance = (hasSensorData && liveDistance !== null)
+    ? liveDistance
+    : isLiveVisionActive
+      ? liveVision.distance_cm
+      : latest
+        ? Math.round(Number(latest.distance_cm))
+        : MAX_DISTANCE_CM;
+  const currentObject = (hasSensorData && liveDistance !== null)
+    ? (currentDistance < 300 ? "Obstacle" : "Pathway")
+    : isLiveVisionActive
+      ? liveVision.object
+      : latest
+        ? latest.detected_object
+        : null;
 
   const allIncidents: Telemetry[] = [
     ...liveIncidents,
@@ -795,17 +815,21 @@ function DashboardPage() {
             </div>
 
             <p aria-live="polite" className="mt-3 text-base font-semibold">
-              {isLiveVisionActive
-                ? `${currentObject} detected at ${currentDistance} cm — ${level}`
-                : telemetryQuery.isLoading
-                  ? "Connecting to the sensor stream…"
-                  : latest
-                    ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${latest.threat_level}`
-                    : "No obstacles detected yet. Your camera / sensor stream is idle."}
+              {hasSensorData && liveDistance !== null
+                ? liveDistance >= 300
+                  ? `Clear pathway ahead (${liveDistance} cm) — Normal`
+                  : `Obstacle detected at ${liveDistance} cm — ${level}`
+                : isLiveVisionActive
+                  ? `${currentObject} detected at ${currentDistance} cm — ${level}`
+                  : telemetryQuery.isLoading
+                    ? "Connecting to the sensor stream…"
+                    : latest
+                      ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${latest.threat_level}`
+                      : "No obstacles detected yet. Your camera / sensor stream is idle."}
             </p>
 
             <div className="mt-5">
-              {telemetryQuery.isLoading && !isLiveVisionActive ? (
+              {telemetryQuery.isLoading && !isLiveVisionActive && !hasSensorData ? (
                 <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-border bg-card p-6">
                   <CuteLeafLoader text="Connecting to sensor stream..." size="md" />
                 </div>
@@ -813,7 +837,7 @@ function DashboardPage() {
                 <DistanceMeter
                   distance={currentDistance}
                   level={level}
-                  hasData={hasSensorData}
+                  hasData={hasSensorData || isLiveVisionActive || !!latest}
                 />
               )}
             </div>

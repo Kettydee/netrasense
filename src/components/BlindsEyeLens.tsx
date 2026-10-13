@@ -167,8 +167,12 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
               ) {
                 onVisionTelemetry?.({
                   object: data.closest_obstacle.object,
-                  distance_cm: data.closest_obstacle.distance_cm || 100,
-                  threat_level: (data.closest_obstacle.threat_level as any) || "Warning",
+                  distance_cm:
+                    typeof data.closest_obstacle.distance_cm === "number" &&
+                    data.closest_obstacle.distance_cm > 0
+                      ? data.closest_obstacle.distance_cm
+                      : 400,
+                  threat_level: (data.closest_obstacle.threat_level as any) || "Normal",
                 });
               }
             }
