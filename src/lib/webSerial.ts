@@ -1,5 +1,6 @@
 // Web Serial API manager for direct in-browser Arduino communication
-// Zero Python backend required! Works directly in Google Chrome, Edge, and Brave.
+// Zero Python backend, zero localhost, zero terminal required!
+// Works directly on https://netrasense.vercel.app in Google Chrome, Edge, and Brave.
 
 export type WebSerialReading = {
   distance_cm: number;
@@ -18,24 +19,53 @@ export class WebSerialReader {
     return typeof window !== "undefined" && "serial" in navigator;
   }
 
+  public async autoConnectIfAuthorized(): Promise<boolean> {
+    if (!this.isSupported()) return false;
+    try {
+      const ports = await (navigator as any).serial.getPorts();
+      if (ports && ports.length > 0) {
+        return await this.openPort(ports[0]);
+      }
+    } catch {
+      // ignore
+    }
+    return false;
+  }
+
   public async connect(): Promise<boolean> {
     if (!this.isSupported()) {
-      alert("Web Serial is not supported in this browser. Please use Google Chrome, Brave, or Microsoft Edge.");
+      alert(
+        "Web Serial is not supported in this browser.\nPlease open https://netrasense.vercel.app in Google Chrome, Microsoft Edge, or Brave.",
+      );
       return false;
     }
 
     try {
-      this.port = await (navigator as any).serial.requestPort();
+      const port = await (navigator as any).serial.requestPort();
+      return await this.openPort(port);
+    } catch (err: any) {
+      this.isReading = false;
+      this.onStatusCallback?.(false, err?.message || "Failed to connect to USB device");
+      return false;
+    }
+  }
+
+  private async openPort(selectedPort: any): Promise<boolean> {
+    try {
+      if (this.port) {
+        await this.disconnect();
+      }
+      this.port = selectedPort;
       await this.port.open({ baudRate: 9600 });
       this.isReading = true;
       this.onStatusCallback?.(true);
 
-      // Read continuously
+      // Start continuous background read loop
       this.readLoop();
       return true;
     } catch (err: any) {
       this.isReading = false;
-      this.onStatusCallback?.(false, err?.message || "Failed to connect to USB device");
+      this.onStatusCallback?.(false, err?.message || "Could not open serial port at 9600 baud");
       return false;
     }
   }
@@ -45,8 +75,12 @@ export class WebSerialReader {
     try {
       if (this.reader) {
         await this.reader.cancel();
-        this.reader.releaseLock();
       }
+    } catch {
+      // ignore
+    }
+
+    try {
       if (this.port) {
         await this.port.close();
       }
@@ -61,27 +95,35 @@ export class WebSerialReader {
 
   private async readLoop() {
     let buffer = "";
+    const decoder = new TextDecoder();
 
     while (this.isReading && this.port && this.port.readable) {
       try {
-        const textDecoder = new TextDecoderStream();
-        this.port.readable.pipeTo(textDecoder.writable).catch(() => {});
-        this.reader = textDecoder.readable.getReader();
+        const reader = this.port.readable.getReader();
+        this.reader = reader;
 
-        while (this.isReading) {
-          const { value, done } = await this.reader.read();
-          if (done) break;
-          if (value) {
-            buffer += value;
-            const lines = buffer.split("\n");
-            buffer = lines.pop() ?? "";
+        try {
+          while (this.isReading) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            if (value) {
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() ?? "";
 
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed) continue;
-              this.parseLine(trimmed);
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed) this.parseLine(trimmed);
+              }
             }
           }
+        } finally {
+          try {
+            reader.releaseLock();
+          } catch {
+            // ignore
+          }
+          this.reader = null;
         }
       } catch (err: any) {
         if (this.isReading) {
@@ -95,10 +137,15 @@ export class WebSerialReader {
   private parseLine(line: string) {
     try {
       let distance: number | null = null;
-      if (line.startsWith("{") && line.endsWith("}")) {
-        const data = JSON.parse(line);
-        if (typeof data.distance_cm === "number") {
-          distance = data.distance_cm;
+
+      // Extract JSON payload: {"distance_cm": ...}
+      if (line.includes("distance_cm")) {
+        const match = line.match(/\{[^}]+\}/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          if (typeof parsed.distance_cm === "number") {
+            distance = parsed.distance_cm;
+          }
         }
       } else {
         const num = parseFloat(line);

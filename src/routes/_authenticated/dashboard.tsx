@@ -352,6 +352,9 @@ function DashboardPage() {
         toast.error(`Arduino USB: ${error}`);
       }
     });
+
+    // Auto-reconnect if port was previously authorized by the browser
+    void webSerialManager.autoConnectIfAuthorized();
   }, []);
 
   const today = new Date().toISOString().slice(0, 10);
