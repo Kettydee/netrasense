@@ -396,6 +396,7 @@ function DashboardPage() {
 
   const [webSerialData, setWebSerialData] = useState<WebSerialReading | null>(null);
   const [isWebSerialConnected, setIsWebSerialConnected] = useState(false);
+  const [browserCameraActive, setBrowserCameraActive] = useState(false);
 
   useEffect(() => {
     webSerialManager.onReading((data) => {
@@ -412,6 +413,10 @@ function DashboardPage() {
 
     // Auto-reconnect if port was previously authorized by the browser
     void webSerialManager.autoConnectIfAuthorized();
+  }, []);
+
+  const handleCameraStatusChange = useCallback((active: boolean) => {
+    setBrowserCameraActive(active);
   }, []);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -630,7 +635,9 @@ function DashboardPage() {
 
   // ── Derive live state from authoritative hardware status + Web Serial USB fallback ──────────
   const isArduinoLive = isWebSerialConnected || (hw?.arduino.connected ?? false);
-  const isUltrasonicLive = isWebSerialConnected || (hw?.ultrasonic.active ?? false);
+  const isUltrasonicLive = isWebSerialConnected
+    ? webSerialData !== null
+    : (hw?.ultrasonic.active ?? false);
   const arduinoConnected = isArduinoLive;
   const ultrasonicActive = isUltrasonicLive;
   const ultrasonicDistance = isWebSerialConnected ? (webSerialData?.distance_cm ?? null) : hw?.ultrasonic.distance_cm;
@@ -638,7 +645,7 @@ function DashboardPage() {
   const cameraConnected = hw?.camera.connected ?? false;
   const aiLoaded = hw?.ai.loaded ?? false;
   const aiProcessing = hw?.ai.processing ?? false;
-  const cameraStatus = hw?.camera.status ?? "DISCONNECTED";
+  const cameraStatus = browserCameraActive ? "ACTIVE" : (hw?.camera.status ?? "DISCONNECTED");
   const aiStatus = hw?.ai.status ?? "NOT READY";
   const arduinoStatus = isWebSerialConnected ? "CONNECTED (USB)" : (hw?.arduino.status ?? "DISCONNECTED");
   const systemStatus = isWebSerialConnected ? "ONLINE" : (hw?.system.status ?? "NO HARDWARE");
@@ -857,7 +864,10 @@ function DashboardPage() {
             <h2 id="vision-heading" className="sr-only">
               Blind's Eye Visual Recognition
             </h2>
-            <BlindsEyeLens onVisionTelemetry={handleVisionTelemetry} />
+            <BlindsEyeLens
+              onVisionTelemetry={handleVisionTelemetry}
+              onCameraStatusChange={handleCameraStatusChange}
+            />
           </section>
 
           {/* --- LIVE ENVIRONMENT COMMAND SECTION --- */}
@@ -884,7 +894,11 @@ function DashboardPage() {
                   }`}
                 >
                   <Radio aria-hidden="true" className="size-3.5" />
-                  {ultrasonicActive ? (isWebSerialConnected ? "SENSOR LIVE (USB)" : "SENSOR LIVE") : "SENSOR NOT ACTIVE"}
+                  {ultrasonicActive
+                    ? (isWebSerialConnected ? "SENSOR LIVE (USB)" : "SENSOR LIVE")
+                    : isWebSerialConnected
+                      ? "USB CONNECTED · NO READINGS"
+                      : "SENSOR NOT ACTIVE"}
                 </span>
                 <span
                   className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-black uppercase tracking-wider border ${
@@ -1097,7 +1111,9 @@ function DashboardPage() {
                       : "text-zinc-400"
                   }`}
                 >
-                  {isWebSerialConnected ? "ACTIVE (USB)" : (hw?.ultrasonic.status ?? "NOT ACTIVE")}
+                  {isWebSerialConnected
+                    ? (webSerialData ? "ACTIVE (USB)" : "CONNECTED · NO READINGS")
+                    : (hw?.ultrasonic.status ?? "NOT ACTIVE")}
                 </span>
               </li>
               {/* Camera Stream */}
@@ -1112,9 +1128,11 @@ function DashboardPage() {
                         : "text-zinc-400"
                   }`}
                 >
-                  {cameraStatus === "ACTIVE"
-                    ? `ACTIVE (${hw?.camera.fps?.toFixed(0) ?? 0} FPS)`
-                    : cameraStatus}
+                  {browserCameraActive
+                    ? "ACTIVE (BROWSER)"
+                    : cameraStatus === "ACTIVE"
+                      ? `ACTIVE (${hw?.camera.fps?.toFixed(0) ?? 0} FPS)`
+                      : cameraStatus}
                 </span>
               </li>
               {/* AI Engine */}
