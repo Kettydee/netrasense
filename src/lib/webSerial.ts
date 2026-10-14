@@ -154,14 +154,12 @@ export class WebSerialReader {
             if (done) break;
             if (value) {
               buffer += decoder.decode(value, { stream: true });
-              if (buffer.includes("\n") || buffer.includes("\r")) {
-                const parts = buffer.split(/[\r\n]+/);
-                const endsWithNewline = /[\r\n]$/.test(buffer);
-                buffer = endsWithNewline ? "" : (parts.pop() ?? "");
-
-                for (const part of parts) {
-                  const trimmed = part.trim();
-                  if (trimmed) this.parseLine(trimmed);
+              let newlineIndex: number;
+              while ((newlineIndex = buffer.indexOf("\n")) >= 0) {
+                const line = buffer.slice(0, newlineIndex).trim();
+                buffer = buffer.slice(newlineIndex + 1);
+                if (line) {
+                  this.parseLine(line);
                 }
               }
             }
@@ -228,9 +226,9 @@ export class WebSerialReader {
 
       // 4. Standalone valid distance fallback
       if (rawDistance === null) {
-        const anyNumMatch = line.match(/\b(\d+(?:\.\d+)?)\b/);
+        const anyNumMatch = line.match(/[-+]?\d+(?:\.\d+)?/);
         if (anyNumMatch) {
-          const val = parseFloat(anyNumMatch[1]);
+          const val = parseFloat(anyNumMatch[0]);
           if (!isNaN(val) && isFinite(val)) {
             rawDistance = val;
           }
@@ -244,26 +242,9 @@ export class WebSerialReader {
         rawDistance = 400;
       }
 
-      // Limit to sensor envelope (2 cm to 400 cm)
+      // Limit to sensor envelope (2 cm to 400 cm) and adopt real-time distance immediately with zero lag
       const bounded = Math.max(2, Math.min(400, rawDistance));
-
-      // 5-sample rolling median filter (eradicates single-ping ultrasound echo dropouts)
-      this.recentSamples.push(bounded);
-      if (this.recentSamples.length > 5) this.recentSamples.shift();
-
-      const sorted = [...this.recentSamples].sort((a, b) => a - b);
-      const median = sorted[Math.floor(sorted.length / 2)];
-
-      // Exponential Moving Average to eliminate micro-jitter
-      if (this.smoothedDistance === null) {
-        this.smoothedDistance = median;
-      } else {
-        const diff = Math.abs(median - this.smoothedDistance);
-        const alpha = diff > 60 ? 0.8 : 0.55;
-        this.smoothedDistance = alpha * median + (1 - alpha) * this.smoothedDistance;
-      }
-
-      const finalDistance = Math.round(this.smoothedDistance);
+      const finalDistance = Math.round(bounded);
 
       // Aligned Threat Level Classification matching NetraSense zones:
       // Critical (< 50 cm), Alarm (50 - 99 cm), Warning (100 - 300 cm), Normal (> 300 cm)
@@ -273,33 +254,20 @@ export class WebSerialReader {
       else if (finalDistance <= 300) threat = "WARNING";
       else threat = "NORMAL";
 
-      const now = Date.now();
-      // Throttle broadcast: emit at most every 50ms unless threat level changed or distance changed
-      if (
-        this.lastEmitReading &&
-        now - this.lastEmitTime < 50 &&
-        threat === this.lastEmitReading.threat_level &&
-        Math.abs(finalDistance - this.lastEmitReading.distance_cm) < 1
-      ) {
-        return;
-      }
-
-      console.log(`[WebSerial Ultrasonic] raw: ${rawDistance}cm -> filtered: ${finalDistance}cm (${threat})`);
-
       const reading: WebSerialReading = {
         distance_cm: finalDistance,
         threat_level: threat,
         timestamp: new Date().toISOString(),
       };
 
-      this.lastEmitTime = now;
       this.lastEmitReading = reading;
+      this.lastEmitTime = Date.now();
 
       for (const cb of this.onReadingCallbacks) {
         try {
           cb(reading);
         } catch {
-          // ignore callback errors
+          // ignore callback error
         }
       }
     } catch {

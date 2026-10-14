@@ -164,7 +164,7 @@ function DistanceMeter({
             strokeDasharray={circumference}
             strokeDashoffset={circumference * (1 - pct)}
             transform="rotate(-90 90 90)"
-            style={{ transition: "stroke-dashoffset 300ms ease, stroke 300ms ease" }}
+            style={{ transition: "stroke-dashoffset 75ms linear, stroke 150ms ease" }}
           />
         ) : (
           <circle
@@ -213,7 +213,7 @@ function DistanceMeter({
         </div>
         <div className="mt-2 h-5 w-full overflow-hidden rounded-full bg-zinc-800/80 border border-zinc-700/50" aria-hidden="true">
           <div
-            className={`h-full rounded-full transition-all duration-400 ${hasData ? barColor : "bg-zinc-600/30"}`}
+            className={`h-full rounded-full transition-all duration-75 ${hasData ? barColor : "bg-zinc-600/30"}`}
             style={{ width: hasData ? `${Math.max(4, pct * 100)}%` : "0%" }}
           />
         </div>
@@ -502,7 +502,7 @@ function DashboardPage() {
   const statusQuery = useQuery({
     queryKey: ["unified-status"],
     queryFn: fetchUnifiedStatus,
-    refetchInterval: 750,  // Single poll at 750ms replaces the old 500ms + 1000ms dual polls
+    refetchInterval: 250,  // Fast 250ms polling for low-latency sensor synchronization
     retry: false,
     placeholderData: () => DEFAULT_STATUS,
   });
