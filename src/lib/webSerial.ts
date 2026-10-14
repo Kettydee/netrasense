@@ -129,6 +129,12 @@ export class WebSerialReader {
     let buffer = "";
     const decoder = new TextDecoder();
 
+    if (this.isReading && this.port && !this.port.readable) {
+      this.isReading = false;
+      this.notifyStatus(false, "USB port opened, but no readable serial stream is available");
+      return;
+    }
+
     while (this.isReading && this.port && this.port.readable) {
       try {
         const reader = this.port.readable.getReader();
@@ -137,7 +143,13 @@ export class WebSerialReader {
         try {
           while (this.isReading) {
             const { value, done } = await reader.read();
-            if (done) break;
+            if (done) {
+              if (this.isReading) {
+                this.isReading = false;
+                this.notifyStatus(false, "USB serial stream ended");
+              }
+              break;
+            }
             if (value) {
               buffer += decoder.decode(value, { stream: true });
               // Serial devices vary: Arduino println uses CRLF, while some boards
@@ -161,7 +173,8 @@ export class WebSerialReader {
         }
       } catch (err: any) {
         if (this.isReading) {
-          this.notifyStatus(false, err?.message);
+          this.isReading = false;
+          this.notifyStatus(false, err?.message || "USB serial reading stopped");
         }
         break;
       }
