@@ -23,6 +23,7 @@ import { fetchContacts } from "@/lib/queries";
 import { speak, type Contact } from "@/lib/netrasense";
 
 export const Route = createFileRoute("/_authenticated/contacts")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Emergency Contacts Hub — NetraSense" },

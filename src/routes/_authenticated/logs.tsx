@@ -20,6 +20,7 @@ import { fetchTelemetry, fetchTelemetryPage } from "@/lib/queries";
 import { THREAT_LEVELS, threatStyles, toCsv } from "@/lib/netrasense";
 
 export const Route = createFileRoute("/_authenticated/logs")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Incident & Telemetry Logs — NetraSense" },

@@ -20,6 +20,7 @@ import { fetchContacts, fetchProfile } from "@/lib/queries";
 import type { ImpairmentLevel } from "@/lib/netrasense";
 
 export const Route = createFileRoute("/_authenticated/medical-id")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Emergency Medical ID — NetraSense" },

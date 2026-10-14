@@ -22,6 +22,7 @@ import { fetchProfile } from "@/lib/queries";
 import { BLOOD_GROUPS, IMPAIRMENT_LEVELS, type ImpairmentLevel } from "@/lib/netrasense";
 
 export const Route = createFileRoute("/_authenticated/profile")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Profile & Medical ID — NetraSense" },

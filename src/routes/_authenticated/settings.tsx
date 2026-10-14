@@ -15,6 +15,7 @@ import { speak } from "@/lib/netrasense";
 import { SENSOR_SERVER_URL_KEY } from "@/lib/sensor";
 
 export const Route = createFileRoute("/_authenticated/settings")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Settings & Audio Preferences — NetraSense" },
