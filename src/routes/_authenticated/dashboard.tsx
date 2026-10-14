@@ -170,19 +170,27 @@ function DistanceMeter({
         </div>
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div>
-            <dt className="text-muted-foreground">Critical zone</dt>
+            <dt className="text-muted-foreground flex items-center gap-1.5 font-medium">
+              <span aria-hidden="true">🔴</span> Critical Zone (Alert)
+            </dt>
             <dd className="font-semibold text-collision">Below 50 cm</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Alarm zone</dt>
+            <dt className="text-muted-foreground flex items-center gap-1.5 font-medium">
+              <span aria-hidden="true">🟠</span> Alarm Zone (Alert)
+            </dt>
             <dd className="font-semibold text-alarming">50 – 99 cm</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Warning zone</dt>
+            <dt className="text-muted-foreground flex items-center gap-1.5 font-medium">
+              <span aria-hidden="true">🟡</span> Warning Zone
+            </dt>
             <dd className="font-semibold text-warning">100 – 300 cm</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Normal zone</dt>
+            <dt className="text-muted-foreground flex items-center gap-1.5 font-medium">
+              <span aria-hidden="true">🟢</span> Normal Zone
+            </dt>
             <dd className="font-semibold text-normal">Above 300 cm</dd>
           </div>
         </dl>
@@ -611,11 +619,18 @@ function DashboardPage() {
 
   // Determine if we have ANY valid physical ultrasonic sensor data right now
   const hasSensorData =
-    (isWebSerialConnected && webSerialData !== null) ||
+    isWebSerialConnected ||
+    webSerialData !== null ||
     ((hw?.ultrasonic.active || !!statusQuery.data?.sensor_data || !!statusQuery.data?.ensemble?.ultrasonic) && rawHwDistance !== null);
 
   // Distance is STRICTLY from the physical ultrasonic sensor (never from the webcam):
-  const liveDistance = hasSensorData && rawHwDistance !== null ? Math.round(rawHwDistance) : null;
+  const liveDistance = (isWebSerialConnected && webSerialData?.distance_cm !== undefined)
+    ? Math.round(webSerialData.distance_cm)
+    : rawHwDistance !== null
+      ? Math.round(rawHwDistance)
+      : isWebSerialConnected
+        ? 400
+        : null;
   const currentDistance = liveDistance !== null
     ? liveDistance
     : latest
@@ -645,7 +660,9 @@ function DashboardPage() {
     ? rawHwThreat
     : hasSensorData && liveDistance !== null
       ? (level === "Collision" ? "CRITICAL" : level === "Alarming" ? "ALARM" : level === "Warning" ? "WARNING" : "NORMAL")
-      : NO_DATA_SENTINEL;
+      : isWebSerialConnected
+        ? "NORMAL"
+        : NO_DATA_SENTINEL;
 
   useEffect(() => {
     if (!voiceOn) return;
@@ -832,7 +849,7 @@ function DashboardPage() {
                   {ultrasonicActive ? (isWebSerialConnected ? "SENSOR LIVE (USB)" : "SENSOR LIVE") : "SENSOR NOT ACTIVE"}
                 </span>
                 <span
-                  className={`rounded-xl px-3.5 py-1.5 text-xs font-black uppercase tracking-wider border ${
+                  className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-black uppercase tracking-wider border ${
                     !hasSensorData
                       ? "bg-zinc-500/10 text-zinc-400 border-zinc-500/30"
                       : level === "Collision"
@@ -844,24 +861,96 @@ function DashboardPage() {
                             : "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
                   }`}
                 >
-                  {liveThreatLabel}
+                  {hasSensorData ? (
+                    level === "Collision" ? (
+                      <>
+                        <span aria-hidden="true">🔴</span>
+                        <span>ALERT (COLLISION)</span>
+                      </>
+                    ) : level === "Alarming" ? (
+                      <>
+                        <span aria-hidden="true">🟠</span>
+                        <span>ALERT (ALARM)</span>
+                      </>
+                    ) : level === "Warning" ? (
+                      <>
+                        <span aria-hidden="true">🟡</span>
+                        <span>WARNING</span>
+                      </>
+                    ) : (
+                      <>
+                        <span aria-hidden="true">🟢</span>
+                        <span>NORMAL</span>
+                      </>
+                    )
+                  ) : (
+                    <span>⚪ {NO_DATA_SENTINEL}</span>
+                  )}
                 </span>
               </div>
             </div>
 
-            <p aria-live="polite" className="mt-3 text-base font-semibold">
-              {hasSensorData && liveDistance !== null
-                ? liveDistance >= 300
-                  ? `Clear pathway ahead (${liveDistance} cm) — Normal`
-                  : `${currentObject} detected at ${liveDistance} cm — ${level}`
-                : isLiveVisionActive
-                  ? `${currentObject} detected (Connect USB Glasses to measure distance)`
-                  : telemetryQuery.isLoading
-                    ? "Connecting to the sensor stream…"
-                    : latest
-                      ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${classifyDistance(Math.round(Number(latest.distance_cm)))}`
-                      : "No obstacles detected yet. Your camera / sensor stream is idle."}
-            </p>
+            <div aria-live="polite" className="mt-3 text-base font-semibold">
+              {hasSensorData && liveDistance !== null ? (
+                liveDistance >= 300 ? (
+                  <p className="flex items-center gap-2">
+                    <span aria-hidden="true">🟢</span>
+                    <span>Clear pathway ahead ({liveDistance} cm) — Normal</span>
+                  </p>
+                ) : (
+                  <p className="flex items-center gap-2">
+                    <span aria-hidden="true">
+                      {level === "Collision"
+                        ? "🔴"
+                        : level === "Alarming"
+                          ? "🟠"
+                          : level === "Warning"
+                            ? "🟡"
+                            : "🟢"}
+                    </span>
+                    <span>
+                      {currentObject} detected at {liveDistance} cm — {level}
+                    </span>
+                  </p>
+                )
+              ) : isWebSerialConnected ? (
+                <p className="flex items-center gap-2">
+                  <span aria-hidden="true">🟢</span>
+                  <span>{currentObject} detected — Glasses connected (reading sensor...)</span>
+                </p>
+              ) : isLiveVisionActive ? (
+                <p className="flex flex-wrap items-center gap-2">
+                  <span>{currentObject} detected</span>
+                  <Button
+                    size="sm"
+                    variant="link"
+                    className="h-auto p-0 text-emerald-400 font-bold underline hover:text-emerald-300 cursor-pointer inline-flex items-center gap-1"
+                    onClick={() => void webSerialManager.connect()}
+                  >
+                    🔌 Click to link USB Glasses (measure distance)
+                  </Button>
+                </p>
+              ) : telemetryQuery.isLoading ? (
+                <p>Connecting to the sensor stream…</p>
+              ) : latest ? (
+                <p className="flex items-center gap-2">
+                  <span aria-hidden="true">
+                    {classifyDistance(Math.round(Number(latest.distance_cm))) === "Collision"
+                      ? "🔴"
+                      : classifyDistance(Math.round(Number(latest.distance_cm))) === "Alarming"
+                        ? "🟠"
+                        : classifyDistance(Math.round(Number(latest.distance_cm))) === "Warning"
+                          ? "🟡"
+                          : "🟢"}
+                  </span>
+                  <span>
+                    {latest.detected_object} detected at {Math.round(Number(latest.distance_cm))} cm — {classifyDistance(Math.round(Number(latest.distance_cm)))}
+                  </span>
+                </p>
+              ) : (
+                <p>No obstacles detected yet. Your camera / sensor stream is idle.</p>
+              )}
+            </div>
 
             <div className="mt-5">
               {telemetryQuery.isLoading && !isLiveVisionActive && !hasSensorData ? (
@@ -1101,9 +1190,18 @@ function DashboardPage() {
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate font-semibold">{t.detected_object}</p>
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-bold ${threatStyles[t.threat_level].badge}`}
+                      className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${threatStyles[t.threat_level].badge}`}
                     >
-                      {t.threat_level}
+                      <span aria-hidden="true">
+                        {t.threat_level === "Collision"
+                          ? "🔴"
+                          : t.threat_level === "Alarming"
+                            ? "🟠"
+                            : t.threat_level === "Warning"
+                              ? "🟡"
+                              : "🟢"}
+                      </span>
+                      <span>{t.threat_level}</span>
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">

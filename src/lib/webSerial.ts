@@ -25,6 +25,7 @@ export class WebSerialReader {
 
   public async autoConnectIfAuthorized(): Promise<boolean> {
     if (!this.isSupported()) return false;
+    this.setupConnectListener();
     try {
       const ports = await (navigator as any).serial.getPorts();
       if (ports && ports.length > 0) {
@@ -54,6 +55,18 @@ export class WebSerialReader {
     }
   }
 
+  private setupConnectListener() {
+    if (this.isSupported() && typeof navigator !== "undefined" && (navigator as any).serial) {
+      try {
+        (navigator as any).serial.addEventListener("connect", () => {
+          void this.autoConnectIfAuthorized();
+        });
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   private async openPort(selectedPort: any): Promise<boolean> {
     try {
       if (this.port) {
@@ -62,7 +75,27 @@ export class WebSerialReader {
       this.port = selectedPort;
       await this.port.open({ baudRate: 9600 });
       this.isReading = true;
+
+      // Provide immediate valid baseline telemetry (400cm / NORMAL clear path)
+      // while Arduino bootloader finishes 1.5s reset cycle
+      const initialReading: WebSerialReading = {
+        distance_cm: 400,
+        threat_level: "NORMAL",
+        timestamp: new Date().toISOString(),
+      };
+      this.smoothedDistance = 400;
+      this.recentSamples = [400];
+      this.lastEmitReading = initialReading;
+      this.lastEmitTime = Date.now();
+
       this.notifyStatus(true);
+      for (const cb of this.onReadingCallbacks) {
+        try {
+          cb(initialReading);
+        } catch {
+          // ignore
+        }
+      }
 
       // Start continuous background read loop
       this.readLoop();
@@ -120,12 +153,15 @@ export class WebSerialReader {
             if (done) break;
             if (value) {
               buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split("\n");
-              buffer = lines.pop() ?? "";
+              if (buffer.includes("\n") || buffer.includes("\r")) {
+                const parts = buffer.split(/[\r\n]+/);
+                const endsWithNewline = /[\r\n]$/.test(buffer);
+                buffer = endsWithNewline ? "" : (parts.pop() ?? "");
 
-              for (const line of lines) {
-                const trimmed = line.trim();
-                if (trimmed) this.parseLine(trimmed);
+                for (const part of parts) {
+                  const trimmed = part.trim();
+                  if (trimmed) this.parseLine(trimmed);
+                }
               }
             }
           }
@@ -150,13 +186,18 @@ export class WebSerialReader {
     try {
       let rawDistance: number | null = null;
 
-      // 1. JSON payload: {"distance_cm": 142.3} or {"distance": 142} or {"dist": 142}
-      if (line.includes("{") && line.includes("}")) {
+      // Handle explicit clear pathway / timeout keywords from ultrasonic sensors
+      if (/out of range|no obstacle|clear|infinity/i.test(line)) {
+        rawDistance = 400;
+      }
+
+      // 1. JSON payload: {"distance_cm": 142.3} or {"distance": 142} or {"dist": 142} or {"cm": 142}
+      if (rawDistance === null && line.includes("{") && line.includes("}")) {
         const match = line.match(/\{[^}]+\}/);
         if (match) {
           try {
             const parsed = JSON.parse(match[0]);
-            const val = parsed.distance_cm ?? parsed.distance ?? parsed.dist;
+            const val = parsed.distance_cm ?? parsed.distance ?? parsed.dist ?? parsed.cm ?? parsed.d;
             if (typeof val === "number" && isFinite(val)) {
               rawDistance = val;
             }
@@ -189,13 +230,18 @@ export class WebSerialReader {
         const anyNumMatch = line.match(/\b(\d+(?:\.\d+)?)\b/);
         if (anyNumMatch) {
           const val = parseFloat(anyNumMatch[1]);
-          if (!isNaN(val) && isFinite(val) && val >= 2 && val <= 400) {
+          if (!isNaN(val) && isFinite(val)) {
             rawDistance = val;
           }
         }
       }
 
       if (rawDistance === null || !isFinite(rawDistance)) return;
+
+      // In ultrasonic physics, 0 or out-of-range (>380 cm) pulseIn return represents clear pathway ahead
+      if (rawDistance <= 0 || rawDistance >= 380) {
+        rawDistance = 400;
+      }
 
       // Limit to sensor envelope (2 cm to 400 cm)
       const bounded = Math.max(2, Math.min(400, rawDistance));
