@@ -647,44 +647,43 @@ function DashboardPage() {
   const ensemble: EnsembleBreakdown | undefined = statusQuery.data?.ensemble ?? undefined;
 
   // Determine if we have ANY valid hardware ultrasonic sensor data right now
-  const rawHwDistance =
-    (isWebSerialConnected && webSerialData?.distance_cm !== undefined)
-      ? webSerialData.distance_cm
-      : (hw?.ultrasonic.active && hw.ultrasonic.distance_cm !== null)
-        ? hw.ultrasonic.distance_cm
-        : statusQuery.data?.sensor_data?.distance_cm !== undefined && statusQuery.data?.sensor_data?.distance_cm !== null
-          ? Number(statusQuery.data.sensor_data.distance_cm)
-          : statusQuery.data?.ensemble?.ultrasonic?.distance_cm !== undefined && statusQuery.data?.ensemble?.ultrasonic?.distance_cm !== null
-            ? Number(statusQuery.data.ensemble.ultrasonic.distance_cm)
-            : null;
+  // USB mode must use only readings from the USB stream; do not let stale
+  // backend telemetry stand in for a missing USB measurement.
+  const rawHwDistance = isWebSerialConnected
+    ? (webSerialData?.distance_cm ?? null)
+    : (hw?.ultrasonic.active && hw.ultrasonic.distance_cm !== null)
+      ? hw.ultrasonic.distance_cm
+      : statusQuery.data?.sensor_data?.distance_cm !== undefined && statusQuery.data?.sensor_data?.distance_cm !== null
+        ? Number(statusQuery.data.sensor_data.distance_cm)
+        : statusQuery.data?.ensemble?.ultrasonic?.distance_cm !== undefined && statusQuery.data?.ensemble?.ultrasonic?.distance_cm !== null
+          ? Number(statusQuery.data.ensemble.ultrasonic.distance_cm)
+          : null;
 
-  const rawHwThreat =
-    (isWebSerialConnected && webSerialData?.threat_level)
-      ? webSerialData.threat_level
-      : hw?.ultrasonic.threat_level ??
-        statusQuery.data?.sensor_data?.threat_level ??
-        statusQuery.data?.ensemble?.ultrasonic?.threat_level ??
-        null;
+  const rawHwThreat = isWebSerialConnected
+    ? (webSerialData?.threat_level ?? null)
+    : hw?.ultrasonic.threat_level ??
+      statusQuery.data?.sensor_data?.threat_level ??
+      statusQuery.data?.ensemble?.ultrasonic?.threat_level ??
+      null;
 
-  // Determine if we have ANY valid physical ultrasonic sensor data right now
-  const hasSensorData =
-    isWebSerialConnected ||
-    webSerialData !== null ||
-    ((hw?.ultrasonic.active || !!statusQuery.data?.sensor_data || !!statusQuery.data?.ensemble?.ultrasonic) && rawHwDistance !== null);
+  const hasBackendSensorData =
+    (hw?.ultrasonic.active || !!statusQuery.data?.sensor_data || !!statusQuery.data?.ensemble?.ultrasonic) &&
+    rawHwDistance !== null;
+  const hasSensorData = isWebSerialConnected
+    ? webSerialData !== null && rawHwDistance !== null
+    : hasBackendSensorData;
 
   // Distance is STRICTLY from the physical ultrasonic sensor (never from the webcam):
-  const liveDistance = (isWebSerialConnected && webSerialData?.distance_cm !== undefined)
-    ? Math.round(webSerialData.distance_cm)
-    : rawHwDistance !== null
-      ? Math.round(rawHwDistance)
-      : isWebSerialConnected
-        ? 400
-        : null;
-  const currentDistance = liveDistance !== null
-    ? liveDistance
-    : latest
-      ? Math.round(Number(latest.distance_cm))
-      : MAX_DISTANCE_CM;
+  const liveDistance = hasSensorData && rawHwDistance !== null
+    ? Math.round(rawHwDistance)
+    : null;
+  const currentDistance = isWebSerialConnected
+    ? (liveDistance ?? MAX_DISTANCE_CM)
+    : liveDistance !== null
+      ? liveDistance
+      : latest
+        ? Math.round(Number(latest.distance_cm))
+        : MAX_DISTANCE_CM;
 
   // Active object identification strictly from webcam:
   const isLiveVisionActive = !!(liveVision && now - liveVision.timestamp < 5000);
@@ -699,7 +698,7 @@ function DashboardPage() {
     ? hardwareThreatToUiLevel(rawHwThreat)
     : hasSensorData && liveDistance !== null
       ? classifyDistance(liveDistance)
-      : latest
+      : !isWebSerialConnected && latest
         ? classifyDistance(Math.round(Number(latest.distance_cm)))
         : "Normal";
 
@@ -709,9 +708,7 @@ function DashboardPage() {
     ? rawHwThreat
     : hasSensorData && liveDistance !== null
       ? (level === "Collision" ? "CRITICAL" : level === "Alarming" ? "ALARM" : level === "Warning" ? "WARNING" : "NORMAL")
-      : isWebSerialConnected
-        ? "NORMAL"
-        : NO_DATA_SENTINEL;
+      : NO_DATA_SENTINEL;
 
   useEffect(() => {
     if (!voiceOn) return;
@@ -965,7 +962,7 @@ function DashboardPage() {
               ) : isWebSerialConnected ? (
                 <p className="flex items-center gap-2">
                   <span aria-hidden="true">🟢</span>
-                  <span>{currentObject} detected — Glasses connected (reading sensor...)</span>
+                  <span>USB connected — waiting for the first sensor reading…</span>
                 </p>
               ) : isLiveVisionActive ? (
                 <p className="flex flex-wrap items-center gap-2">
@@ -1010,7 +1007,7 @@ function DashboardPage() {
                 <DistanceMeter
                   distance={currentDistance}
                   level={level}
-                  hasData={hasSensorData || isLiveVisionActive || !!latest}
+                  hasData={isWebSerialConnected ? hasSensorData : hasSensorData || isLiveVisionActive || !!latest}
                 />
               )}
             </div>
