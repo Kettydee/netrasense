@@ -617,14 +617,26 @@ function DashboardPage() {
   // Distance: real value only when sensor is active
   const liveDistance = hasSensorData ? Math.round(rawHwDistance!) : null;
 
-  // Threat level: real value only when sensor is active
+  // Authoritative Threat level matching distance zones
   const sensorLevel = hasSensorData && rawHwThreat
     ? hardwareThreatToUiLevel(rawHwThreat)
-    : null;
-  const level = sensorLevel ?? "Normal"; // fallback for type safety; hasData flag controls display
+    : hasSensorData && liveDistance !== null
+      ? classifyDistance(liveDistance)
+      : isLiveVisionActive && liveVision?.threat_level
+        ? liveVision.threat_level
+        : latest
+          ? classifyDistance(Math.round(Number(latest.distance_cm)))
+          : "Normal";
+
+  const level: ThreatLevel = sensorLevel ?? classifyDistance(currentDistance);
+
   const liveThreatLabel = hasSensorData && rawHwThreat
     ? rawHwThreat
-    : NO_DATA_SENTINEL;
+    : hasSensorData && liveDistance !== null
+      ? (level === "Collision" ? "CRITICAL" : level === "Alarming" ? "ALARM" : level === "Warning" ? "WARNING" : "NORMAL")
+      : isLiveVisionActive
+        ? (level === "Collision" ? "CRITICAL" : level === "Alarming" ? "ALARM" : level === "Warning" ? "WARNING" : "NORMAL")
+        : NO_DATA_SENTINEL;
 
   useEffect(() => {
     if (!voiceOn) return;
@@ -854,7 +866,7 @@ function DashboardPage() {
                   : telemetryQuery.isLoading
                     ? "Connecting to the sensor stream…"
                     : latest
-                      ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${latest.threat_level}`
+                      ? `${latest.detected_object} detected at ${Math.round(Number(latest.distance_cm))} cm — ${classifyDistance(Math.round(Number(latest.distance_cm)))}`
                       : "No obstacles detected yet. Your camera / sensor stream is idle."}
             </p>
 

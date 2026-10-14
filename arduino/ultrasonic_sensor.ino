@@ -48,8 +48,10 @@ void buzzerOff() {
   digitalWrite(BUZZER_PIN, LOW);
 }
 
-// Distance measurement
-float measureDistanceCm() {
+float lastValidDistance = 400.0f;
+byte consecutiveMisses = 0;
+
+float measureSinglePulse() {
   digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(4);
   digitalWrite(TRIG_PIN, HIGH);
@@ -57,18 +59,26 @@ float measureDistanceCm() {
   digitalWrite(TRIG_PIN, LOW);
 
   unsigned long durationUs = pulseIn(ECHO_PIN, HIGH, ECHO_TIMEOUT_US);
-
-  if (durationUs == 0) {
-    return 400.0f; // Clear open space
-  }
-
+  if (durationUs == 0) return 400.0f;
   float dist = (float)durationUs * 0.0343f / 2.0f;
-
-  if (dist < 2.0f || dist > 380.0f) {
-    return 400.0f;
-  }
-
+  if (dist < 2.0f || dist > 380.0f) return 400.0f;
   return dist;
+}
+
+// Distance measurement with single-ping dropout rejection (prevents rapid glitching)
+float measureDistanceCm() {
+  float current = measureSinglePulse();
+  if (current < 380.0f) {
+    consecutiveMisses = 0;
+    lastValidDistance = current;
+    return current;
+  }
+  consecutiveMisses++;
+  if (consecutiveMisses < 2) {
+    return lastValidDistance;
+  }
+  lastValidDistance = 400.0f;
+  return 400.0f;
 }
 
 // Non-blocking pulsed buzzer state machine (ALWAYS has pauses — NO continuous tone!)

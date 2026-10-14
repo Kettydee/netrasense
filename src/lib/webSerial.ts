@@ -86,16 +86,24 @@ export class WebSerialReader {
 
     try {
       if (this.port) {
-        await this.port.close();
+        await this.closePort();
       }
     } catch {
       // ignore
     } finally {
       this.port = null;
       this.reader = null;
+      this.recentSamples = [];
+      this.smoothedDistance = null;
+      this.lastEmitReading = null;
       this.notifyStatus(false);
     }
   }
+
+  private recentSamples: number[] = [];
+  private smoothedDistance: number | null = null;
+  private lastEmitTime = 0;
+  private lastEmitReading: WebSerialReading | null = null;
 
   private async readLoop() {
     let buffer = "";
@@ -140,45 +148,121 @@ export class WebSerialReader {
 
   private parseLine(line: string) {
     try {
-      let distance: number | null = null;
+      let rawDistance: number | null = null;
 
-      // Extract JSON payload: {"distance_cm": ...}
-      if (line.includes("distance_cm")) {
+      // 1. JSON payload: {"distance_cm": 142.3} or {"distance": 142} or {"dist": 142}
+      if (line.includes("{") && line.includes("}")) {
         const match = line.match(/\{[^}]+\}/);
         if (match) {
-          const parsed = JSON.parse(match[0]);
-          if (typeof parsed.distance_cm === "number") {
-            distance = parsed.distance_cm;
+          try {
+            const parsed = JSON.parse(match[0]);
+            const val = parsed.distance_cm ?? parsed.distance ?? parsed.dist;
+            if (typeof val === "number" && isFinite(val)) {
+              rawDistance = val;
+            }
+          } catch {
+            // ignore JSON parse error
           }
         }
-      } else {
-        const num = parseFloat(line);
-        if (!isNaN(num)) distance = num;
       }
 
-      if (distance !== null && isFinite(distance)) {
-        let threat: "NORMAL" | "WARNING" | "ALARM" | "CRITICAL" = "NORMAL";
-        if (distance >= 300) threat = "NORMAL";
-        else if (distance >= 100) threat = "WARNING";
-        else if (distance >= 45) threat = "ALARM";
-        else threat = "CRITICAL";
+      // 2. Labeled text: "Distance: 142.3 cm", "Distance = 142", "dist: 142", "Sonar: 142"
+      if (rawDistance === null) {
+        const labeledMatch = line.match(/(?:distance|dist|sonar|range|obstacle)[\s:=]+([-+]?\d+(?:\.\d+)?)/i);
+        if (labeledMatch) {
+          const val = parseFloat(labeledMatch[1]);
+          if (!isNaN(val) && isFinite(val)) rawDistance = val;
+        }
+      }
 
-        const reading: WebSerialReading = {
-          distance_cm: Math.round(distance),
-          threat_level: threat,
-          timestamp: new Date().toISOString(),
-        };
+      // 3. Plain number or "142 cm"
+      if (rawDistance === null) {
+        const simpleMatch = line.match(/^\s*([-+]?\d+(?:\.\d+)?)\s*(?:cm)?\s*$/i);
+        if (simpleMatch) {
+          const val = parseFloat(simpleMatch[1]);
+          if (!isNaN(val) && isFinite(val)) rawDistance = val;
+        }
+      }
 
-        for (const cb of this.onReadingCallbacks) {
-          try {
-            cb(reading);
-          } catch {
-            // ignore callback errors
+      // 4. Standalone valid distance fallback
+      if (rawDistance === null) {
+        const anyNumMatch = line.match(/\b(\d+(?:\.\d+)?)\b/);
+        if (anyNumMatch) {
+          const val = parseFloat(anyNumMatch[1]);
+          if (!isNaN(val) && isFinite(val) && val >= 2 && val <= 400) {
+            rawDistance = val;
           }
+        }
+      }
+
+      if (rawDistance === null || !isFinite(rawDistance)) return;
+
+      // Limit to sensor envelope (2 cm to 400 cm)
+      const bounded = Math.max(2, Math.min(400, rawDistance));
+
+      // 5-sample rolling median filter (eradicates single-ping ultrasound echo dropouts)
+      this.recentSamples.push(bounded);
+      if (this.recentSamples.length > 5) this.recentSamples.shift();
+
+      const sorted = [...this.recentSamples].sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)];
+
+      // Exponential Moving Average to eliminate micro-jitter
+      if (this.smoothedDistance === null) {
+        this.smoothedDistance = median;
+      } else {
+        const diff = Math.abs(median - this.smoothedDistance);
+        const alpha = diff > 60 ? 0.8 : 0.55;
+        this.smoothedDistance = alpha * median + (1 - alpha) * this.smoothedDistance;
+      }
+
+      const finalDistance = Math.round(this.smoothedDistance);
+
+      // Aligned Threat Level Classification matching NetraSense zones:
+      // Critical (< 50 cm), Alarm (50 - 99 cm), Warning (100 - 300 cm), Normal (> 300 cm)
+      let threat: "NORMAL" | "WARNING" | "ALARM" | "CRITICAL" = "NORMAL";
+      if (finalDistance < 50) threat = "CRITICAL";
+      else if (finalDistance < 100) threat = "ALARM";
+      else if (finalDistance <= 300) threat = "WARNING";
+      else threat = "NORMAL";
+
+      const now = Date.now();
+      // Throttle broadcast: emit at most every 75ms unless threat level changed or distance jumped >= 3 cm
+      if (
+        this.lastEmitReading &&
+        now - this.lastEmitTime < 75 &&
+        threat === this.lastEmitReading.threat_level &&
+        Math.abs(finalDistance - this.lastEmitReading.distance_cm) < 3
+      ) {
+        return;
+      }
+
+      const reading: WebSerialReading = {
+        distance_cm: finalDistance,
+        threat_level: threat,
+        timestamp: new Date().toISOString(),
+      };
+
+      this.lastEmitTime = now;
+      this.lastEmitReading = reading;
+
+      for (const cb of this.onReadingCallbacks) {
+        try {
+          cb(reading);
+        } catch {
+          // ignore callback errors
         }
       }
     } catch {
       // ignore malformed lines
+    }
+  }
+
+  private async closePort(): Promise<void> {
+    try {
+      if (this.port) await this.port.close();
+    } catch {
+      // ignore
     }
   }
 

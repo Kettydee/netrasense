@@ -57,9 +57,9 @@ export const threatStyles: Record<
 };
 
 export function classifyDistance(distanceCm: number): ThreatLevel {
-  if (distanceCm <= 40) return "Collision";
-  if (distanceCm <= 100) return "Alarming";
-  if (distanceCm <= 200) return "Warning";
+  if (distanceCm < 50) return "Collision";
+  if (distanceCm < 100) return "Alarming";
+  if (distanceCm <= 300) return "Warning";
   return "Normal";
 }
 
