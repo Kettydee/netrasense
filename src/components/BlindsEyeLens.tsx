@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import * as tf from "@tensorflow/tfjs";
-import * as cocoSsd from "@tensorflow-models/coco-ssd";
+
 import {
   Camera,
   CameraOff,
@@ -63,11 +62,19 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
   const [serverStatus, setServerStatus] = useState<YoloStatus | null>(null);
   const [serverCheckKey, setServerCheckKey] = useState<number>(0);
 
+interface BrowserObjectDetectionModel {
+  detect: (
+    img: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement,
+    maxNumBoxes?: number,
+    minScore?: number,
+  ) => Promise<Array<{ bbox: [number, number, number, number]; class: string; score: number }>>;
+}
+
   // In-browser Camera state
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgStreamRef = useRef<HTMLImageElement | null>(null);
-  const [browserModel, setBrowserModel] = useState<cocoSsd.ObjectDetection | null>(null);
+  const [browserModel, setBrowserModel] = useState<BrowserObjectDetectionModel | null>(null);
   const [isBrowserCameraActive, setIsBrowserCameraActive] = useState<boolean>(false);
   const [voiceAlerts, setVoiceAlerts] = useState<boolean>(true);
   const [browserDetectedItem, setBrowserDetectedItem] = useState<string>("Scanning...");
@@ -206,9 +213,11 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
       async function initModel() {
         try {
           setIsLoadingBrowserModel(true);
+          const tf = await import("@tensorflow/tfjs");
           await tf.ready();
+          const cocoSsd = await import("@tensorflow-models/coco-ssd");
           const loadedModel = await cocoSsd.load();
-          setBrowserModel(loadedModel);
+          setBrowserModel(loadedModel as unknown as BrowserObjectDetectionModel);
         } catch (err) {
           console.error("Failed to load browser detection model:", err);
         } finally {
