@@ -176,20 +176,6 @@ export class WebSerialReader {
                 const trimmed = line.trim();
                 if (trimmed) this.parseLine(trimmed);
               }
-
-              // Some serial sketches print successive JSON readings without a
-              // newline. Parse complete objects as soon as their closing brace
-              // arrives instead of retaining the stream as one unfinished line.
-              const jsonObjectPattern = /\{[^{}]*\}/g;
-              let jsonMatch: RegExpExecArray | null;
-              let consumedThrough = 0;
-              while ((jsonMatch = jsonObjectPattern.exec(buffer)) !== null) {
-                this.parseLine(jsonMatch[0]);
-                consumedThrough = jsonObjectPattern.lastIndex;
-              }
-              if (consumedThrough > 0) {
-                buffer = buffer.slice(consumedThrough);
-              }
             }
           }
         } finally {
