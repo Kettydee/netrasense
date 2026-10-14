@@ -44,6 +44,8 @@ import {
   hardwareThreatToUiLevel,
   type HardwareStatus,
   type EnsembleBreakdown,
+  type ObstacleWarningState,
+  type ObstacleWarningInfo,
 } from "@/lib/sensor";
 import { webSerialManager, type WebSerialReading } from "@/lib/webSerial";
 import type { VisionTelemetryEvent } from "@/components/BlindsEyeLens";
@@ -387,7 +389,7 @@ function DashboardPage() {
   const [liveVision, setLiveVision] = useState<{
     object: string;
     timestamp: number;
-    direction?: string;
+    direction?: string | undefined;
   } | null>(null);
   const [liveIncidents, setLiveIncidents] = useState<Telemetry[]>([]);
   const lastLoggedVisionRef = useRef<Map<string, number>>(new Map());
@@ -694,6 +696,44 @@ function DashboardPage() {
     ? (liveVision.object.charAt(0).toUpperCase() + liveVision.object.slice(1))
     : (currentDistance < 300 ? "Obstacle" : "Pathway");
 
+  // ── Authoritative 4-State Obstacle Warning Logic ─────────────────
+  // Distinguishes between:
+  // 1. OBSTACLE WARNING: Valid measurement at or below configured threshold
+  // 2. CLEAR: Valid, sufficiently recent measurement above threshold
+  // 3. SENSOR ERROR: Invalid measurement (timeout, corrupted, impossible value)
+  // 4. SENSOR UNAVAILABLE: No fresh reading within configured timeout
+  const backendObsState: ObstacleWarningState | undefined =
+    hw?.ultrasonic.obstacle_state ?? hw?.obstacle_warning?.state;
+
+  const obstacleState: ObstacleWarningState = isWebSerialConnected
+    ? (webSerialData !== null
+        ? (liveDistance !== null && liveDistance <= 300 ? "OBSTACLE_WARNING" : "CLEAR")
+        : "SENSOR_UNAVAILABLE")
+    : (backendObsState ??
+       (hasSensorData && liveDistance !== null
+          ? (liveDistance <= 300 ? "OBSTACLE_WARNING" : "CLEAR")
+          : "SENSOR_UNAVAILABLE"));
+
+  const isObstacleWarning = obstacleState === "OBSTACLE_WARNING";
+  const isObstacleClear = obstacleState === "CLEAR";
+  const isSensorError = obstacleState === "SENSOR_ERROR";
+  const isSensorUnavailable = obstacleState === "SENSOR_UNAVAILABLE";
+
+  const sensorAgeSeconds: number | null = isWebSerialConnected
+    ? 0.1
+    : (hw?.ultrasonic.age_seconds ??
+       (hw?.ultrasonic.timestamp
+         ? Math.max(0, (Date.now() - new Date(hw.ultrasonic.timestamp).getTime()) / 1000)
+         : null));
+
+  const sensorFreshnessText: string = isSensorUnavailable
+    ? (sensorAgeSeconds !== null ? `Stale (${sensorAgeSeconds.toFixed(1)}s ago)` : "Unavailable")
+    : isSensorError
+      ? "Sensor Error"
+      : sensorAgeSeconds !== null
+        ? `${sensorAgeSeconds.toFixed(1)}s ago`
+        : "Live";
+
   // Authoritative Threat level matching distance zones (strictly derived from physical distance):
   const sensorLevel = hasSensorData && rawHwThreat
     ? hardwareThreatToUiLevel(rawHwThreat)
@@ -885,20 +925,31 @@ function DashboardPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold ${
-                    ultrasonicActive
-                      ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
-                      : "bg-zinc-500/10 text-zinc-400 border border-zinc-500/30"
+                    isObstacleWarning
+                      ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                      : isObstacleClear
+                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                        : isSensorError
+                          ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                          : "bg-zinc-500/15 text-zinc-400 border border-zinc-500/30"
                   }`}
                 >
                   <Radio aria-hidden="true" className="size-3.5" />
-                  {ultrasonicActive
-                    ? (isWebSerialConnected ? "SENSOR LIVE (USB)" : "SENSOR LIVE")
-                    : isWebSerialConnected
-                      ? "USB CONNECTED · NO READINGS"
-                      : "SENSOR NOT ACTIVE"}
+                  <span>
+                    {isObstacleWarning
+                      ? "OBSTACLE WARNING"
+                      : isObstacleClear
+                        ? "PATHWAY CLEAR"
+                        : isSensorError
+                          ? "SENSOR ERROR"
+                          : "SENSOR UNAVAILABLE"}
+                  </span>
+                  <span className="text-[10px] opacity-75 font-mono">
+                    ({sensorFreshnessText})
+                  </span>
                 </span>
                 <span
                   className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-black uppercase tracking-wider border ${
@@ -1106,14 +1157,24 @@ function DashboardPage() {
                 <span className="text-muted-foreground font-medium">HC-SR04 Ultrasonic</span>
                 <span
                   className={`font-mono text-xs font-bold ${
-                    ultrasonicActive
-                      ? "text-emerald-400"
-                      : "text-zinc-400"
+                    isObstacleWarning
+                      ? "text-amber-400"
+                      : isObstacleClear
+                        ? "text-emerald-400"
+                        : isSensorError
+                          ? "text-rose-400"
+                          : "text-zinc-400"
                   }`}
                 >
                   {isWebSerialConnected
-                    ? (webSerialData ? "ACTIVE (USB)" : "CONNECTED · NO READINGS")
-                    : (hw?.ultrasonic.status ?? "NOT ACTIVE")}
+                    ? (webSerialData ? (isObstacleWarning ? "OBSTACLE WARNING (USB)" : "CLEAR (USB)") : "CONNECTED · NO READINGS")
+                    : (obstacleState === "OBSTACLE_WARNING"
+                        ? "OBSTACLE WARNING"
+                        : obstacleState === "CLEAR"
+                          ? "CLEAR"
+                          : obstacleState === "SENSOR_ERROR"
+                            ? "SENSOR ERROR"
+                            : "SENSOR UNAVAILABLE")}
                 </span>
               </li>
               {/* Camera Stream */}

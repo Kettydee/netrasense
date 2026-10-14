@@ -1,0 +1,253 @@
+{
+  "timestamp": "2026-10-14T17:27:01Z",
+  "hardware_environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "processor": "arm",
+    "python_version": "3.14.3",
+    "torch_version": "2.14.0",
+    "cuda_available": false,
+    "mps_available": true,
+    "device_evaluated": "mps",
+    "cpu_brand": "Apple M4"
+  },
+  "dataset_inspection": {
+    "ground_truth_available": false,
+    "annotated_dataset_path": "dataset/processed/test",
+    "annotated_samples_found": 0,
+    "status_message": "Ground-truth object detection annotations are currently unavailable in the repository. Per academic integrity guidelines, precision, recall, and mAP cannot yet be measured reliably without authentic ground-truth labels. The model's own predictions must NOT be treated as ground truth.",
+    "metrics": {
+      "precision": null,
+      "recall": null,
+      "f1_score": null,
+      "mAP_50": null
+    }
+  },
+  "yolo_benchmark": {
+    "model": "YOLO11n (yolo11n.pt)",
+    "device": "cpu",
+    "input_frame_width": 640,
+    "confidence_threshold": 0.45,
+    "total_frames_processed": 100,
+    "successful_inferences": 100,
+    "warmup_runs": 15,
+    "model_inference_latency": {
+      "mean_ms": 32.88,
+      "median_ms": 33.28,
+      "std_dev_ms": 3.34,
+      "min_ms": 27.71,
+      "max_ms": 38.45,
+      "p95_ms": 37.21,
+      "fps": 30.42
+    },
+    "end_to_end_latency": {
+      "mean_ms": 33.0,
+      "median_ms": 33.4,
+      "std_dev_ms": 3.33,
+      "min_ms": 27.81,
+      "max_ms": 38.57,
+      "p95_ms": 37.33,
+      "fps": 30.3
+    }
+  },
+  "yolo_benchmark_accelerated_mps": {
+    "model": "YOLO11n (yolo11n.pt)",
+    "device": "mps",
+    "input_frame_width": 640,
+    "confidence_threshold": 0.45,
+    "total_frames_processed": 100,
+    "successful_inferences": 100,
+    "warmup_runs": 15,
+    "model_inference_latency": {
+      "mean_ms": 18.58,
+      "median_ms": 16.2,
+      "std_dev_ms": 5.87,
+      "min_ms": 14.22,
+      "max_ms": 54.48,
+      "p95_ms": 27.91,
+      "fps": 53.82
+    },
+    "end_to_end_latency": {
+      "mean_ms": 19.78,
+      "median_ms": 17.44,
+      "std_dev_ms": 6.02,
+      "min_ms": 15.03,
+      "max_ms": 55.98,
+      "p95_ms": 29.13,
+      "fps": 50.56
+    }
+  },
+  "lighting_variations_exploratory": {
+    "exploratory_warning": "Synthetically transformed images are not a substitute for real-world lighting experiments.",
+    "confidence_threshold": 0.45,
+    "conditions": {
+      "original": {
+        "total_detections": 8,
+        "mean_confidence": 0.782,
+        "mean_latency_ms": 53.78,
+        "detected_labels": [
+          "bus",
+          "person",
+          "tie"
+        ]
+      },
+      "reduced_brightness_50pct": {
+        "total_detections": 8,
+        "mean_confidence": 0.773,
+        "mean_latency_ms": 32.35,
+        "detected_labels": [
+          "bus",
+          "person",
+          "skateboard"
+        ]
+      },
+      "increased_brightness_50pct": {
+        "total_detections": 7,
+        "mean_confidence": 0.814,
+        "mean_latency_ms": 30.82,
+        "detected_labels": [
+          "bus",
+          "person"
+        ]
+      }
+    }
+  },
+  "obstacle_warning_reliability": {
+    "evaluation_type": "Software unit verification with simulated inputs (not physical hardware)",
+    "total_tests": 13,
+    "passed": 13,
+    "failed": 0,
+    "tests": [
+      {
+        "test_name": "Missing sensor data at startup",
+        "passed": true,
+        "expected_state": "SENSOR_UNAVAILABLE",
+        "actual_state": "SENSOR_UNAVAILABLE",
+        "expected_alert_triggered": false,
+        "actual_alert_triggered": false,
+        "expected_threat": "NONE",
+        "actual_threat": "NONE"
+      },
+      {
+        "test_name": "Valid obstacle distance below threshold (120 cm)",
+        "passed": true,
+        "expected_state": "OBSTACLE_WARNING",
+        "actual_state": "OBSTACLE_WARNING",
+        "expected_alert_triggered": true,
+        "actual_alert_triggered": true,
+        "expected_threat": "WARNING",
+        "actual_threat": "WARNING"
+      },
+      {
+        "test_name": "Valid obstacle distance exactly at threshold (300 cm)",
+        "passed": true,
+        "expected_state": "OBSTACLE_WARNING",
+        "actual_state": "OBSTACLE_WARNING",
+        "expected_alert_triggered": true,
+        "actual_alert_triggered": true,
+        "expected_threat": "WARNING",
+        "actual_threat": "WARNING"
+      },
+      {
+        "test_name": "Repeated measurement of same obstacle (121 cm, delta < 15cm)",
+        "passed": true,
+        "expected_state": "OBSTACLE_WARNING",
+        "actual_state": "OBSTACLE_WARNING",
+        "expected_alert_triggered": false,
+        "actual_alert_triggered": false,
+        "expected_threat": "WARNING",
+        "actual_threat": "WARNING"
+      },
+      {
+        "test_name": "Significant change in obstacle distance (120 cm -> 60 cm, delta >= 15cm)",
+        "passed": true,
+        "expected_state": "OBSTACLE_WARNING",
+        "actual_state": "OBSTACLE_WARNING",
+        "expected_alert_triggered": true,
+        "actual_alert_triggered": true,
+        "expected_threat": "ALARM",
+        "actual_threat": "ALARM"
+      },
+      {
+        "test_name": "Valid clear distance above threshold (350 cm)",
+        "passed": true,
+        "expected_state": "CLEAR",
+        "actual_state": "CLEAR",
+        "expected_alert_triggered": false,
+        "actual_alert_triggered": false,
+        "expected_threat": "NORMAL",
+        "actual_threat": "NORMAL"
+      },
+      {
+        "test_name": "Hysteresis boundary retention (302 cm after warning)",
+        "passed": true,
+        "expected_state": "OBSTACLE_WARNING",
+        "actual_state": "OBSTACLE_WARNING",
+        "expected_alert_triggered": false,
+        "actual_alert_triggered": false,
+        "expected_threat": "NORMAL",
+        "actual_threat": "NORMAL"
+      },
+      {
+        "test_name": "Invalid reading: corrupted string",
+        "passed": true,
+        "expected_state": "SENSOR_ERROR",
+        "actual_state": "SENSOR_ERROR",
+        "expected_alert_triggered": false,
+        "actual_alert_triggered": false,
+        "expected_threat": "NONE",
+        "actual_threat": "NONE"
+      },
+      {
+        "test_name": "Invalid reading: boolean True",
+        "passed": true,
+        "expected_state": "SENSOR_ERROR",
+        "actual_state": "SENSOR_ERROR",
+        "expected_alert_triggered": false,
+        "actual_alert_triggered": false,
+        "expected_threat": "NONE",
+        "actual_threat": "NONE"
+      },
+      {
+        "test_name": "Invalid reading: physically out-of-bounds (0 cm)",
+        "passed": true,
+        "expected_state": "SENSOR_ERROR",
+        "actual_state": "SENSOR_ERROR",
+        "expected_alert_triggered": false,
+        "actual_alert_triggered": false,
+        "expected_threat": "NONE",
+        "actual_threat": "NONE"
+      },
+      {
+        "test_name": "Recovery after sensor error to active warning (70 cm)",
+        "passed": true,
+        "expected_state": "OBSTACLE_WARNING",
+        "actual_state": "OBSTACLE_WARNING",
+        "expected_alert_triggered": true,
+        "actual_alert_triggered": true,
+        "expected_threat": "ALARM",
+        "actual_threat": "ALARM"
+      },
+      {
+        "test_name": "Stale timeout expiration: warning does not persist past timeout",
+        "passed": true,
+        "expected_state": "SENSOR_UNAVAILABLE",
+        "actual_state": "SENSOR_UNAVAILABLE",
+        "expected_alert_triggered": false,
+        "actual_alert_triggered": false,
+        "expected_threat": "NONE",
+        "actual_threat": "NONE"
+      },
+      {
+        "test_name": "Stale timeout expiration: clear does not persist indefinitely",
+        "passed": true,
+        "expected_state": "SENSOR_UNAVAILABLE",
+        "actual_state": "SENSOR_UNAVAILABLE",
+        "expected_alert_triggered": false,
+        "actual_alert_triggered": false,
+        "expected_threat": "NONE",
+        "actual_threat": "NONE"
+      }
+    ]
+  }
+}

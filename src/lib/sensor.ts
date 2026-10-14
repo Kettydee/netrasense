@@ -33,6 +33,27 @@ export type ArduinoStatus = {
   total_readings: number;
 };
 
+export type ObstacleWarningState =
+  | "OBSTACLE_WARNING"
+  | "CLEAR"
+  | "SENSOR_ERROR"
+  | "SENSOR_UNAVAILABLE";
+
+export type ObstacleWarningInfo = {
+  state: ObstacleWarningState;
+  distance_cm: number | null;
+  is_warning: boolean;
+  is_clear: boolean;
+  is_error: boolean;
+  is_unavailable: boolean;
+  alert_triggered: boolean;
+  threat_level: string;
+  timestamp: number;
+  raw_reading_timestamp: string | null;
+  age_seconds: number | null;
+  error_message: string | null;
+};
+
 export type UltrasonicStatus = {
   active: boolean;
   distance_cm: number | null;
@@ -40,6 +61,12 @@ export type UltrasonicStatus = {
   device_id: string | null;
   timestamp: string | null;
   status: "ACTIVE" | "NOT ACTIVE";
+  obstacle_state?: ObstacleWarningState;
+  is_warning?: boolean;
+  is_clear?: boolean;
+  is_error?: boolean;
+  is_unavailable?: boolean;
+  age_seconds?: number | null;
 };
 
 export type CameraHwStatus = {
@@ -69,6 +96,7 @@ export type HardwareStatus = {
   ultrasonic: UltrasonicStatus;
   camera: CameraHwStatus;
   ai: AiStatus;
+  obstacle_warning?: ObstacleWarningInfo;
 };
 
 export type SignalBreakdown = {
@@ -90,6 +118,7 @@ type SensorApiResponse = {
   sensor_data: SensorReading | null;
   sensor_status: SensorStatus;
   hardware_status?: HardwareStatus;
+  obstacle_warning?: ObstacleWarningInfo;
   ensemble?: EnsembleBreakdown;
 };
 

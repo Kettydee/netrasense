@@ -407,6 +407,7 @@ interface BrowserObjectDetectionModel {
                 return {
                   label: p.class,
                   direction: dir,
+                  distance_cm: 150,
                 };
               }),
             );

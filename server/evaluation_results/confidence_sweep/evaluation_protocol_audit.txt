@@ -1,0 +1,108 @@
+====================================================================================================
+NETRASENSE YOLO11n INDEPENDENT REPRODUCIBILITY AUDIT REPORT
+====================================================================================================
+
+1. PROVENANCE & ENVIRONMENT
+----------------------------------------------------------------------------------------------------
+Model Weights Path   : /Users/harshbothra/Desktop/netrasense/server/yolo11n.pt
+Model Weights SHA-256: 0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1
+Dataset YAML / Split : coco128.yaml / val (/opt/homebrew/datasets/coco128/images/train2017)
+Total Images         : 128
+Total Ground Truth   : 929 targets across 71 active classes (out of 80 total)
+Benchmark Category   : Diagnostic verification benchmark (COCO-128, CC BY 4.0)
+Ultralytics Version  : 8.4.155
+PyTorch Version      : 2.14.0
+Python Version       : 3.14.3
+Host Platform        : macOS-27.0.1-arm64-arm-64bit-Mach-O
+
+2. BASELINE OFFICIAL ULTRALYTICS VALIDATION (Standard Full PR-Curve Integration, conf=0.001)
+----------------------------------------------------------------------------------------------------
+Baseline mAP@50             : 67.95%
+Baseline mAP@50-95          : 50.22%
+Macro Precision             : 69.35%
+Macro Recall                : 59.09%
+Macro F1 (Arithmetic Mean)  : 57.91%
+Harmonic F1 (of Macro P & R): 63.81%
+
+Raw results_dict:
+{
+  "metrics/precision(B)": 0.693523405655069,
+  "metrics/recall(B)": 0.5908825805841028,
+  "metrics/mAP50(B)": 0.6794589989925688,
+  "metrics/mAP50-95(B)": 0.5022480956203047,
+  "fitness": 0.5022480956203047
+}
+
+3. EXACT OPERATING-THRESHOLD SWEEP (Discrete Matching at IoU >= 0.50)
+----------------------------------------------------------------------------------------------------
+Matching Specification:
+- Proposals filtered strictly at conf >= tau.
+- Predictions sorted in descending confidence order per image and class.
+- One-to-one greedy assignment to candidate with highest IoU >= 0.5.
+- Overlapping duplicate detections mapped to same target are marked FP.
+- Classes matched strictly by exact ID (no cross-class assignments).
+
+Overall Sweep Results:
+Conf | Retained Detections | Micro-P | Micro-R | Micro-F1 | Macro-P | Macro-R | Macro-F1 | Harmonic F1 (Macro)
+----------------------------------------------------------------------------------------------------------------
+0.10 | 1077                | 55.34 % | 64.16 % | 59.42  % | 55.51 % | 65.72 % | 56.63  % | 60.19 %
+0.25 | 625                 | 76.96 % | 51.78 % | 61.90  % | 71.20 % | 57.00 % | 59.37  % | 63.32 %
+0.45 | 433                 | 91.45 % | 42.63 % | 58.15  % | 80.70 % | 48.21 % | 55.87  % | 60.36 %
+0.60 | 309                 | 95.79 % | 31.86 % | 47.82  % | 76.50 % | 36.87 % | 44.74  % | 49.76 %
+----------------------------------------------------------------------------------------------------------------
+
+TARGET OBSTACLE CLASSES (TP, FP, FN COUNTS & FORMULA VERIFICATION):
+----------------------------------------------------------------------------------------------------
+Class   | Conf | GT  | TP  | FP  | FN  | Precision | Recall  | F1-Score | Conservation (TP+FN==GT)
+----------------------------------------------------------------------------------------------------
+person  | 0.10 | 254 | 200 | 116 | 54  | 63.29   % | 78.74 % | 70.18  % | 200 + 54 == 254 (OK)
+person  | 0.25 | 254 | 166 | 36  | 88  | 82.18   % | 65.35 % | 72.81  % | 166 + 88 == 254 (OK)
+person  | 0.45 | 254 | 135 | 6   | 119 | 95.74   % | 53.15 % | 68.35  % | 135 + 119 == 254 (OK)
+person  | 0.60 | 254 | 108 | 1   | 146 | 99.08   % | 42.52 % | 59.50  % | 108 + 146 == 254 (OK)
+----------------------------------------------------------------------------------------------------
+car     | 0.10 | 46  | 11  | 10  | 35  | 52.38   % | 23.91 % | 32.84  % | 11 + 35 == 46 (OK)
+car     | 0.25 | 46  | 8   | 2   | 38  | 80.00   % | 17.39 % | 28.57  % | 8 + 38 == 46 (OK)
+car     | 0.45 | 46  | 7   | 1   | 39  | 87.50   % | 15.22 % | 25.93  % | 7 + 39 == 46 (OK)
+car     | 0.60 | 46  | 5   | 1   | 41  | 83.33   % | 10.87 % | 19.23  % | 5 + 41 == 46 (OK)
+----------------------------------------------------------------------------------------------------
+bicycle | 0.10 | 6   | 2   | 4   | 4   | 33.33   % | 33.33 % | 33.33  % | 2 + 4 == 6 (OK)
+bicycle | 0.25 | 6   | 1   | 1   | 5   | 50.00   % | 16.67 % | 25.00  % | 1 + 5 == 6 (OK)
+bicycle | 0.45 | 6   | 1   | 1   | 5   | 50.00   % | 16.67 % | 25.00  % | 1 + 5 == 6 (OK)
+bicycle | 0.60 | 6   | 0   | 0   | 6   | 0.00    % | 0.00  % | 0.00   % | 0 + 6 == 6 (OK)
+----------------------------------------------------------------------------------------------------
+dog     | 0.10 | 9   | 8   | 6   | 1   | 57.14   % | 88.89 % | 69.57  % | 8 + 1 == 9 (OK)
+dog     | 0.25 | 9   | 7   | 4   | 2   | 63.64   % | 77.78 % | 70.00  % | 7 + 2 == 9 (OK)
+dog     | 0.45 | 9   | 6   | 2   | 3   | 75.00   % | 66.67 % | 70.59  % | 6 + 3 == 9 (OK)
+dog     | 0.60 | 9   | 6   | 1   | 3   | 85.71   % | 66.67 % | 75.00  % | 6 + 3 == 9 (OK)
+----------------------------------------------------------------------------------------------------
+chair   | 0.10 | 35  | 23  | 40  | 12  | 36.51   % | 65.71 % | 46.94  % | 23 + 12 == 35 (OK)
+chair   | 0.25 | 35  | 19  | 16  | 16  | 54.29   % | 54.29 % | 54.29  % | 19 + 16 == 35 (OK)
+chair   | 0.45 | 35  | 13  | 3   | 22  | 81.25   % | 37.14 % | 50.98  % | 13 + 22 == 35 (OK)
+chair   | 0.60 | 35  | 3   | 0   | 32  | 100.00  % | 8.57  % | 15.79  % | 3 + 32 == 35 (OK)
+----------------------------------------------------------------------------------------------------
+bus     | 0.10 | 7   | 5   | 3   | 2   | 62.50   % | 71.43 % | 66.67  % | 5 + 2 == 7 (OK)
+bus     | 0.25 | 7   | 5   | 1   | 2   | 83.33   % | 71.43 % | 76.92  % | 5 + 2 == 7 (OK)
+bus     | 0.45 | 7   | 4   | 0   | 3   | 100.00  % | 57.14 % | 72.73  % | 4 + 3 == 7 (OK)
+bus     | 0.60 | 7   | 4   | 0   | 3   | 100.00  % | 57.14 % | 72.73  % | 4 + 3 == 7 (OK)
+----------------------------------------------------------------------------------------------------
+
+4. METHODOLOGICAL COMPARISON: CUSTOM EVALUATOR VS. ULTRALYTICS
+----------------------------------------------------------------------------------------------------
+1. Custom evaluator computes discrete operational metrics directly from raw predictions retained
+   at a specific confidence threshold (conf >= tau) with greedy 1-to-1 matching at IoU >= 0.50.
+2. Ultralytics validator evaluates a continuous PR curve across all possible confidence thresholds
+   using cumulative 10-level IoU matching, reporting precision and recall at the peak F1 operating point.
+3. Macro F1 is computed as the arithmetic mean of per-class F1 scores. The harmonic mean of macro
+   precision and macro recall is reported separately under 'harmonic_f1_of_macro_p_r'.
+4. Both methods are mathematically sound for their respective purposes, but evaluate different definitions
+   of operational performance. Fixed-threshold metrics should not be conflated with PR-curve peak values.
+
+5. SCIENTIFIC & APPLICATION LIMITATIONS
+----------------------------------------------------------------------------------------------------
+- Diagnostic Dataset: COCO-128 is a minimal diagnostic dataset (128 images). It does not represent
+  the full diversity of real-world obstacles or rare navigational hazards.
+- Static Imagery: COCO-128 contains third-person stationary photos, whereas NetraSense operates from
+  a body-worn sensor experiencing camera motion, vibration, and dynamic lighting.
+- Safety Disclaimer: No claims of navigation safety, real-world obstacle-avoidance reliability, or
+  physical sensor fusion performance are made or implied based on these software benchmark results.
+====================================================================================================

@@ -224,7 +224,7 @@ export class WebSerialReader {
       // 2. Labeled text: "Distance: 142.3 cm", "Distance = 142", "dist: 142", "Sonar: 142"
       if (rawDistance === null) {
         const labeledMatch = line.match(/(?:distance|dist|sonar|range|obstacle)[\s:=]+([-+]?\d+(?:\.\d+)?)/i);
-        if (labeledMatch) {
+        if (labeledMatch && labeledMatch[1]) {
           const val = parseFloat(labeledMatch[1]);
           if (!isNaN(val) && isFinite(val)) rawDistance = val;
         }
@@ -233,7 +233,7 @@ export class WebSerialReader {
       // 3. Plain number or "142 cm"
       if (rawDistance === null) {
         const simpleMatch = line.match(/^\s*([-+]?\d+(?:\.\d+)?)\s*(?:cm)?\s*$/i);
-        if (simpleMatch) {
+        if (simpleMatch && simpleMatch[1]) {
           const val = parseFloat(simpleMatch[1]);
           if (!isNaN(val) && isFinite(val)) rawDistance = val;
         }

@@ -1,0 +1,3065 @@
+{
+  "report_title": "NetraSense YOLO11n Independent Reproducibility Audit & Evaluation Report",
+  "evaluation_provenance": {
+    "framework": "Ultralytics YOLO",
+    "ultralytics_version": "8.4.155",
+    "torch_version": "2.14.0",
+    "python_version": "3.14.3 (main, Feb  3 2026, 15:32:20) [Clang 17.0.0 (clang-1700.6.3.2)]",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "weights_path": "/Users/harshbothra/Desktop/netrasense/server/yolo11n.pt",
+    "weights_sha256": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+    "dataset_yaml": "coco128.yaml",
+    "dataset_split": "val",
+    "image_size": 640,
+    "conf_cutoff": 0.001,
+    "nms_iou": 0.6,
+    "device": "cpu",
+    "raw_results_dict": {
+      "metrics/precision(B)": 0.693523405655069,
+      "metrics/recall(B)": 0.5908825805841028,
+      "metrics/mAP50(B)": 0.6794589989925688,
+      "metrics/mAP50-95(B)": 0.5022480956203047,
+      "fitness": 0.5022480956203047
+    },
+    "macro_metrics": {
+      "precision": 0.6935,
+      "recall": 0.5909,
+      "macro_f1_arithmetic": 0.5791,
+      "harmonic_f1_of_macro_p_r": 0.6381,
+      "mAP50": 0.6795,
+      "mAP50_95": 0.5022
+    },
+    "target_obstacle_classes": {
+      "person": {
+        "class_id": 0,
+        "precision": 0.8246,
+        "recall": 0.6849,
+        "f1_score": 0.7483,
+        "mAP50": 0.795,
+        "mAP50_95": 0.5343
+      },
+      "bicycle": {
+        "class_id": 1,
+        "precision": 0.388,
+        "recall": 0.1667,
+        "f1_score": 0.2332,
+        "mAP50": 0.4591,
+        "mAP50_95": 0.2685
+      },
+      "car": {
+        "class_id": 2,
+        "precision": 0.6825,
+        "recall": 0.1957,
+        "f1_score": 0.3041,
+        "mAP50": 0.2356,
+        "mAP50_95": 0.1465
+      },
+      "bus": {
+        "class_id": 5,
+        "precision": 0.7742,
+        "recall": 0.7143,
+        "f1_score": 0.7431,
+        "mAP50": 0.7229,
+        "mAP50_95": 0.6486
+      },
+      "dog": {
+        "class_id": 16,
+        "precision": 0.6377,
+        "recall": 0.7778,
+        "f1_score": 0.7008,
+        "mAP50": 0.9046,
+        "mAP50_95": 0.7094
+      },
+      "chair": {
+        "class_id": 56,
+        "precision": 0.5286,
+        "recall": 0.5429,
+        "f1_score": 0.5356,
+        "mAP50": 0.5507,
+        "mAP50_95": 0.2989
+      }
+    }
+  },
+  "dataset_metadata": {
+    "name": "COCO-128",
+    "path": "/opt/homebrew/datasets/coco128/images/train2017",
+    "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+    "images_count": 128,
+    "total_ground_truth_targets": 929,
+    "active_classes_count": 71,
+    "benchmark_classification": "Diagnostic sanity check (not independent field validation)"
+  },
+  "matching_algorithm_specification": {
+    "prediction_ordering": "Descending confidence order per image and class",
+    "iou_matching_rule": "Greedy one-to-one assignment to candidate with highest IoU >= 0.5",
+    "duplicate_handling": "Secondary candidate predictions matching already-assigned ground truth are labeled FP",
+    "class_matching_rule": "Strict class equality (cross-class proposals zeroed)"
+  },
+  "baseline_ultralytics_evaluation": {
+    "description": "Standard Ultralytics validation integrating the full continuous PR curve (conf=0.001)",
+    "macro_metrics": {
+      "precision": 0.6935,
+      "recall": 0.5909,
+      "macro_f1_arithmetic": 0.5791,
+      "harmonic_f1_of_macro_p_r": 0.6381,
+      "mAP50": 0.6795,
+      "mAP50_95": 0.5022
+    },
+    "target_classes": {
+      "person": {
+        "class_id": 0,
+        "precision": 0.8246,
+        "recall": 0.6849,
+        "f1_score": 0.7483,
+        "mAP50": 0.795,
+        "mAP50_95": 0.5343
+      },
+      "bicycle": {
+        "class_id": 1,
+        "precision": 0.388,
+        "recall": 0.1667,
+        "f1_score": 0.2332,
+        "mAP50": 0.4591,
+        "mAP50_95": 0.2685
+      },
+      "car": {
+        "class_id": 2,
+        "precision": 0.6825,
+        "recall": 0.1957,
+        "f1_score": 0.3041,
+        "mAP50": 0.2356,
+        "mAP50_95": 0.1465
+      },
+      "bus": {
+        "class_id": 5,
+        "precision": 0.7742,
+        "recall": 0.7143,
+        "f1_score": 0.7431,
+        "mAP50": 0.7229,
+        "mAP50_95": 0.6486
+      },
+      "dog": {
+        "class_id": 16,
+        "precision": 0.6377,
+        "recall": 0.7778,
+        "f1_score": 0.7008,
+        "mAP50": 0.9046,
+        "mAP50_95": 0.7094
+      },
+      "chair": {
+        "class_id": 56,
+        "precision": 0.5286,
+        "recall": 0.5429,
+        "f1_score": 0.5356,
+        "mAP50": 0.5507,
+        "mAP50_95": 0.2989
+      }
+    }
+  },
+  "custom_fixed_threshold_sweep": [
+    {
+      "confidence_threshold": 0.1,
+      "retained_predictions_count": 1077,
+      "micro_averaged_metrics": {
+        "total_tp": 596,
+        "total_fp": 481,
+        "total_fn": 333,
+        "precision": 0.5534,
+        "recall": 0.6416,
+        "f1_score": 0.5942
+      },
+      "macro_averaged_metrics": {
+        "active_classes_count": 71,
+        "precision": 0.5551,
+        "recall": 0.6572,
+        "macro_f1": 0.5663,
+        "harmonic_f1_of_macro_p_r": 0.6019
+      },
+      "target_obstacle_classes": {
+        "person": {
+          "class_id": 0,
+          "ground_truth_count": 254,
+          "true_positives": 200,
+          "false_positives": 116,
+          "false_negatives": 54,
+          "precision": 0.6329,
+          "recall": 0.7874,
+          "f1_score": 0.7018
+        },
+        "car": {
+          "class_id": 2,
+          "ground_truth_count": 46,
+          "true_positives": 11,
+          "false_positives": 10,
+          "false_negatives": 35,
+          "precision": 0.5238,
+          "recall": 0.2391,
+          "f1_score": 0.3284
+        },
+        "bicycle": {
+          "class_id": 1,
+          "ground_truth_count": 6,
+          "true_positives": 2,
+          "false_positives": 4,
+          "false_negatives": 4,
+          "precision": 0.3333,
+          "recall": 0.3333,
+          "f1_score": 0.3333
+        },
+        "dog": {
+          "class_id": 16,
+          "ground_truth_count": 9,
+          "true_positives": 8,
+          "false_positives": 6,
+          "false_negatives": 1,
+          "precision": 0.5714,
+          "recall": 0.8889,
+          "f1_score": 0.6957
+        },
+        "chair": {
+          "class_id": 56,
+          "ground_truth_count": 35,
+          "true_positives": 23,
+          "false_positives": 40,
+          "false_negatives": 12,
+          "precision": 0.3651,
+          "recall": 0.6571,
+          "f1_score": 0.4694
+        },
+        "bus": {
+          "class_id": 5,
+          "ground_truth_count": 7,
+          "true_positives": 5,
+          "false_positives": 3,
+          "false_negatives": 2,
+          "precision": 0.625,
+          "recall": 0.7143,
+          "f1_score": 0.6667
+        }
+      },
+      "all_classes": {
+        "person": {
+          "tp": 200,
+          "fp": 116,
+          "fn": 54,
+          "gt": 254,
+          "precision": 0.6329,
+          "recall": 0.7874,
+          "f1_score": 0.7018
+        },
+        "bicycle": {
+          "tp": 2,
+          "fp": 4,
+          "fn": 4,
+          "gt": 6,
+          "precision": 0.3333,
+          "recall": 0.3333,
+          "f1_score": 0.3333
+        },
+        "car": {
+          "tp": 11,
+          "fp": 10,
+          "fn": 35,
+          "gt": 46,
+          "precision": 0.5238,
+          "recall": 0.2391,
+          "f1_score": 0.3284
+        },
+        "motorcycle": {
+          "tp": 5,
+          "fp": 1,
+          "fn": 0,
+          "gt": 5,
+          "precision": 0.8333,
+          "recall": 1.0,
+          "f1_score": 0.9091
+        },
+        "airplane": {
+          "tp": 6,
+          "fp": 1,
+          "fn": 0,
+          "gt": 6,
+          "precision": 0.8571,
+          "recall": 1.0,
+          "f1_score": 0.9231
+        },
+        "bus": {
+          "tp": 5,
+          "fp": 3,
+          "fn": 2,
+          "gt": 7,
+          "precision": 0.625,
+          "recall": 0.7143,
+          "f1_score": 0.6667
+        },
+        "train": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "gt": 3,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "truck": {
+          "tp": 3,
+          "fp": 3,
+          "fn": 9,
+          "gt": 12,
+          "precision": 0.5,
+          "recall": 0.25,
+          "f1_score": 0.3333
+        },
+        "boat": {
+          "tp": 4,
+          "fp": 7,
+          "fn": 2,
+          "gt": 6,
+          "precision": 0.3636,
+          "recall": 0.6667,
+          "f1_score": 0.4706
+        },
+        "traffic light": {
+          "tp": 2,
+          "fp": 3,
+          "fn": 12,
+          "gt": 14,
+          "precision": 0.4,
+          "recall": 0.1429,
+          "f1_score": 0.2105
+        },
+        "stop sign": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "bench": {
+          "tp": 6,
+          "fp": 2,
+          "fn": 3,
+          "gt": 9,
+          "precision": 0.75,
+          "recall": 0.6667,
+          "f1_score": 0.7059
+        },
+        "bird": {
+          "tp": 16,
+          "fp": 5,
+          "fn": 0,
+          "gt": 16,
+          "precision": 0.7619,
+          "recall": 1.0,
+          "f1_score": 0.8649
+        },
+        "cat": {
+          "tp": 4,
+          "fp": 2,
+          "fn": 0,
+          "gt": 4,
+          "precision": 0.6667,
+          "recall": 1.0,
+          "f1_score": 0.8
+        },
+        "dog": {
+          "tp": 8,
+          "fp": 6,
+          "fn": 1,
+          "gt": 9,
+          "precision": 0.5714,
+          "recall": 0.8889,
+          "f1_score": 0.6957
+        },
+        "horse": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "elephant": {
+          "tp": 16,
+          "fp": 1,
+          "fn": 1,
+          "gt": 17,
+          "precision": 0.9412,
+          "recall": 0.9412,
+          "f1_score": 0.9412
+        },
+        "bear": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "gt": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "zebra": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "gt": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "giraffe": {
+          "tp": 8,
+          "fp": 3,
+          "fn": 1,
+          "gt": 9,
+          "precision": 0.7273,
+          "recall": 0.8889,
+          "f1_score": 0.8
+        },
+        "backpack": {
+          "tp": 2,
+          "fp": 3,
+          "fn": 4,
+          "gt": 6,
+          "precision": 0.4,
+          "recall": 0.3333,
+          "f1_score": 0.3636
+        },
+        "umbrella": {
+          "tp": 13,
+          "fp": 8,
+          "fn": 5,
+          "gt": 18,
+          "precision": 0.619,
+          "recall": 0.7222,
+          "f1_score": 0.6667
+        },
+        "handbag": {
+          "tp": 2,
+          "fp": 4,
+          "fn": 17,
+          "gt": 19,
+          "precision": 0.3333,
+          "recall": 0.1053,
+          "f1_score": 0.16
+        },
+        "tie": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 4,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.4286,
+          "f1_score": 0.6
+        },
+        "suitcase": {
+          "tp": 4,
+          "fp": 4,
+          "fn": 0,
+          "gt": 4,
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1_score": 0.6667
+        },
+        "frisbee": {
+          "tp": 4,
+          "fp": 2,
+          "fn": 1,
+          "gt": 5,
+          "precision": 0.6667,
+          "recall": 0.8,
+          "f1_score": 0.7273
+        },
+        "skis": {
+          "tp": 1,
+          "fp": 3,
+          "fn": 0,
+          "gt": 1,
+          "precision": 0.25,
+          "recall": 1.0,
+          "f1_score": 0.4
+        },
+        "snowboard": {
+          "tp": 5,
+          "fp": 1,
+          "fn": 2,
+          "gt": 7,
+          "precision": 0.8333,
+          "recall": 0.7143,
+          "f1_score": 0.7692
+        },
+        "sports ball": {
+          "tp": 4,
+          "fp": 5,
+          "fn": 2,
+          "gt": 6,
+          "precision": 0.4444,
+          "recall": 0.6667,
+          "f1_score": 0.5333
+        },
+        "kite": {
+          "tp": 6,
+          "fp": 3,
+          "fn": 4,
+          "gt": 10,
+          "precision": 0.6667,
+          "recall": 0.6,
+          "f1_score": 0.6316
+        },
+        "baseball bat": {
+          "tp": 1,
+          "fp": 2,
+          "fn": 3,
+          "gt": 4,
+          "precision": 0.3333,
+          "recall": 0.25,
+          "f1_score": 0.2857
+        },
+        "baseball glove": {
+          "tp": 3,
+          "fp": 6,
+          "fn": 4,
+          "gt": 7,
+          "precision": 0.3333,
+          "recall": 0.4286,
+          "f1_score": 0.375
+        },
+        "skateboard": {
+          "tp": 3,
+          "fp": 3,
+          "fn": 2,
+          "gt": 5,
+          "precision": 0.5,
+          "recall": 0.6,
+          "f1_score": 0.5455
+        },
+        "tennis racket": {
+          "tp": 5,
+          "fp": 7,
+          "fn": 2,
+          "gt": 7,
+          "precision": 0.4167,
+          "recall": 0.7143,
+          "f1_score": 0.5263
+        },
+        "bottle": {
+          "tp": 11,
+          "fp": 13,
+          "fn": 7,
+          "gt": 18,
+          "precision": 0.4583,
+          "recall": 0.6111,
+          "f1_score": 0.5238
+        },
+        "wine glass": {
+          "tp": 10,
+          "fp": 13,
+          "fn": 6,
+          "gt": 16,
+          "precision": 0.4348,
+          "recall": 0.625,
+          "f1_score": 0.5128
+        },
+        "cup": {
+          "tp": 13,
+          "fp": 10,
+          "fn": 23,
+          "gt": 36,
+          "precision": 0.5652,
+          "recall": 0.3611,
+          "f1_score": 0.4407
+        },
+        "fork": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 4,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.3333,
+          "f1_score": 0.5
+        },
+        "knife": {
+          "tp": 12,
+          "fp": 12,
+          "fn": 4,
+          "gt": 16,
+          "precision": 0.5,
+          "recall": 0.75,
+          "f1_score": 0.6
+        },
+        "spoon": {
+          "tp": 10,
+          "fp": 6,
+          "fn": 12,
+          "gt": 22,
+          "precision": 0.625,
+          "recall": 0.4545,
+          "f1_score": 0.5263
+        },
+        "bowl": {
+          "tp": 21,
+          "fp": 20,
+          "fn": 7,
+          "gt": 28,
+          "precision": 0.5122,
+          "recall": 0.75,
+          "f1_score": 0.6087
+        },
+        "banana": {
+          "tp": 1,
+          "fp": 3,
+          "fn": 0,
+          "gt": 1,
+          "precision": 0.25,
+          "recall": 1.0,
+          "f1_score": 0.4
+        },
+        "sandwich": {
+          "tp": 2,
+          "fp": 2,
+          "fn": 0,
+          "gt": 2,
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1_score": 0.6667
+        },
+        "orange": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 4,
+          "gt": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "broccoli": {
+          "tp": 2,
+          "fp": 9,
+          "fn": 9,
+          "gt": 11,
+          "precision": 0.1818,
+          "recall": 0.1818,
+          "f1_score": 0.1818
+        },
+        "carrot": {
+          "tp": 17,
+          "fp": 17,
+          "fn": 7,
+          "gt": 24,
+          "precision": 0.5,
+          "recall": 0.7083,
+          "f1_score": 0.5862
+        },
+        "hot dog": {
+          "tp": 2,
+          "fp": 2,
+          "fn": 0,
+          "gt": 2,
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1_score": 0.6667
+        },
+        "pizza": {
+          "tp": 5,
+          "fp": 4,
+          "fn": 0,
+          "gt": 5,
+          "precision": 0.5556,
+          "recall": 1.0,
+          "f1_score": 0.7143
+        },
+        "donut": {
+          "tp": 14,
+          "fp": 8,
+          "fn": 0,
+          "gt": 14,
+          "precision": 0.6364,
+          "recall": 1.0,
+          "f1_score": 0.7778
+        },
+        "cake": {
+          "tp": 3,
+          "fp": 3,
+          "fn": 1,
+          "gt": 4,
+          "precision": 0.5,
+          "recall": 0.75,
+          "f1_score": 0.6
+        },
+        "chair": {
+          "tp": 23,
+          "fp": 40,
+          "fn": 12,
+          "gt": 35,
+          "precision": 0.3651,
+          "recall": 0.6571,
+          "f1_score": 0.4694
+        },
+        "couch": {
+          "tp": 5,
+          "fp": 5,
+          "fn": 1,
+          "gt": 6,
+          "precision": 0.5,
+          "recall": 0.8333,
+          "f1_score": 0.625
+        },
+        "potted plant": {
+          "tp": 9,
+          "fp": 6,
+          "fn": 5,
+          "gt": 14,
+          "precision": 0.6,
+          "recall": 0.6429,
+          "f1_score": 0.6207
+        },
+        "bed": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 1,
+          "gt": 3,
+          "precision": 0.6667,
+          "recall": 0.6667,
+          "f1_score": 0.6667
+        },
+        "dining table": {
+          "tp": 9,
+          "fp": 12,
+          "fn": 4,
+          "gt": 13,
+          "precision": 0.4286,
+          "recall": 0.6923,
+          "f1_score": 0.5294
+        },
+        "toilet": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 1,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1_score": 0.6667
+        },
+        "tv": {
+          "tp": 2,
+          "fp": 2,
+          "fn": 0,
+          "gt": 2,
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1_score": 0.6667
+        },
+        "laptop": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 2,
+          "gt": 3,
+          "precision": 1.0,
+          "recall": 0.3333,
+          "f1_score": 0.5
+        },
+        "mouse": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "gt": 2,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "remote": {
+          "tp": 4,
+          "fp": 3,
+          "fn": 4,
+          "gt": 8,
+          "precision": 0.5714,
+          "recall": 0.5,
+          "f1_score": 0.5333
+        },
+        "cell phone": {
+          "tp": 1,
+          "fp": 4,
+          "fn": 7,
+          "gt": 8,
+          "precision": 0.2,
+          "recall": 0.125,
+          "f1_score": 0.1538
+        },
+        "microwave": {
+          "tp": 3,
+          "fp": 8,
+          "fn": 0,
+          "gt": 3,
+          "precision": 0.2727,
+          "recall": 1.0,
+          "f1_score": 0.4286
+        },
+        "oven": {
+          "tp": 2,
+          "fp": 13,
+          "fn": 3,
+          "gt": 5,
+          "precision": 0.1333,
+          "recall": 0.4,
+          "f1_score": 0.2
+        },
+        "sink": {
+          "tp": 1,
+          "fp": 6,
+          "fn": 5,
+          "gt": 6,
+          "precision": 0.1429,
+          "recall": 0.1667,
+          "f1_score": 0.1538
+        },
+        "refrigerator": {
+          "tp": 5,
+          "fp": 3,
+          "fn": 0,
+          "gt": 5,
+          "precision": 0.625,
+          "recall": 1.0,
+          "f1_score": 0.7692
+        },
+        "book": {
+          "tp": 11,
+          "fp": 14,
+          "fn": 18,
+          "gt": 29,
+          "precision": 0.44,
+          "recall": 0.3793,
+          "f1_score": 0.4074
+        },
+        "clock": {
+          "tp": 8,
+          "fp": 3,
+          "fn": 1,
+          "gt": 9,
+          "precision": 0.7273,
+          "recall": 0.8889,
+          "f1_score": 0.8
+        },
+        "vase": {
+          "tp": 2,
+          "fp": 11,
+          "fn": 0,
+          "gt": 2,
+          "precision": 0.1538,
+          "recall": 1.0,
+          "f1_score": 0.2667
+        },
+        "scissors": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "gt": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "teddy bear": {
+          "tp": 14,
+          "fp": 10,
+          "fn": 7,
+          "gt": 21,
+          "precision": 0.5833,
+          "recall": 0.6667,
+          "f1_score": 0.6222
+        },
+        "toothbrush": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 1,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 0.8,
+          "f1_score": 0.8889
+        }
+      }
+    },
+    {
+      "confidence_threshold": 0.25,
+      "retained_predictions_count": 625,
+      "micro_averaged_metrics": {
+        "total_tp": 481,
+        "total_fp": 144,
+        "total_fn": 448,
+        "precision": 0.7696,
+        "recall": 0.5178,
+        "f1_score": 0.619
+      },
+      "macro_averaged_metrics": {
+        "active_classes_count": 71,
+        "precision": 0.712,
+        "recall": 0.57,
+        "macro_f1": 0.5937,
+        "harmonic_f1_of_macro_p_r": 0.6332
+      },
+      "target_obstacle_classes": {
+        "person": {
+          "class_id": 0,
+          "ground_truth_count": 254,
+          "true_positives": 166,
+          "false_positives": 36,
+          "false_negatives": 88,
+          "precision": 0.8218,
+          "recall": 0.6535,
+          "f1_score": 0.7281
+        },
+        "car": {
+          "class_id": 2,
+          "ground_truth_count": 46,
+          "true_positives": 8,
+          "false_positives": 2,
+          "false_negatives": 38,
+          "precision": 0.8,
+          "recall": 0.1739,
+          "f1_score": 0.2857
+        },
+        "bicycle": {
+          "class_id": 1,
+          "ground_truth_count": 6,
+          "true_positives": 1,
+          "false_positives": 1,
+          "false_negatives": 5,
+          "precision": 0.5,
+          "recall": 0.1667,
+          "f1_score": 0.25
+        },
+        "dog": {
+          "class_id": 16,
+          "ground_truth_count": 9,
+          "true_positives": 7,
+          "false_positives": 4,
+          "false_negatives": 2,
+          "precision": 0.6364,
+          "recall": 0.7778,
+          "f1_score": 0.7
+        },
+        "chair": {
+          "class_id": 56,
+          "ground_truth_count": 35,
+          "true_positives": 19,
+          "false_positives": 16,
+          "false_negatives": 16,
+          "precision": 0.5429,
+          "recall": 0.5429,
+          "f1_score": 0.5429
+        },
+        "bus": {
+          "class_id": 5,
+          "ground_truth_count": 7,
+          "true_positives": 5,
+          "false_positives": 1,
+          "false_negatives": 2,
+          "precision": 0.8333,
+          "recall": 0.7143,
+          "f1_score": 0.7692
+        }
+      },
+      "all_classes": {
+        "person": {
+          "tp": 166,
+          "fp": 36,
+          "fn": 88,
+          "gt": 254,
+          "precision": 0.8218,
+          "recall": 0.6535,
+          "f1_score": 0.7281
+        },
+        "bicycle": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 5,
+          "gt": 6,
+          "precision": 0.5,
+          "recall": 0.1667,
+          "f1_score": 0.25
+        },
+        "car": {
+          "tp": 8,
+          "fp": 2,
+          "fn": 38,
+          "gt": 46,
+          "precision": 0.8,
+          "recall": 0.1739,
+          "f1_score": 0.2857
+        },
+        "motorcycle": {
+          "tp": 5,
+          "fp": 1,
+          "fn": 0,
+          "gt": 5,
+          "precision": 0.8333,
+          "recall": 1.0,
+          "f1_score": 0.9091
+        },
+        "airplane": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 1,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.8333,
+          "f1_score": 0.9091
+        },
+        "bus": {
+          "tp": 5,
+          "fp": 1,
+          "fn": 2,
+          "gt": 7,
+          "precision": 0.8333,
+          "recall": 0.7143,
+          "f1_score": 0.7692
+        },
+        "train": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "gt": 3,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "truck": {
+          "tp": 2,
+          "fp": 3,
+          "fn": 10,
+          "gt": 12,
+          "precision": 0.4,
+          "recall": 0.1667,
+          "f1_score": 0.2353
+        },
+        "boat": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 4,
+          "gt": 6,
+          "precision": 0.6667,
+          "recall": 0.3333,
+          "f1_score": 0.4444
+        },
+        "traffic light": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 12,
+          "gt": 14,
+          "precision": 0.6667,
+          "recall": 0.1429,
+          "f1_score": 0.2353
+        },
+        "stop sign": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "bench": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 6,
+          "gt": 9,
+          "precision": 1.0,
+          "recall": 0.3333,
+          "f1_score": 0.5
+        },
+        "bird": {
+          "tp": 16,
+          "fp": 1,
+          "fn": 0,
+          "gt": 16,
+          "precision": 0.9412,
+          "recall": 1.0,
+          "f1_score": 0.9697
+        },
+        "cat": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "gt": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "dog": {
+          "tp": 7,
+          "fp": 4,
+          "fn": 2,
+          "gt": 9,
+          "precision": 0.6364,
+          "recall": 0.7778,
+          "f1_score": 0.7
+        },
+        "horse": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "elephant": {
+          "tp": 16,
+          "fp": 0,
+          "fn": 1,
+          "gt": 17,
+          "precision": 1.0,
+          "recall": 0.9412,
+          "f1_score": 0.9697
+        },
+        "bear": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "gt": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "zebra": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "gt": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "giraffe": {
+          "tp": 8,
+          "fp": 0,
+          "fn": 1,
+          "gt": 9,
+          "precision": 1.0,
+          "recall": 0.8889,
+          "f1_score": 0.9412
+        },
+        "backpack": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 4,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.3333,
+          "f1_score": 0.5
+        },
+        "umbrella": {
+          "tp": 7,
+          "fp": 2,
+          "fn": 11,
+          "gt": 18,
+          "precision": 0.7778,
+          "recall": 0.3889,
+          "f1_score": 0.5185
+        },
+        "handbag": {
+          "tp": 0,
+          "fp": 1,
+          "fn": 19,
+          "gt": 19,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "tie": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 4,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.4286,
+          "f1_score": 0.6
+        },
+        "suitcase": {
+          "tp": 4,
+          "fp": 2,
+          "fn": 0,
+          "gt": 4,
+          "precision": 0.6667,
+          "recall": 1.0,
+          "f1_score": 0.8
+        },
+        "frisbee": {
+          "tp": 4,
+          "fp": 2,
+          "fn": 1,
+          "gt": 5,
+          "precision": 0.6667,
+          "recall": 0.8,
+          "f1_score": 0.7273
+        },
+        "skis": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "gt": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "snowboard": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 3,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.5714,
+          "f1_score": 0.7273
+        },
+        "sports ball": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 4,
+          "gt": 6,
+          "precision": 0.6667,
+          "recall": 0.3333,
+          "f1_score": 0.4444
+        },
+        "kite": {
+          "tp": 4,
+          "fp": 2,
+          "fn": 6,
+          "gt": 10,
+          "precision": 0.6667,
+          "recall": 0.4,
+          "f1_score": 0.5
+        },
+        "baseball bat": {
+          "tp": 0,
+          "fp": 1,
+          "fn": 4,
+          "gt": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "baseball glove": {
+          "tp": 3,
+          "fp": 2,
+          "fn": 4,
+          "gt": 7,
+          "precision": 0.6,
+          "recall": 0.4286,
+          "f1_score": 0.5
+        },
+        "skateboard": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 3,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 0.4,
+          "f1_score": 0.5714
+        },
+        "tennis racket": {
+          "tp": 3,
+          "fp": 2,
+          "fn": 4,
+          "gt": 7,
+          "precision": 0.6,
+          "recall": 0.4286,
+          "f1_score": 0.5
+        },
+        "bottle": {
+          "tp": 5,
+          "fp": 3,
+          "fn": 13,
+          "gt": 18,
+          "precision": 0.625,
+          "recall": 0.2778,
+          "f1_score": 0.3846
+        },
+        "wine glass": {
+          "tp": 7,
+          "fp": 4,
+          "fn": 9,
+          "gt": 16,
+          "precision": 0.6364,
+          "recall": 0.4375,
+          "f1_score": 0.5185
+        },
+        "cup": {
+          "tp": 10,
+          "fp": 2,
+          "fn": 26,
+          "gt": 36,
+          "precision": 0.8333,
+          "recall": 0.2778,
+          "f1_score": 0.4167
+        },
+        "fork": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 5,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.1667,
+          "f1_score": 0.2857
+        },
+        "knife": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 9,
+          "gt": 16,
+          "precision": 1.0,
+          "recall": 0.4375,
+          "f1_score": 0.6087
+        },
+        "spoon": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 16,
+          "gt": 22,
+          "precision": 1.0,
+          "recall": 0.2727,
+          "f1_score": 0.4286
+        },
+        "bowl": {
+          "tp": 19,
+          "fp": 7,
+          "fn": 9,
+          "gt": 28,
+          "precision": 0.7308,
+          "recall": 0.6786,
+          "f1_score": 0.7037
+        },
+        "banana": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "gt": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "sandwich": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 0,
+          "gt": 2,
+          "precision": 0.6667,
+          "recall": 1.0,
+          "f1_score": 0.8
+        },
+        "orange": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 4,
+          "gt": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "broccoli": {
+          "tp": 2,
+          "fp": 2,
+          "fn": 9,
+          "gt": 11,
+          "precision": 0.5,
+          "recall": 0.1818,
+          "f1_score": 0.2667
+        },
+        "carrot": {
+          "tp": 12,
+          "fp": 4,
+          "fn": 12,
+          "gt": 24,
+          "precision": 0.75,
+          "recall": 0.5,
+          "f1_score": 0.6
+        },
+        "hot dog": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 0,
+          "gt": 2,
+          "precision": 0.6667,
+          "recall": 1.0,
+          "f1_score": 0.8
+        },
+        "pizza": {
+          "tp": 5,
+          "fp": 2,
+          "fn": 0,
+          "gt": 5,
+          "precision": 0.7143,
+          "recall": 1.0,
+          "f1_score": 0.8333
+        },
+        "donut": {
+          "tp": 14,
+          "fp": 7,
+          "fn": 0,
+          "gt": 14,
+          "precision": 0.6667,
+          "recall": 1.0,
+          "f1_score": 0.8
+        },
+        "cake": {
+          "tp": 3,
+          "fp": 2,
+          "fn": 1,
+          "gt": 4,
+          "precision": 0.6,
+          "recall": 0.75,
+          "f1_score": 0.6667
+        },
+        "chair": {
+          "tp": 19,
+          "fp": 16,
+          "fn": 16,
+          "gt": 35,
+          "precision": 0.5429,
+          "recall": 0.5429,
+          "f1_score": 0.5429
+        },
+        "couch": {
+          "tp": 5,
+          "fp": 3,
+          "fn": 1,
+          "gt": 6,
+          "precision": 0.625,
+          "recall": 0.8333,
+          "f1_score": 0.7143
+        },
+        "potted plant": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 7,
+          "gt": 14,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1_score": 0.6667
+        },
+        "bed": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 1,
+          "gt": 3,
+          "precision": 0.6667,
+          "recall": 0.6667,
+          "f1_score": 0.6667
+        },
+        "dining table": {
+          "tp": 9,
+          "fp": 5,
+          "fn": 4,
+          "gt": 13,
+          "precision": 0.6429,
+          "recall": 0.6923,
+          "f1_score": 0.6667
+        },
+        "toilet": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 1,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1_score": 0.6667
+        },
+        "tv": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "laptop": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "gt": 3,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "mouse": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "gt": 2,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "remote": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 4,
+          "gt": 8,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1_score": 0.6667
+        },
+        "cell phone": {
+          "tp": 0,
+          "fp": 1,
+          "fn": 8,
+          "gt": 8,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "microwave": {
+          "tp": 3,
+          "fp": 3,
+          "fn": 0,
+          "gt": 3,
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1_score": 0.6667
+        },
+        "oven": {
+          "tp": 2,
+          "fp": 4,
+          "fn": 3,
+          "gt": 5,
+          "precision": 0.3333,
+          "recall": 0.4,
+          "f1_score": 0.3636
+        },
+        "sink": {
+          "tp": 1,
+          "fp": 2,
+          "fn": 5,
+          "gt": 6,
+          "precision": 0.3333,
+          "recall": 0.1667,
+          "f1_score": 0.2222
+        },
+        "refrigerator": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "book": {
+          "tp": 4,
+          "fp": 2,
+          "fn": 25,
+          "gt": 29,
+          "precision": 0.6667,
+          "recall": 0.1379,
+          "f1_score": 0.2286
+        },
+        "clock": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 2,
+          "gt": 9,
+          "precision": 1.0,
+          "recall": 0.7778,
+          "f1_score": 0.875
+        },
+        "vase": {
+          "tp": 2,
+          "fp": 4,
+          "fn": 0,
+          "gt": 2,
+          "precision": 0.3333,
+          "recall": 1.0,
+          "f1_score": 0.5
+        },
+        "scissors": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "gt": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "teddy bear": {
+          "tp": 7,
+          "fp": 2,
+          "fn": 14,
+          "gt": 21,
+          "precision": 0.7778,
+          "recall": 0.3333,
+          "f1_score": 0.4667
+        },
+        "toothbrush": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 1,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 0.8,
+          "f1_score": 0.8889
+        }
+      }
+    },
+    {
+      "confidence_threshold": 0.45,
+      "retained_predictions_count": 433,
+      "micro_averaged_metrics": {
+        "total_tp": 396,
+        "total_fp": 37,
+        "total_fn": 533,
+        "precision": 0.9145,
+        "recall": 0.4263,
+        "f1_score": 0.5815
+      },
+      "macro_averaged_metrics": {
+        "active_classes_count": 71,
+        "precision": 0.807,
+        "recall": 0.4821,
+        "macro_f1": 0.5587,
+        "harmonic_f1_of_macro_p_r": 0.6036
+      },
+      "target_obstacle_classes": {
+        "person": {
+          "class_id": 0,
+          "ground_truth_count": 254,
+          "true_positives": 135,
+          "false_positives": 6,
+          "false_negatives": 119,
+          "precision": 0.9574,
+          "recall": 0.5315,
+          "f1_score": 0.6835
+        },
+        "car": {
+          "class_id": 2,
+          "ground_truth_count": 46,
+          "true_positives": 7,
+          "false_positives": 1,
+          "false_negatives": 39,
+          "precision": 0.875,
+          "recall": 0.1522,
+          "f1_score": 0.2593
+        },
+        "bicycle": {
+          "class_id": 1,
+          "ground_truth_count": 6,
+          "true_positives": 1,
+          "false_positives": 1,
+          "false_negatives": 5,
+          "precision": 0.5,
+          "recall": 0.1667,
+          "f1_score": 0.25
+        },
+        "dog": {
+          "class_id": 16,
+          "ground_truth_count": 9,
+          "true_positives": 6,
+          "false_positives": 2,
+          "false_negatives": 3,
+          "precision": 0.75,
+          "recall": 0.6667,
+          "f1_score": 0.7059
+        },
+        "chair": {
+          "class_id": 56,
+          "ground_truth_count": 35,
+          "true_positives": 13,
+          "false_positives": 3,
+          "false_negatives": 22,
+          "precision": 0.8125,
+          "recall": 0.3714,
+          "f1_score": 0.5098
+        },
+        "bus": {
+          "class_id": 5,
+          "ground_truth_count": 7,
+          "true_positives": 4,
+          "false_positives": 0,
+          "false_negatives": 3,
+          "precision": 1.0,
+          "recall": 0.5714,
+          "f1_score": 0.7273
+        }
+      },
+      "all_classes": {
+        "person": {
+          "tp": 135,
+          "fp": 6,
+          "fn": 119,
+          "gt": 254,
+          "precision": 0.9574,
+          "recall": 0.5315,
+          "f1_score": 0.6835
+        },
+        "bicycle": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 5,
+          "gt": 6,
+          "precision": 0.5,
+          "recall": 0.1667,
+          "f1_score": 0.25
+        },
+        "car": {
+          "tp": 7,
+          "fp": 1,
+          "fn": 39,
+          "gt": 46,
+          "precision": 0.875,
+          "recall": 0.1522,
+          "f1_score": 0.2593
+        },
+        "motorcycle": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 1,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 0.8,
+          "f1_score": 0.8889
+        },
+        "airplane": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 1,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.8333,
+          "f1_score": 0.9091
+        },
+        "bus": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 3,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.5714,
+          "f1_score": 0.7273
+        },
+        "train": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "gt": 3,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "truck": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 10,
+          "gt": 12,
+          "precision": 0.6667,
+          "recall": 0.1667,
+          "f1_score": 0.2667
+        },
+        "boat": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 4,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.3333,
+          "f1_score": 0.5
+        },
+        "traffic light": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 12,
+          "gt": 14,
+          "precision": 0.6667,
+          "recall": 0.1429,
+          "f1_score": 0.2353
+        },
+        "stop sign": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "bench": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 8,
+          "gt": 9,
+          "precision": 1.0,
+          "recall": 0.1111,
+          "f1_score": 0.2
+        },
+        "bird": {
+          "tp": 13,
+          "fp": 0,
+          "fn": 3,
+          "gt": 16,
+          "precision": 1.0,
+          "recall": 0.8125,
+          "f1_score": 0.8966
+        },
+        "cat": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "gt": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "dog": {
+          "tp": 6,
+          "fp": 2,
+          "fn": 3,
+          "gt": 9,
+          "precision": 0.75,
+          "recall": 0.6667,
+          "f1_score": 0.7059
+        },
+        "horse": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "elephant": {
+          "tp": 16,
+          "fp": 0,
+          "fn": 1,
+          "gt": 17,
+          "precision": 1.0,
+          "recall": 0.9412,
+          "f1_score": 0.9697
+        },
+        "bear": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "gt": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "zebra": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "gt": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "giraffe": {
+          "tp": 8,
+          "fp": 0,
+          "fn": 1,
+          "gt": 9,
+          "precision": 1.0,
+          "recall": 0.8889,
+          "f1_score": 0.9412
+        },
+        "backpack": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 5,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.1667,
+          "f1_score": 0.2857
+        },
+        "umbrella": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 13,
+          "gt": 18,
+          "precision": 1.0,
+          "recall": 0.2778,
+          "f1_score": 0.4348
+        },
+        "handbag": {
+          "tp": 0,
+          "fp": 1,
+          "fn": 19,
+          "gt": 19,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "tie": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 4,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.4286,
+          "f1_score": 0.6
+        },
+        "suitcase": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 1,
+          "gt": 4,
+          "precision": 1.0,
+          "recall": 0.75,
+          "f1_score": 0.8571
+        },
+        "frisbee": {
+          "tp": 4,
+          "fp": 1,
+          "fn": 1,
+          "gt": 5,
+          "precision": 0.8,
+          "recall": 0.8,
+          "f1_score": 0.8
+        },
+        "skis": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "gt": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "snowboard": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 5,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.2857,
+          "f1_score": 0.4444
+        },
+        "sports ball": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 4,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.3333,
+          "f1_score": 0.5
+        },
+        "kite": {
+          "tp": 3,
+          "fp": 1,
+          "fn": 7,
+          "gt": 10,
+          "precision": 0.75,
+          "recall": 0.3,
+          "f1_score": 0.4286
+        },
+        "baseball bat": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 4,
+          "gt": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "baseball glove": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 4,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.4286,
+          "f1_score": 0.6
+        },
+        "skateboard": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 3,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 0.4,
+          "f1_score": 0.5714
+        },
+        "tennis racket": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 4,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.4286,
+          "f1_score": 0.6
+        },
+        "bottle": {
+          "tp": 4,
+          "fp": 2,
+          "fn": 14,
+          "gt": 18,
+          "precision": 0.6667,
+          "recall": 0.2222,
+          "f1_score": 0.3333
+        },
+        "wine glass": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 10,
+          "gt": 16,
+          "precision": 1.0,
+          "recall": 0.375,
+          "f1_score": 0.5455
+        },
+        "cup": {
+          "tp": 9,
+          "fp": 0,
+          "fn": 27,
+          "gt": 36,
+          "precision": 1.0,
+          "recall": 0.25,
+          "f1_score": 0.4
+        },
+        "fork": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 5,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.1667,
+          "f1_score": 0.2857
+        },
+        "knife": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 9,
+          "gt": 16,
+          "precision": 1.0,
+          "recall": 0.4375,
+          "f1_score": 0.6087
+        },
+        "spoon": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 19,
+          "gt": 22,
+          "precision": 1.0,
+          "recall": 0.1364,
+          "f1_score": 0.24
+        },
+        "bowl": {
+          "tp": 16,
+          "fp": 3,
+          "fn": 12,
+          "gt": 28,
+          "precision": 0.8421,
+          "recall": 0.5714,
+          "f1_score": 0.6809
+        },
+        "banana": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "gt": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "sandwich": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 1,
+          "gt": 2,
+          "precision": 0.5,
+          "recall": 0.5,
+          "f1_score": 0.5
+        },
+        "orange": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 4,
+          "gt": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "broccoli": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 9,
+          "gt": 11,
+          "precision": 1.0,
+          "recall": 0.1818,
+          "f1_score": 0.3077
+        },
+        "carrot": {
+          "tp": 9,
+          "fp": 2,
+          "fn": 15,
+          "gt": 24,
+          "precision": 0.8182,
+          "recall": 0.375,
+          "f1_score": 0.5143
+        },
+        "hot dog": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 0,
+          "gt": 2,
+          "precision": 0.6667,
+          "recall": 1.0,
+          "f1_score": 0.8
+        },
+        "pizza": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "donut": {
+          "tp": 14,
+          "fp": 4,
+          "fn": 0,
+          "gt": 14,
+          "precision": 0.7778,
+          "recall": 1.0,
+          "f1_score": 0.875
+        },
+        "cake": {
+          "tp": 3,
+          "fp": 1,
+          "fn": 1,
+          "gt": 4,
+          "precision": 0.75,
+          "recall": 0.75,
+          "f1_score": 0.75
+        },
+        "chair": {
+          "tp": 13,
+          "fp": 3,
+          "fn": 22,
+          "gt": 35,
+          "precision": 0.8125,
+          "recall": 0.3714,
+          "f1_score": 0.5098
+        },
+        "couch": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 4,
+          "gt": 6,
+          "precision": 0.6667,
+          "recall": 0.3333,
+          "f1_score": 0.4444
+        },
+        "potted plant": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 8,
+          "gt": 14,
+          "precision": 1.0,
+          "recall": 0.4286,
+          "f1_score": 0.6
+        },
+        "bed": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 2,
+          "gt": 3,
+          "precision": 1.0,
+          "recall": 0.3333,
+          "f1_score": 0.5
+        },
+        "dining table": {
+          "tp": 5,
+          "fp": 1,
+          "fn": 8,
+          "gt": 13,
+          "precision": 0.8333,
+          "recall": 0.3846,
+          "f1_score": 0.5263
+        },
+        "toilet": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 1,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1_score": 0.6667
+        },
+        "tv": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "laptop": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "gt": 3,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "mouse": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "gt": 2,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "remote": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 5,
+          "gt": 8,
+          "precision": 1.0,
+          "recall": 0.375,
+          "f1_score": 0.5455
+        },
+        "cell phone": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 8,
+          "gt": 8,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "microwave": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "gt": 3,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "oven": {
+          "tp": 2,
+          "fp": 2,
+          "fn": 3,
+          "gt": 5,
+          "precision": 0.5,
+          "recall": 0.4,
+          "f1_score": 0.4444
+        },
+        "sink": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 5,
+          "gt": 6,
+          "precision": 0.5,
+          "recall": 0.1667,
+          "f1_score": 0.25
+        },
+        "refrigerator": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 1,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 0.8,
+          "f1_score": 0.8889
+        },
+        "book": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 28,
+          "gt": 29,
+          "precision": 1.0,
+          "recall": 0.0345,
+          "f1_score": 0.0667
+        },
+        "clock": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 2,
+          "gt": 9,
+          "precision": 1.0,
+          "recall": 0.7778,
+          "f1_score": 0.875
+        },
+        "vase": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "scissors": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "gt": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "teddy bear": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 16,
+          "gt": 21,
+          "precision": 1.0,
+          "recall": 0.2381,
+          "f1_score": 0.3846
+        },
+        "toothbrush": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 3,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 0.4,
+          "f1_score": 0.5714
+        }
+      }
+    },
+    {
+      "confidence_threshold": 0.6,
+      "retained_predictions_count": 309,
+      "micro_averaged_metrics": {
+        "total_tp": 296,
+        "total_fp": 13,
+        "total_fn": 633,
+        "precision": 0.9579,
+        "recall": 0.3186,
+        "f1_score": 0.4782
+      },
+      "macro_averaged_metrics": {
+        "active_classes_count": 71,
+        "precision": 0.765,
+        "recall": 0.3687,
+        "macro_f1": 0.4474,
+        "harmonic_f1_of_macro_p_r": 0.4976
+      },
+      "target_obstacle_classes": {
+        "person": {
+          "class_id": 0,
+          "ground_truth_count": 254,
+          "true_positives": 108,
+          "false_positives": 1,
+          "false_negatives": 146,
+          "precision": 0.9908,
+          "recall": 0.4252,
+          "f1_score": 0.595
+        },
+        "car": {
+          "class_id": 2,
+          "ground_truth_count": 46,
+          "true_positives": 5,
+          "false_positives": 1,
+          "false_negatives": 41,
+          "precision": 0.8333,
+          "recall": 0.1087,
+          "f1_score": 0.1923
+        },
+        "bicycle": {
+          "class_id": 1,
+          "ground_truth_count": 6,
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 6,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "dog": {
+          "class_id": 16,
+          "ground_truth_count": 9,
+          "true_positives": 6,
+          "false_positives": 1,
+          "false_negatives": 3,
+          "precision": 0.8571,
+          "recall": 0.6667,
+          "f1_score": 0.75
+        },
+        "chair": {
+          "class_id": 56,
+          "ground_truth_count": 35,
+          "true_positives": 3,
+          "false_positives": 0,
+          "false_negatives": 32,
+          "precision": 1.0,
+          "recall": 0.0857,
+          "f1_score": 0.1579
+        },
+        "bus": {
+          "class_id": 5,
+          "ground_truth_count": 7,
+          "true_positives": 4,
+          "false_positives": 0,
+          "false_negatives": 3,
+          "precision": 1.0,
+          "recall": 0.5714,
+          "f1_score": 0.7273
+        }
+      },
+      "all_classes": {
+        "person": {
+          "tp": 108,
+          "fp": 1,
+          "fn": 146,
+          "gt": 254,
+          "precision": 0.9908,
+          "recall": 0.4252,
+          "f1_score": 0.595
+        },
+        "bicycle": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 6,
+          "gt": 6,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "car": {
+          "tp": 5,
+          "fp": 1,
+          "fn": 41,
+          "gt": 46,
+          "precision": 0.8333,
+          "recall": 0.1087,
+          "f1_score": 0.1923
+        },
+        "motorcycle": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 2,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 0.6,
+          "f1_score": 0.75
+        },
+        "airplane": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 1,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.8333,
+          "f1_score": 0.9091
+        },
+        "bus": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 3,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.5714,
+          "f1_score": 0.7273
+        },
+        "train": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 1,
+          "gt": 3,
+          "precision": 1.0,
+          "recall": 0.6667,
+          "f1_score": 0.8
+        },
+        "truck": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 11,
+          "gt": 12,
+          "precision": 1.0,
+          "recall": 0.0833,
+          "f1_score": 0.1538
+        },
+        "boat": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 5,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.1667,
+          "f1_score": 0.2857
+        },
+        "traffic light": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 13,
+          "gt": 14,
+          "precision": 0.5,
+          "recall": 0.0714,
+          "f1_score": 0.125
+        },
+        "stop sign": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "bench": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 8,
+          "gt": 9,
+          "precision": 1.0,
+          "recall": 0.1111,
+          "f1_score": 0.2
+        },
+        "bird": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 9,
+          "gt": 16,
+          "precision": 1.0,
+          "recall": 0.4375,
+          "f1_score": 0.6087
+        },
+        "cat": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "gt": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "dog": {
+          "tp": 6,
+          "fp": 1,
+          "fn": 3,
+          "gt": 9,
+          "precision": 0.8571,
+          "recall": 0.6667,
+          "f1_score": 0.75
+        },
+        "horse": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "elephant": {
+          "tp": 13,
+          "fp": 0,
+          "fn": 4,
+          "gt": 17,
+          "precision": 1.0,
+          "recall": 0.7647,
+          "f1_score": 0.8667
+        },
+        "bear": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "gt": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "zebra": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "gt": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "giraffe": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 2,
+          "gt": 9,
+          "precision": 1.0,
+          "recall": 0.7778,
+          "f1_score": 0.875
+        },
+        "backpack": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 6,
+          "gt": 6,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "umbrella": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 16,
+          "gt": 18,
+          "precision": 1.0,
+          "recall": 0.1111,
+          "f1_score": 0.2
+        },
+        "handbag": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 19,
+          "gt": 19,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "tie": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 4,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.4286,
+          "f1_score": 0.6
+        },
+        "suitcase": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 2,
+          "gt": 4,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1_score": 0.6667
+        },
+        "frisbee": {
+          "tp": 4,
+          "fp": 1,
+          "fn": 1,
+          "gt": 5,
+          "precision": 0.8,
+          "recall": 0.8,
+          "f1_score": 0.8
+        },
+        "skis": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "gt": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "snowboard": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 6,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.1429,
+          "f1_score": 0.25
+        },
+        "sports ball": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 5,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.1667,
+          "f1_score": 0.2857
+        },
+        "kite": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 8,
+          "gt": 10,
+          "precision": 1.0,
+          "recall": 0.2,
+          "f1_score": 0.3333
+        },
+        "baseball bat": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 4,
+          "gt": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "baseball glove": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 6,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.1429,
+          "f1_score": 0.25
+        },
+        "skateboard": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 3,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 0.4,
+          "f1_score": 0.5714
+        },
+        "tennis racket": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 6,
+          "gt": 7,
+          "precision": 1.0,
+          "recall": 0.1429,
+          "f1_score": 0.25
+        },
+        "bottle": {
+          "tp": 4,
+          "fp": 1,
+          "fn": 14,
+          "gt": 18,
+          "precision": 0.8,
+          "recall": 0.2222,
+          "f1_score": 0.3478
+        },
+        "wine glass": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 11,
+          "gt": 16,
+          "precision": 1.0,
+          "recall": 0.3125,
+          "f1_score": 0.4762
+        },
+        "cup": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 29,
+          "gt": 36,
+          "precision": 1.0,
+          "recall": 0.1944,
+          "f1_score": 0.3256
+        },
+        "fork": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 5,
+          "gt": 6,
+          "precision": 1.0,
+          "recall": 0.1667,
+          "f1_score": 0.2857
+        },
+        "knife": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 11,
+          "gt": 16,
+          "precision": 1.0,
+          "recall": 0.3125,
+          "f1_score": 0.4762
+        },
+        "spoon": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 21,
+          "gt": 22,
+          "precision": 1.0,
+          "recall": 0.0455,
+          "f1_score": 0.087
+        },
+        "bowl": {
+          "tp": 12,
+          "fp": 1,
+          "fn": 16,
+          "gt": 28,
+          "precision": 0.9231,
+          "recall": 0.4286,
+          "f1_score": 0.5854
+        },
+        "banana": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "gt": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "sandwich": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "gt": 2,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "orange": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 4,
+          "gt": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "broccoli": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 9,
+          "gt": 11,
+          "precision": 1.0,
+          "recall": 0.1818,
+          "f1_score": 0.3077
+        },
+        "carrot": {
+          "tp": 4,
+          "fp": 1,
+          "fn": 20,
+          "gt": 24,
+          "precision": 0.8,
+          "recall": 0.1667,
+          "f1_score": 0.2759
+        },
+        "hot dog": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "pizza": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 1,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 0.8,
+          "f1_score": 0.8889
+        },
+        "donut": {
+          "tp": 13,
+          "fp": 3,
+          "fn": 1,
+          "gt": 14,
+          "precision": 0.8125,
+          "recall": 0.9286,
+          "f1_score": 0.8667
+        },
+        "cake": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 1,
+          "gt": 4,
+          "precision": 1.0,
+          "recall": 0.75,
+          "f1_score": 0.8571
+        },
+        "chair": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 32,
+          "gt": 35,
+          "precision": 1.0,
+          "recall": 0.0857,
+          "f1_score": 0.1579
+        },
+        "couch": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 6,
+          "gt": 6,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "potted plant": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 9,
+          "gt": 14,
+          "precision": 1.0,
+          "recall": 0.3571,
+          "f1_score": 0.5263
+        },
+        "bed": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "gt": 3,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "dining table": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 11,
+          "gt": 13,
+          "precision": 1.0,
+          "recall": 0.1538,
+          "f1_score": 0.2667
+        },
+        "toilet": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 1,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1_score": 0.6667
+        },
+        "tv": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "laptop": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "gt": 3,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "mouse": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "gt": 2,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "remote": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 5,
+          "gt": 8,
+          "precision": 1.0,
+          "recall": 0.375,
+          "f1_score": 0.5455
+        },
+        "cell phone": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 8,
+          "gt": 8,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "microwave": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 1,
+          "gt": 3,
+          "precision": 1.0,
+          "recall": 0.6667,
+          "f1_score": 0.8
+        },
+        "oven": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 4,
+          "gt": 5,
+          "precision": 0.5,
+          "recall": 0.2,
+          "f1_score": 0.2857
+        },
+        "sink": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 5,
+          "gt": 6,
+          "precision": 0.5,
+          "recall": 0.1667,
+          "f1_score": 0.25
+        },
+        "refrigerator": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 2,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 0.6,
+          "f1_score": 0.75
+        },
+        "book": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 28,
+          "gt": 29,
+          "precision": 1.0,
+          "recall": 0.0345,
+          "f1_score": 0.0667
+        },
+        "clock": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 3,
+          "gt": 9,
+          "precision": 1.0,
+          "recall": 0.6667,
+          "f1_score": 0.8
+        },
+        "vase": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "gt": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0
+        },
+        "scissors": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "gt": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "teddy bear": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 18,
+          "gt": 21,
+          "precision": 1.0,
+          "recall": 0.1429,
+          "f1_score": 0.25
+        },
+        "toothbrush": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 3,
+          "gt": 5,
+          "precision": 1.0,
+          "recall": 0.4,
+          "f1_score": 0.5714
+        }
+      }
+    }
+  ],
+  "metric_definitions": {
+    "precision": "TP / (TP + FP) [0.0 if TP + FP == 0]",
+    "recall": "TP / (TP + FN) [0.0 if TP + FN == 0; note TP + FN == GT]",
+    "per_class_f1": "2 * P * R / (P + R) [0.0 if P + R == 0]",
+    "micro_f1": "Calculated directly from pooled counts: 2 * Micro_P * Micro_R / (Micro_P + Micro_R)",
+    "macro_precision": "Arithmetic mean of per-class precision across active classes",
+    "macro_recall": "Arithmetic mean of per-class recall across active classes",
+    "macro_f1": "Arithmetic mean of per-class F1 across active classes",
+    "harmonic_f1_of_macro_p_r": "Harmonic mean of Macro_Precision and Macro_Recall: 2 * Macro_P * Macro_R / (Macro_P + Macro_R)"
+  },
+  "methodological_comparison_note": "Custom operating-threshold metrics measure discrete TP/FP/FN after post-NMS confidence filtering at fixed tau. In contrast, Ultralytics precision and recall are picked from the peak F1 of an interpolated continuous curve. Furthermore, thresholded mAP represents a right-truncated PR curve and is not directly comparable to baseline mAP.",
+  "unresolved_limitations": [
+    "COCO-128 is a small 128-image diagnostic dataset with low target counts for bicycle (6) and bus (7).",
+    "Offline still image testing does not capture first-person wearable camera motion, vibration, or blur.",
+    "Results do not demonstrate physical sensor fusion, real-world obstacle avoidance reliability, or navigation safety."
+  ]
+}

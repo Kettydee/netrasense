@@ -36,6 +36,7 @@ from dataset_collector import DatasetCollector
 from dataset_cleaner import DatasetCleaner
 from face_engine import FaceEngine
 from ensemble_model import MultiModalEnsembleModel
+from obstacle_warning import ObstacleWarningEvaluator, ObstacleState
 
 app = Flask(__name__)
 
@@ -87,6 +88,15 @@ def add_security_headers(response):
 # references the same value.
 SENSOR_HEARTBEAT_TIMEOUT_S = 3.0
 
+# Configurable obstacle warning evaluator instance
+obstacle_evaluator = ObstacleWarningEvaluator(
+    warning_threshold_cm=300.0,
+    stale_timeout_s=SENSOR_HEARTBEAT_TIMEOUT_S,
+    hysteresis_cm=5.0,
+    debounce_count=1,
+    delta_alert_threshold_cm=15.0,
+)
+
 # Global pipeline state
 state = {
     "camera": None,
@@ -108,6 +118,8 @@ state = {
     # Heartbeat bookkeeping — populated by update_sensor_data()
     "sensor_last_update": 0.0,   # time.monotonic() of last valid reading
     "sensor_total_readings": 0,  # lifetime count of accepted readings
+    # Last obstacle warning evaluation
+    "latest_warning_eval": None,
 }
 state_lock = threading.Lock()
 
@@ -115,12 +127,19 @@ state_lock = threading.Lock()
 def update_sensor_data(record):
     """Store the latest validated Arduino measurement for API clients.
 
-    Also sends the corresponding threat level back to the Arduino buzzer.
+    Evaluates obstacle warning logic, tracks repeated measurements,
+    and sends the corresponding threat level back to the Arduino buzzer.
     """
     with state_lock:
         state["sensor_data"] = record
         state["sensor_last_update"] = time.monotonic()
         state["sensor_total_readings"] += 1
+
+        # Evaluate configurable obstacle warning logic
+        dist = record.get("distance_cm") if record else None
+        ts = record.get("timestamp") if record else None
+        warning_eval = obstacle_evaluator.process_reading(dist, reading_timestamp=ts)
+        state["latest_warning_eval"] = warning_eval.to_dict()
 
         # Send buzzer command to Arduino
         reader = state.get("sensor_reader")
@@ -246,7 +265,11 @@ def _build_hardware_status() -> dict:
     if arduino_last_error and not arduino_connected:
         arduino_status = "DISCONNECTED"
 
-    # ── HC-SR04 Ultrasonic ───────────────────────────────────────────
+    # ── HC-SR04 Ultrasonic & Obstacle Warning Evaluator ─────────────
+    # Evaluate current freshness and warning state using the obstacle evaluator
+    obs_eval = obstacle_evaluator.evaluate(current_time=now)
+    obs_dict = obs_eval.to_dict()
+
     sensor_data = state["sensor_data"]
     ultrasonic_active = False
     ultrasonic_distance_cm = None
@@ -258,7 +281,7 @@ def _build_hardware_status() -> dict:
         arduino_connected
         and sensor_data is not None
         and arduino_last_update > 0
-        and (now - arduino_last_update) <= SENSOR_HEARTBEAT_TIMEOUT_S
+        and (now - arduino_last_update) <= obstacle_evaluator.stale_timeout_s
     ):
         ultrasonic_active = True
         ultrasonic_distance_cm = sensor_data.get("distance_cm")
@@ -334,7 +357,14 @@ def _build_hardware_status() -> dict:
             "device_id": ultrasonic_device_id,
             "timestamp": ultrasonic_timestamp,
             "status": ultrasonic_status,
+            "obstacle_state": obs_dict["state"],
+            "is_warning": obs_dict["is_warning"],
+            "is_clear": obs_dict["is_clear"],
+            "is_error": obs_dict["is_error"],
+            "is_unavailable": obs_dict["is_unavailable"],
+            "age_seconds": obs_dict["age_seconds"],
         },
+        "obstacle_warning": obs_dict,
         "camera": {
             "connected": camera_connected,
             "fps": camera_fps,
@@ -534,6 +564,8 @@ def api_latest():
             "detections": state["latest_detections"],
             "sensor_data": sensor_data,
             "sensor_status": sensor_status,
+            # Obstacle warning state and configuration
+            "obstacle_warning": hw.get("obstacle_warning"),
             # Ensemble fused result
             "ensemble": state.get("ensemble_result"),
             # New authoritative hardware status object
@@ -631,12 +663,27 @@ def api_config():
                 tracker = state.get("tracker")
                 if tracker:
                     tracker.set_announce_normal(ann)
+            # Configurable obstacle warning parameters
+            obs_updates = {}
+            if "warning_threshold_cm" in data:
+                obs_updates["warning_threshold_cm"] = float(data["warning_threshold_cm"])
+            if "stale_timeout_s" in data:
+                obs_updates["stale_timeout_s"] = float(data["stale_timeout_s"])
+            if "hysteresis_cm" in data:
+                obs_updates["hysteresis_cm"] = float(data["hysteresis_cm"])
+            if "debounce_count" in data:
+                obs_updates["debounce_count"] = int(data["debounce_count"])
+            if "delta_alert_threshold_cm" in data:
+                obs_updates["delta_alert_threshold_cm"] = float(data["delta_alert_threshold_cm"])
+            if obs_updates:
+                obstacle_evaluator.update_config(**obs_updates)
 
         return jsonify({
             "confidence": state["confidence"],
             "mode": state["mode"],
             "audio_enabled": state["audio_enabled"],
             "announce_normal": state["announce_normal"],
+            "obstacle_warning": obstacle_evaluator.get_config(),
         })
 
 
@@ -947,10 +994,24 @@ def main():
     parser.add_argument("--sensor-device-id", type=str, default="NETRA-001", help="ID added to sensor records")
     parser.add_argument("--sensor-min-distance-cm", type=float, default=2.0, help="Reject sensor readings below this value")
     parser.add_argument("--sensor-max-distance-cm", type=float, default=400.0, help="Reject sensor readings above this value")
+    parser.add_argument("--warning-threshold-cm", type=float, default=300.0, help="Obstacle warning distance threshold in cm (default: 300.0)")
+    parser.add_argument("--stale-timeout-s", type=float, default=3.0, help="Sensor stale data timeout in seconds (default: 3.0)")
+    parser.add_argument("--hysteresis-cm", type=float, default=5.0, help="Obstacle warning hysteresis in cm (default: 5.0)")
+    parser.add_argument("--debounce-count", type=int, default=1, help="Consecutive readings to confirm state transition (default: 1)")
     parser.add_argument("--dataset-dir", type=str, default=None, help="Enable dataset collection; save frames + metadata to this directory")
     parser.add_argument("--allowed-origins", type=str, default=None, help="Comma-separated CORS allowed origins (overrides NETRASENSE_CORS_ORIGINS env)")
 
     args = parser.parse_args()
+
+    # Configure obstacle evaluator from CLI flags
+    obstacle_evaluator.update_config(
+        warning_threshold_cm=args.warning_threshold_cm,
+        stale_timeout_s=args.stale_timeout_s,
+        hysteresis_cm=args.hysteresis_cm,
+        debounce_count=args.debounce_count,
+        min_distance_cm=args.sensor_min_distance_cm,
+        max_distance_cm=args.sensor_max_distance_cm,
+    )
 
     # Override CORS origins from CLI if provided
     if args.allowed_origins:
