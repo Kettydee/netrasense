@@ -28,8 +28,12 @@ export class WebSerialReader {
     this.setupConnectListener();
     try {
       const ports = await (navigator as any).serial.getPorts();
-      if (ports && ports.length > 0) {
-        return await this.openPort(ports[0]);
+      // getPorts() can include previously authorized Bluetooth serial devices.
+      // Only auto-connect when exactly one recognized USB serial adapter exists.
+      const usbVendorIds = new Set([0x2341, 0x2a03, 0x1a86, 0x10c4, 0x0403, 0x2e8a]);
+      const usbPorts = (ports ?? []).filter((port: any) => usbVendorIds.has(port.getInfo?.().usbVendorId));
+      if (usbPorts.length === 1) {
+        return await this.openPort(usbPorts[0]);
       }
     } catch {
       // ignore
@@ -46,7 +50,18 @@ export class WebSerialReader {
     }
 
     try {
-      const port = await (navigator as any).serial.requestPort();
+      // Limit the chooser to common Arduino boards and USB-to-serial adapters,
+      // so paired audio/Bluetooth devices are not mistaken for the sensor.
+      const port = await (navigator as any).serial.requestPort({
+        filters: [
+          { usbVendorId: 0x2341 }, // Arduino
+          { usbVendorId: 0x2a03 }, // Arduino
+          { usbVendorId: 0x1a86 }, // CH340/CH341
+          { usbVendorId: 0x10c4 }, // CP210x
+          { usbVendorId: 0x0403 }, // FTDI
+          { usbVendorId: 0x2e8a }, // RP2040
+        ],
+      });
       return await this.openPort(port);
     } catch (err: any) {
       this.isReading = false;
