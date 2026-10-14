@@ -675,16 +675,12 @@ function DashboardPage() {
 
   // Distance is STRICTLY from the physical ultrasonic sensor (never from the webcam):
   const liveDistance = hasSensorData && rawHwDistance !== null
-    ? Math.round(rawHwDistance)
+    ? Number(rawHwDistance.toFixed(1))
     : null;
-  // Only current sensor or live camera measurements belong in the live gauge.
-  // Historical incident rows remain in the incident list, not the live readout.
+  // The live distance gauge is sourced exclusively from the ultrasonic sensor.
+  // Camera detections identify objects but do not include a measured distance.
   const isLiveVisionActive = !!(liveVision && now - liveVision.timestamp < 5000);
-  const currentDistance = liveDistance !== null
-    ? liveDistance
-    : isLiveVisionActive
-      ? liveVision.distance_cm
-      : MAX_DISTANCE_CM;
+  const currentDistance = liveDistance ?? MAX_DISTANCE_CM;
 
   // Active object identification strictly from webcam:
   const currentObject = isLiveVisionActive && liveVision.object
@@ -696,9 +692,7 @@ function DashboardPage() {
     ? hardwareThreatToUiLevel(rawHwThreat)
     : hasSensorData && liveDistance !== null
       ? classifyDistance(liveDistance)
-      : isLiveVisionActive
-        ? liveVision.threat_level
-        : "Normal";
+      : "Normal";
 
   const level: ThreatLevel = sensorLevel;
 
@@ -990,7 +984,7 @@ function DashboardPage() {
                 <DistanceMeter
                   distance={currentDistance}
                   level={level}
-                  hasData={hasSensorData || isLiveVisionActive}
+                  hasData={hasSensorData}
                 />
               )}
             </div>
