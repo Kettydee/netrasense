@@ -51,9 +51,13 @@ export interface VisionTelemetryEvent {
 
 interface BlindsEyeLensProps {
   onVisionTelemetry?: (event: VisionTelemetryEvent) => void;
+  onCameraStatusChange?: (active: boolean) => void;
 }
 
-export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
+export function BlindsEyeLens({
+  onVisionTelemetry,
+  onCameraStatusChange,
+}: BlindsEyeLensProps = {}) {
   const [engineMode, setEngineMode] = useState<"yolo" | "browser">("yolo");
   const [serverUrl, setServerUrl] = useState<string>("http://localhost:5000");
   const [isServerLive, setIsServerLive] = useState<boolean>(false);
@@ -74,6 +78,10 @@ interface BrowserObjectDetectionModel {
   const imgStreamRef = useRef<HTMLImageElement | null>(null);
   const [browserModel, setBrowserModel] = useState<BrowserObjectDetectionModel | null>(null);
   const [isBrowserCameraActive, setIsBrowserCameraActive] = useState<boolean>(false);
+
+  useEffect(() => {
+    onCameraStatusChange?.(isBrowserCameraActive);
+  }, [isBrowserCameraActive, onCameraStatusChange]);
   const [voiceAlerts, setVoiceAlerts] = useState<boolean>(true);
   const [browserDetectedItem, setBrowserDetectedItem] = useState<string>("Scanning...");
   const [browserDetections, setBrowserDetections] = useState<
