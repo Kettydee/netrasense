@@ -12,11 +12,15 @@ export class WebSerialReader {
   private port: any = null;
   private reader: any = null;
   private isReading = false;
-  private onReadingCallback: ((reading: WebSerialReading) => void) | null = null;
-  private onStatusCallback: ((connected: boolean, error?: string) => void) | null = null;
+  private onReadingCallbacks = new Set<(reading: WebSerialReading) => void>();
+  private onStatusCallbacks = new Set<(connected: boolean, error?: string) => void>();
 
   public isSupported(): boolean {
     return typeof window !== "undefined" && "serial" in navigator;
+  }
+
+  public isConnected(): boolean {
+    return this.isReading;
   }
 
   public async autoConnectIfAuthorized(): Promise<boolean> {
@@ -45,7 +49,7 @@ export class WebSerialReader {
       return await this.openPort(port);
     } catch (err: any) {
       this.isReading = false;
-      this.onStatusCallback?.(false, err?.message || "Failed to connect to USB device");
+      this.notifyStatus(false, err?.message || "Failed to connect to USB device");
       return false;
     }
   }
@@ -58,14 +62,14 @@ export class WebSerialReader {
       this.port = selectedPort;
       await this.port.open({ baudRate: 9600 });
       this.isReading = true;
-      this.onStatusCallback?.(true);
+      this.notifyStatus(true);
 
       // Start continuous background read loop
       this.readLoop();
       return true;
     } catch (err: any) {
       this.isReading = false;
-      this.onStatusCallback?.(false, err?.message || "Could not open serial port at 9600 baud");
+      this.notifyStatus(false, err?.message || "Could not open serial port at 9600 baud");
       return false;
     }
   }
@@ -89,7 +93,7 @@ export class WebSerialReader {
     } finally {
       this.port = null;
       this.reader = null;
-      this.onStatusCallback?.(false);
+      this.notifyStatus(false);
     }
   }
 
@@ -127,7 +131,7 @@ export class WebSerialReader {
         }
       } catch (err: any) {
         if (this.isReading) {
-          this.onStatusCallback?.(false, err?.message);
+          this.notifyStatus(false, err?.message);
         }
         break;
       }
@@ -159,23 +163,48 @@ export class WebSerialReader {
         else if (distance >= 45) threat = "ALARM";
         else threat = "CRITICAL";
 
-        this.onReadingCallback?.({
+        const reading: WebSerialReading = {
           distance_cm: Math.round(distance),
           threat_level: threat,
           timestamp: new Date().toISOString(),
-        });
+        };
+
+        for (const cb of this.onReadingCallbacks) {
+          try {
+            cb(reading);
+          } catch {
+            // ignore callback errors
+          }
+        }
       }
     } catch {
       // ignore malformed lines
     }
   }
 
-  public onReading(cb: (reading: WebSerialReading) => void) {
-    this.onReadingCallback = cb;
+  private notifyStatus(connected: boolean, error?: string) {
+    for (const cb of this.onStatusCallbacks) {
+      try {
+        cb(connected, error);
+      } catch {
+        // ignore
+      }
+    }
   }
 
-  public onStatus(cb: (connected: boolean, error?: string) => void) {
-    this.onStatusCallback = cb;
+  public onReading(cb: (reading: WebSerialReading) => void): () => void {
+    this.onReadingCallbacks.add(cb);
+    return () => {
+      this.onReadingCallbacks.delete(cb);
+    };
+  }
+
+  public onStatus(cb: (connected: boolean, error?: string) => void): () => void {
+    this.onStatusCallbacks.add(cb);
+    cb(this.isReading);
+    return () => {
+      this.onStatusCallbacks.delete(cb);
+    };
   }
 }
 

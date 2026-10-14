@@ -1028,6 +1028,25 @@ function DashboardPage() {
                 </span>
               </li>
             </ul>
+
+            {!isWebSerialConnected ? (
+              <Button
+                size="default"
+                className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 py-2.5 rounded-xl cursor-pointer"
+                onClick={() => webSerialManager.connect()}
+              >
+                <span>🔌 Connect USB Glasses</span>
+              </Button>
+            ) : (
+              <Button
+                size="default"
+                variant="outline"
+                className="w-full mt-4 border-rose-500/50 text-rose-400 hover:bg-rose-500/10 font-bold flex items-center justify-center gap-2 py-2.5 rounded-xl cursor-pointer"
+                onClick={() => webSerialManager.disconnect()}
+              >
+                <span>Disconnect USB Glasses</span>
+              </Button>
+            )}
           </section>
           <section aria-labelledby="contacts-heading" className="surface-card p-5">
             <h2 id="contacts-heading" className="text-lg font-bold">

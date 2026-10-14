@@ -19,6 +19,7 @@ import { CAMERA_STREAM_URL_KEY } from "@/components/CameraFeed";
 import { VoiceSelector } from "@/components/VoiceSelector";
 import { CameraDeviceSelector } from "@/components/CameraDeviceSelector";
 import { speak } from "@/lib/netrasense";
+import { webSerialManager } from "@/lib/webSerial";
 
 interface YoloDetection {
   label: string;
@@ -544,7 +545,7 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
                     or switch to <strong className="text-white">Browser Lens</strong> above.
                   </p>
                 </div>
-                <div className="flex gap-2 mt-2">
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
                   <Button
                     size="sm"
                     variant="outline"
@@ -559,6 +560,13 @@ export function BlindsEyeLens({ onVisionTelemetry }: BlindsEyeLensProps = {}) {
                     onClick={() => setEngineMode("browser")}
                   >
                     Use Browser Camera
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 text-white hover:bg-emerald-500 font-bold border border-emerald-400/50 shadow-md shadow-emerald-950/40"
+                    onClick={() => webSerialManager.connect()}
+                  >
+                    🔌 Connect USB Glasses
                   </Button>
                 </div>
               </div>

@@ -20,6 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { fetchUnifiedStatus } from "@/lib/sensor";
+import { webSerialManager } from "@/lib/webSerial";
 
 // --- Precision Framed Eye Logo Component ---
 function NetraSenseFramedEye({ className = "h-8.5 w-auto" }: { className?: string }) {
@@ -147,9 +148,17 @@ export function AppShell({ title, description, children, actions }: AppShellProp
     retry: false,
   });
 
-  // Use hardware_status from the API for accurate connection state.
+  const [isUsbConnected, setIsUsbConnected] = useState(false);
+
+  useEffect(() => {
+    return webSerialManager.onStatus((connected) => {
+      setIsUsbConnected(connected);
+    });
+  }, []);
+
+  // Use hardware_status from the API or direct USB Web Serial for accurate connection state.
   const hwStatus = statusQuery.data?.hardware?.arduino;
-  const isSensorConnected = hwStatus ? hwStatus.connected : false;
+  const isSensorConnected = isUsbConnected || (hwStatus ? hwStatus.connected : false);
   const isServerReachable = statusQuery.data !== undefined;
 
   return (
@@ -253,38 +262,55 @@ export function AppShell({ title, description, children, actions }: AppShellProp
 
             {/* Arduino Device Connected Status Pill */}
             {isSidebarOpen ? (
-              <div
-                className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-[11px] font-bold tracking-wider uppercase transition-colors ${
+              <button
+                type="button"
+                onClick={() => {
+                  if (isUsbConnected) {
+                    void webSerialManager.disconnect();
+                  } else {
+                    void webSerialManager.connect();
+                  }
+                }}
+                className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-[11px] font-bold tracking-wider uppercase transition-colors text-left cursor-pointer ${
                   isSensorConnected
                     ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
-                    : "border-zinc-500/30 bg-zinc-500/10 text-zinc-400"
+                    : "border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
                 }`}
+                title={isSensorConnected ? "Click to disconnect USB" : "Click to connect USB device"}
               >
                 <div className="flex items-center gap-2 truncate">
                   <span
                     className={`size-2 rounded-full ${
-                      isSensorConnected ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
+                      isSensorConnected ? "bg-emerald-500 animate-pulse" : "bg-emerald-400 animate-ping"
                     }`}
                   />
                   <span className="truncate">
-                    {isSensorConnected ? "DEVICE ONLINE" : "DEVICE DISCONNECTED"}
+                    {isSensorConnected ? (isUsbConnected ? "USB ONLINE" : "DEVICE ONLINE") : "🔌 CONNECT USB"}
                   </span>
                 </div>
                 <span className="font-mono text-[9px] opacity-70">
-                  {isSensorConnected ? hwStatus?.port ?? "ARDUINO" : "NO DEVICE"}
+                  {isSensorConnected ? (isUsbConnected ? "COM" : hwStatus?.port ?? "ARDUINO") : "CLICK HERE"}
                 </span>
-              </div>
+              </button>
             ) : (
-              <div
-                className="flex justify-center py-1"
-                title={isSensorConnected ? "DEVICE ONLINE" : "DEVICE DISCONNECTED"}
+              <button
+                type="button"
+                onClick={() => {
+                  if (isUsbConnected) {
+                    void webSerialManager.disconnect();
+                  } else {
+                    void webSerialManager.connect();
+                  }
+                }}
+                className="flex justify-center py-1 cursor-pointer"
+                title={isSensorConnected ? "DEVICE ONLINE" : "Click to Connect USB"}
               >
                 <span
                   className={`size-3 rounded-full ${
-                    isSensorConnected ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
+                    isSensorConnected ? "bg-emerald-500 animate-pulse" : "bg-emerald-400 animate-ping"
                   }`}
                 />
-              </div>
+              </button>
             )}
           </div>
 
@@ -327,7 +353,7 @@ export function AppShell({ title, description, children, actions }: AppShellProp
       {/* --- MAIN CONTENT VIEWPORT --- */}
       <main className="flex-1 overflow-y-auto px-6 py-8 transition-all duration-300 ease-in-out max-w-full">
         {/* Server unreachable banner */}
-        {!isServerReachable && (
+        {!isServerReachable && !isUsbConnected && (
           <div
             className="mb-4 flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-600 dark:text-amber-400 animate-pulse"
             role="alert"
@@ -349,6 +375,30 @@ export function AppShell({ title, description, children, actions }: AppShellProp
 
           <div className="flex items-center gap-3">
             {actions}
+
+            {/* Direct Web Serial USB connect/disconnect button in main header */}
+            {isUsbConnected ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => webSerialManager.disconnect()}
+                className="inline-flex items-center gap-2 rounded-2xl border-rose-500/50 bg-rose-500/10 px-4 py-3 h-auto text-sm font-bold text-rose-400 hover:bg-rose-500/20 cursor-pointer shadow-sm transition-all"
+                title="Disconnect USB Hardware"
+              >
+                <span className="size-2 rounded-full bg-rose-400" />
+                <span>Disconnect USB</span>
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={() => webSerialManager.connect()}
+                className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 h-auto text-sm font-extrabold text-white shadow-[0_0_20px_rgba(16,185,129,0.35)] border border-emerald-400/60 hover:bg-emerald-500 hover:shadow-[0_0_28px_rgba(16,185,129,0.6)] cursor-pointer active:scale-95 transition-all"
+                title="Connect directly to Arduino Uno via USB"
+              >
+                <span className="size-2 rounded-full bg-white animate-pulse" />
+                <span>🔌 Connect USB Glasses</span>
+              </Button>
+            )}
 
             <button
               type="button"
