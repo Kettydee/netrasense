@@ -231,7 +231,7 @@ export class WebSerialReader {
 
       // Limit to sensor envelope (2 cm to 400 cm) and adopt real-time distance immediately with zero lag
       const bounded = Math.max(2, Math.min(400, rawDistance));
-      const finalDistance = Math.round(bounded);
+      const finalDistance = Number(bounded.toFixed(1));
 
       // Aligned Threat Level Classification matching NetraSense zones:
       // Critical (< 50 cm), Alarm (50 - 99 cm), Warning (100 - 300 cm), Normal (> 300 cm)
