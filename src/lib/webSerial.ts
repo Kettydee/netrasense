@@ -76,27 +76,13 @@ export class WebSerialReader {
       await this.port.open({ baudRate: 9600 });
       this.isReading = true;
 
-      // Provide immediate valid baseline telemetry (400cm / NORMAL clear path)
-      // while Arduino bootloader finishes 1.5s reset cycle
-      const initialReading: WebSerialReading = {
-        distance_cm: 400,
-        threat_level: "NORMAL",
-        timestamp: new Date().toISOString(),
-      };
-      // Keep filter empty so the very first real hardware ping immediately takes effect
+      // Do not publish a synthetic distance at connection time.
+      // The dashboard should show no data until the first measurement arrives.
       this.smoothedDistance = null;
       this.recentSamples = [];
       this.lastEmitReading = null;
       this.lastEmitTime = 0;
-
       this.notifyStatus(true);
-      for (const cb of this.onReadingCallbacks) {
-        try {
-          cb(initialReading);
-        } catch {
-          // ignore
-        }
-      }
 
       // Start continuous background read loop
       this.readLoop();
