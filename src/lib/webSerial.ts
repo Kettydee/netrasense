@@ -140,13 +140,14 @@ export class WebSerialReader {
             if (done) break;
             if (value) {
               buffer += decoder.decode(value, { stream: true });
-              let newlineIndex: number;
-              while ((newlineIndex = buffer.indexOf("\n")) >= 0) {
-                const line = buffer.slice(0, newlineIndex).trim();
-                buffer = buffer.slice(newlineIndex + 1);
-                if (line) {
-                  this.parseLine(line);
-                }
+              // Serial devices vary: Arduino println uses CRLF, while some boards
+              // and USB adapters send only CR or LF. Retain any incomplete final line.
+              const lines = buffer.split(/[\r\n]+/);
+              const hasLineEnding = /[\r\n]$/.test(buffer);
+              buffer = hasLineEnding ? "" : (lines.pop() ?? "");
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed) this.parseLine(trimmed);
               }
             }
           }
