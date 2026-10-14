@@ -113,6 +113,25 @@ function DistanceMeter({
   const radius = 76;
   const circumference = 2 * Math.PI * radius;
 
+  // Direct hex colors guarantee the SVG circle renders cleanly regardless of theme
+  const strokeColor =
+    level === "Collision"
+      ? "#f43f5e"
+      : level === "Alarming"
+        ? "#f97316"
+        : level === "Warning"
+          ? "#f59e0b"
+          : "#10b981";
+
+  const barColor =
+    level === "Collision"
+      ? "bg-rose-500"
+      : level === "Alarming"
+        ? "bg-orange-500"
+        : level === "Warning"
+          ? "bg-amber-400"
+          : "bg-emerald-400";
+
   return (
     <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-8">
       <svg
@@ -121,8 +140,18 @@ function DistanceMeter({
         viewBox="0 0 180 180"
         role="img"
         aria-label={hasData ? `${distance} centimetres to obstacle` : "No sensor data available"}
+        className="shrink-0 drop-shadow-md"
       >
-        <circle cx="90" cy="90" r={radius} fill="none" strokeWidth="14" className="stroke-muted" />
+        {/* Background track circle */}
+        <circle
+          cx="90"
+          cy="90"
+          r={radius}
+          fill="none"
+          strokeWidth="14"
+          stroke="rgba(255, 255, 255, 0.12)"
+        />
+        {/* Active Proximity Ring */}
         {hasData ? (
           <circle
             cx="90"
@@ -131,11 +160,11 @@ function DistanceMeter({
             fill="none"
             strokeWidth="14"
             strokeLinecap="round"
-            className={threatStyles[level].ring}
+            stroke={strokeColor}
             strokeDasharray={circumference}
             strokeDashoffset={circumference * (1 - pct)}
             transform="rotate(-90 90 90)"
-            style={{ transition: "stroke-dashoffset 400ms ease" }}
+            style={{ transition: "stroke-dashoffset 300ms ease, stroke 300ms ease" }}
           />
         ) : (
           <circle
@@ -145,26 +174,46 @@ function DistanceMeter({
             fill="none"
             strokeWidth="14"
             strokeLinecap="round"
+            stroke="rgba(255, 255, 255, 0.2)"
             strokeDasharray={circumference}
             strokeDashoffset={circumference}
             transform="rotate(-90 90 90)"
-            className="stroke-muted-foreground/30"
           />
         )}
-        <text x="90" y="86" textAnchor="middle" className="fill-foreground text-2xl font-extrabold">
+        {/* High-contrast Distance Text in bright white */}
+        <text
+          x="90"
+          y="84"
+          textAnchor="middle"
+          fill="#ffffff"
+          className="text-3xl font-black tracking-tight"
+          style={{ fill: "#ffffff", fontWeight: 900 }}
+        >
           {hasData ? distance : "--"}
         </text>
-        <text x="90" y="108" textAnchor="middle" className="fill-muted-foreground text-xs">
+        <text
+          x="90"
+          y="108"
+          textAnchor="middle"
+          fill="#94a3b8"
+          className="text-xs font-bold uppercase tracking-widest"
+          style={{ fill: "#94a3b8" }}
+        >
           {hasData ? "cm" : "no data"}
         </text>
       </svg>
       <div className="w-full">
-        <p className="text-sm font-semibold text-muted-foreground">
-          Proximity range 0 – {MAX_DISTANCE_CM} cm
-        </p>
-        <div className="mt-2 h-5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-muted-foreground">
+            Proximity range 0 – {MAX_DISTANCE_CM} cm
+          </p>
+          <span className="font-mono text-sm font-black text-foreground">
+            {hasData ? `${distance} cm` : "--"}
+          </span>
+        </div>
+        <div className="mt-2 h-5 w-full overflow-hidden rounded-full bg-zinc-800/80 border border-zinc-700/50" aria-hidden="true">
           <div
-            className={`h-full rounded-full transition-all duration-500 ${hasData ? threatStyles[level].bar : "bg-muted-foreground/20"}`}
+            className={`h-full rounded-full transition-all duration-400 ${hasData ? barColor : "bg-zinc-600/30"}`}
             style={{ width: hasData ? `${Math.max(4, pct * 100)}%` : "0%" }}
           />
         </div>

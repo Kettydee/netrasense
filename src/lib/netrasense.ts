@@ -25,34 +25,34 @@ export const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 export const MAX_DISTANCE_CM = 400;
 
-/** Semantic token classes per threat level (never hardcode colors in components). */
+/** Semantic token classes per threat level (high-contrast, valid Tailwind v4 classes). */
 export const threatStyles: Record<
   ThreatLevel,
   { badge: string; text: string; bar: string; ring: string }
 > = {
   Normal: {
-    badge: "bg-normal text-normal-foreground",
-    text: "text-normal",
-    bar: "bg-normal",
-    ring: "stroke-normal",
+    badge: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40",
+    text: "text-emerald-400",
+    bar: "bg-emerald-400",
+    ring: "stroke-emerald-400",
   },
   Warning: {
-    badge: "bg-warning text-warning-foreground",
-    text: "text-warning",
-    bar: "bg-warning",
-    ring: "stroke-warning",
+    badge: "bg-amber-500/20 text-amber-400 border border-amber-500/40",
+    text: "text-amber-400",
+    bar: "bg-amber-400",
+    ring: "stroke-amber-400",
   },
   Alarming: {
-    badge: "bg-alarming text-alarming-foreground",
-    text: "text-alarming",
-    bar: "bg-alarming",
-    ring: "stroke-alarming",
+    badge: "bg-orange-500/20 text-orange-400 border border-orange-500/40",
+    text: "text-orange-400",
+    bar: "bg-orange-400",
+    ring: "stroke-orange-400",
   },
   Collision: {
-    badge: "bg-collision text-collision-foreground",
-    text: "text-collision",
-    bar: "bg-collision",
-    ring: "stroke-collision",
+    badge: "bg-rose-500/20 text-rose-400 border border-rose-500/40",
+    text: "text-rose-400",
+    bar: "bg-rose-500",
+    ring: "stroke-rose-500",
   },
 };
 

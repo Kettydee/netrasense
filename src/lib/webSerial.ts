@@ -83,10 +83,11 @@ export class WebSerialReader {
         threat_level: "NORMAL",
         timestamp: new Date().toISOString(),
       };
-      this.smoothedDistance = 400;
-      this.recentSamples = [400];
-      this.lastEmitReading = initialReading;
-      this.lastEmitTime = Date.now();
+      // Keep filter empty so the very first real hardware ping immediately takes effect
+      this.smoothedDistance = null;
+      this.recentSamples = [];
+      this.lastEmitReading = null;
+      this.lastEmitTime = 0;
 
       this.notifyStatus(true);
       for (const cb of this.onReadingCallbacks) {
@@ -273,15 +274,17 @@ export class WebSerialReader {
       else threat = "NORMAL";
 
       const now = Date.now();
-      // Throttle broadcast: emit at most every 75ms unless threat level changed or distance jumped >= 3 cm
+      // Throttle broadcast: emit at most every 50ms unless threat level changed or distance changed
       if (
         this.lastEmitReading &&
-        now - this.lastEmitTime < 75 &&
+        now - this.lastEmitTime < 50 &&
         threat === this.lastEmitReading.threat_level &&
-        Math.abs(finalDistance - this.lastEmitReading.distance_cm) < 3
+        Math.abs(finalDistance - this.lastEmitReading.distance_cm) < 1
       ) {
         return;
       }
+
+      console.log(`[WebSerial Ultrasonic] raw: ${rawDistance}cm -> filtered: ${finalDistance}cm (${threat})`);
 
       const reading: WebSerialReading = {
         distance_cm: finalDistance,
