@@ -46,9 +46,7 @@ import { SmartAssistiveSuite } from "@/components/SmartAssistiveSuite";
 
 export interface VisionTelemetryEvent {
   object: string;
-  distance_cm: number;
-  threat_level: "Normal" | "Warning" | "Alarming" | "Collision";
-  direction?: string;
+  direction?: "left" | "center" | "right";
 }
 
 interface BlindsEyeLensProps {
@@ -175,12 +173,6 @@ interface BrowserObjectDetectionModel {
               ) {
                 onVisionTelemetry?.({
                   object: data.closest_obstacle.object,
-                  distance_cm:
-                    typeof data.closest_obstacle.distance_cm === "number" &&
-                    data.closest_obstacle.distance_cm > 0
-                      ? data.closest_obstacle.distance_cm
-                      : 400,
-                  threat_level: (data.closest_obstacle.threat_level as any) || "Normal",
                 });
               }
             }
@@ -378,23 +370,17 @@ interface BrowserObjectDetectionModel {
               (prev, curr) => (curr.bbox[3] > prev.bbox[3] ? curr : prev),
               predictions[0]!,
             );
-            const relH = Math.max(0.05, top.bbox[3] / canvas.height);
-            const approxDistCm = Math.round(
-              Math.max(25, Math.min(400, (1.1 / (relH + 0.1)) * 100)),
-            );
-            const threat =
-              approxDistCm <= 40
-                ? "Collision"
-                : approxDistCm <= 100
-                  ? "Alarming"
-                  : approxDistCm <= 200
-                    ? "Warning"
-                    : "Normal";
+            const centerX = top.bbox[0] + top.bbox[2] / 2;
+            const topDir: "left" | "center" | "right" =
+              centerX < canvas.width * 0.33
+                ? "left"
+                : centerX > canvas.width * 0.66
+                  ? "right"
+                  : "center";
 
             onVisionTelemetry?.({
               object: top.class,
-              distance_cm: approxDistCm,
-              threat_level: threat,
+              direction: topDir,
             });
 
             // Remove duplicates for display summary
@@ -402,21 +388,16 @@ interface BrowserObjectDetectionModel {
             setBrowserDetectedItem(uniqueSummaries.join(" · "));
             setBrowserDetections(
               predictions.map((p) => {
-                const relH = Math.max(0.05, p.bbox[3] / canvas.height);
-                const approxDistCm = Math.round(
-                  Math.max(25, Math.min(400, (1.1 / (relH + 0.1)) * 100)),
-                );
-                const centerX = p.bbox[0] + p.bbox[2] / 2;
+                const cX = p.bbox[0] + p.bbox[2] / 2;
                 const dir =
-                  centerX < canvas.width * 0.33
+                  cX < canvas.width * 0.33
                     ? "left"
-                    : centerX > canvas.width * 0.66
+                    : cX > canvas.width * 0.66
                       ? "right"
                       : "center";
                 return {
                   label: p.class,
                   direction: dir,
-                  distance_cm: approxDistCm,
                 };
               }),
             );

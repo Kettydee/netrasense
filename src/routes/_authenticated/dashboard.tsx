@@ -329,9 +329,8 @@ function DashboardPage() {
   const [sessionMinutes, setSessionMinutes] = useState<number>(0);
   const [liveVision, setLiveVision] = useState<{
     object: string;
-    distance_cm: number;
-    threat_level: ThreatLevel;
     timestamp: number;
+    direction?: string;
   } | null>(null);
   const [liveIncidents, setLiveIncidents] = useState<Telemetry[]>([]);
   const lastLoggedVisionRef = useRef<Map<string, number>>(new Map());
@@ -462,16 +461,17 @@ function DashboardPage() {
       const timestamp = Date.now();
       setLiveVision({
         object: event.object,
-        distance_cm: event.distance_cm,
-        threat_level: event.threat_level,
         timestamp,
+        direction: event.direction,
       });
 
       const lastLogged = lastLoggedVisionRef.current.get(event.object) || 0;
       if (timestamp - lastLogged > 3500) {
         lastLoggedVisionRef.current.set(event.object, timestamp);
 
-        const isObstacle = event.threat_level !== "Normal";
+        const currentSensorDist = webSerialData?.distance_cm ?? hw?.ultrasonic.distance_cm ?? null;
+        const currentThreat = currentSensorDist !== null ? classifyDistance(currentSensorDist) : "Normal";
+        const isObstacle = currentThreat !== "Normal";
         let newDodged = localDailyDodged;
         let newDist = localDailyDistM + 15;
 
@@ -492,9 +492,9 @@ function DashboardPage() {
           id: `vis-${timestamp}-${Math.random().toString(36).slice(2, 6)}`,
           user_id: userId || "guest",
           detected_object: event.object.charAt(0).toUpperCase() + event.object.slice(1),
-          distance_cm: event.distance_cm,
-          threat_level: event.threat_level,
-          action_taken: "AI Vision spatial detection",
+          distance_cm: currentSensorDist ?? 0,
+          threat_level: currentThreat,
+          action_taken: currentSensorDist !== null ? "Ultrasonic Sensor + Camera Detection" : "Camera Detection",
           created_at: new Date().toISOString(),
         };
 
@@ -508,9 +508,9 @@ function DashboardPage() {
               .insert({
                 user_id: userId,
                 detected_object: newIncident.detected_object,
-                distance_cm: event.distance_cm,
-                threat_level: event.threat_level,
-                action_taken: "AI Vision spatial detection",
+                distance_cm: newIncident.distance_cm,
+                threat_level: newIncident.threat_level,
+                action_taken: newIncident.action_taken,
               })
           ).then(() => {
             queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
@@ -609,34 +609,43 @@ function DashboardPage() {
         statusQuery.data?.ensemble?.ultrasonic?.threat_level ??
         null;
 
-  // Determine if we have ANY valid sensor data right now
+  // Determine if we have ANY valid physical ultrasonic sensor data right now
   const hasSensorData =
     (isWebSerialConnected && webSerialData !== null) ||
     ((hw?.ultrasonic.active || !!statusQuery.data?.sensor_data || !!statusQuery.data?.ensemble?.ultrasonic) && rawHwDistance !== null);
 
-  // Distance: real value only when sensor is active
-  const liveDistance = hasSensorData ? Math.round(rawHwDistance!) : null;
+  // Distance is STRICTLY from the physical ultrasonic sensor (never from the webcam):
+  const liveDistance = hasSensorData && rawHwDistance !== null ? Math.round(rawHwDistance) : null;
+  const currentDistance = liveDistance !== null
+    ? liveDistance
+    : latest
+      ? Math.round(Number(latest.distance_cm))
+      : MAX_DISTANCE_CM;
 
-  // Authoritative Threat level matching distance zones
+  // Active object identification strictly from webcam:
+  const isLiveVisionActive = !!(liveVision && now - liveVision.timestamp < 5000);
+  const currentObject = isLiveVisionActive && liveVision.object
+    ? (liveVision.object.charAt(0).toUpperCase() + liveVision.object.slice(1))
+    : latest
+      ? latest.detected_object
+      : (currentDistance < 300 ? "Obstacle" : "Pathway");
+
+  // Authoritative Threat level matching distance zones (strictly derived from physical distance):
   const sensorLevel = hasSensorData && rawHwThreat
     ? hardwareThreatToUiLevel(rawHwThreat)
     : hasSensorData && liveDistance !== null
       ? classifyDistance(liveDistance)
-      : isLiveVisionActive && liveVision?.threat_level
-        ? liveVision.threat_level
-        : latest
-          ? classifyDistance(Math.round(Number(latest.distance_cm)))
-          : "Normal";
+      : latest
+        ? classifyDistance(Math.round(Number(latest.distance_cm)))
+        : "Normal";
 
-  const level: ThreatLevel = sensorLevel ?? classifyDistance(currentDistance);
+  const level: ThreatLevel = sensorLevel;
 
   const liveThreatLabel = hasSensorData && rawHwThreat
     ? rawHwThreat
     : hasSensorData && liveDistance !== null
       ? (level === "Collision" ? "CRITICAL" : level === "Alarming" ? "ALARM" : level === "Warning" ? "WARNING" : "NORMAL")
-      : isLiveVisionActive
-        ? (level === "Collision" ? "CRITICAL" : level === "Alarming" ? "ALARM" : level === "Warning" ? "WARNING" : "NORMAL")
-        : NO_DATA_SENTINEL;
+      : NO_DATA_SENTINEL;
 
   useEffect(() => {
     if (!voiceOn) return;
@@ -644,12 +653,12 @@ function DashboardPage() {
       lastSpokenId.current = null;
       return;
     }
-    if (lastSpokenId.current === level) return;
-    lastSpokenId.current = level;
-    const source = hasSensorData ? "Obstacle" : (latest?.detected_object ?? "Obstacle");
-    const distText = liveDistance !== null ? `${liveDistance} centimeters` : "unknown distance";
-    speak(`Warning: ${source} at ${distText}`);
-  }, [latest?.detected_object, level, liveDistance, hasSensorData, voiceOn]);
+    const alertId = `${currentObject}-${level}`;
+    if (lastSpokenId.current === alertId) return;
+    lastSpokenId.current = alertId;
+    const distText = liveDistance !== null ? `${liveDistance} centimeters` : "caution";
+    speak(`Warning: ${currentObject} at ${distText}`);
+  }, [currentObject, level, liveDistance, voiceOn]);
 
   const simulate = useCallback(async () => {
     if (!userId) return;
@@ -720,22 +729,6 @@ function DashboardPage() {
     localLifetimeMinutes,
     historicalLifetimeMinutes + sessionMinutes,
   );
-
-  const isLiveVisionActive = !!(liveVision && now - liveVision.timestamp < 4500);
-  const currentDistance = (hasSensorData && liveDistance !== null)
-    ? liveDistance
-    : isLiveVisionActive
-      ? liveVision.distance_cm
-      : latest
-        ? Math.round(Number(latest.distance_cm))
-        : MAX_DISTANCE_CM;
-  const currentObject = (hasSensorData && liveDistance !== null)
-    ? (currentDistance < 300 ? "Obstacle" : "Pathway")
-    : isLiveVisionActive
-      ? liveVision.object
-      : latest
-        ? latest.detected_object
-        : null;
 
   const allIncidents: Telemetry[] = [
     ...liveIncidents,
@@ -860,9 +853,9 @@ function DashboardPage() {
               {hasSensorData && liveDistance !== null
                 ? liveDistance >= 300
                   ? `Clear pathway ahead (${liveDistance} cm) — Normal`
-                  : `Obstacle detected at ${liveDistance} cm — ${level}`
+                  : `${currentObject} detected at ${liveDistance} cm — ${level}`
                 : isLiveVisionActive
-                  ? `${currentObject} detected at ${currentDistance} cm — ${level}`
+                  ? `${currentObject} detected (Connect USB Glasses to measure distance)`
                   : telemetryQuery.isLoading
                     ? "Connecting to the sensor stream…"
                     : latest
