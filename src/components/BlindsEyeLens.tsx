@@ -80,8 +80,9 @@ interface BrowserObjectDetectionModel {
   const [isBrowserCameraActive, setIsBrowserCameraActive] = useState<boolean>(false);
 
   useEffect(() => {
-    onCameraStatusChange?.(isBrowserCameraActive);
-  }, [isBrowserCameraActive, onCameraStatusChange]);
+    // Report either camera source shown by this component: browser camera or YOLO server stream.
+    onCameraStatusChange?.(isBrowserCameraActive || isServerLive);
+  }, [isBrowserCameraActive, isServerLive, onCameraStatusChange]);
   const [voiceAlerts, setVoiceAlerts] = useState<boolean>(true);
   const [browserDetectedItem, setBrowserDetectedItem] = useState<string>("Scanning...");
   const [browserDetections, setBrowserDetections] = useState<
