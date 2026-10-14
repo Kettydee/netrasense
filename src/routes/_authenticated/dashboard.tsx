@@ -677,29 +677,27 @@ function DashboardPage() {
   const liveDistance = hasSensorData && rawHwDistance !== null
     ? Math.round(rawHwDistance)
     : null;
-  const currentDistance = isWebSerialConnected
-    ? (liveDistance ?? MAX_DISTANCE_CM)
-    : liveDistance !== null
-      ? liveDistance
-      : latest
-        ? Math.round(Number(latest.distance_cm))
-        : MAX_DISTANCE_CM;
+  // Only current sensor or live camera measurements belong in the live gauge.
+  // Historical incident rows remain in the incident list, not the live readout.
+  const isLiveVisionActive = !!(liveVision && now - liveVision.timestamp < 5000);
+  const currentDistance = liveDistance !== null
+    ? liveDistance
+    : isLiveVisionActive
+      ? liveVision.distance_cm
+      : MAX_DISTANCE_CM;
 
   // Active object identification strictly from webcam:
-  const isLiveVisionActive = !!(liveVision && now - liveVision.timestamp < 5000);
   const currentObject = isLiveVisionActive && liveVision.object
     ? (liveVision.object.charAt(0).toUpperCase() + liveVision.object.slice(1))
-    : latest
-      ? latest.detected_object
-      : (currentDistance < 300 ? "Obstacle" : "Pathway");
+    : (currentDistance < 300 ? "Obstacle" : "Pathway");
 
   // Authoritative Threat level matching distance zones (strictly derived from physical distance):
   const sensorLevel = hasSensorData && rawHwThreat
     ? hardwareThreatToUiLevel(rawHwThreat)
     : hasSensorData && liveDistance !== null
       ? classifyDistance(liveDistance)
-      : !isWebSerialConnected && latest
-        ? classifyDistance(Math.round(Number(latest.distance_cm)))
+      : isLiveVisionActive
+        ? liveVision.threat_level
         : "Normal";
 
   const level: ThreatLevel = sensorLevel;
@@ -978,23 +976,8 @@ function DashboardPage() {
                 </p>
               ) : telemetryQuery.isLoading ? (
                 <p>Connecting to the sensor stream…</p>
-              ) : latest ? (
-                <p className="flex items-center gap-2">
-                  <span aria-hidden="true">
-                    {classifyDistance(Math.round(Number(latest.distance_cm))) === "Collision"
-                      ? "🔴"
-                      : classifyDistance(Math.round(Number(latest.distance_cm))) === "Alarming"
-                        ? "🟠"
-                        : classifyDistance(Math.round(Number(latest.distance_cm))) === "Warning"
-                          ? "🟡"
-                          : "🟢"}
-                  </span>
-                  <span>
-                    {latest.detected_object} detected at {Math.round(Number(latest.distance_cm))} cm — {classifyDistance(Math.round(Number(latest.distance_cm)))}
-                  </span>
-                </p>
               ) : (
-                <p>No obstacles detected yet. Your camera / sensor stream is idle.</p>
+                <p>No live sensor reading. Your camera / sensor stream is idle.</p>
               )}
             </div>
 
@@ -1007,7 +990,7 @@ function DashboardPage() {
                 <DistanceMeter
                   distance={currentDistance}
                   level={level}
-                  hasData={isWebSerialConnected ? hasSensorData : hasSensorData || isLiveVisionActive || !!latest}
+                  hasData={hasSensorData || isLiveVisionActive}
                 />
               )}
             </div>
