@@ -224,10 +224,12 @@ class EnsembleClassifier:
         if not (self._min_distance <= distance_cm <= self._max_distance):
             return None
 
+        # Distance classification is deterministic.  Do not trust an
+        # externally supplied label to downplay (or exaggerate) a valid range.
         return SignalInput(
             source="ultrasonic",
             distance_cm=distance_cm,
-            threat_level=threat or self._distance_to_threat(distance_cm),
+            threat_level=self._distance_to_threat(distance_cm),
             confidence=1.0,  # Direct measurement — highest confidence
         )
 
@@ -332,7 +334,10 @@ class EnsembleClassifier:
         # sole distance source; otherwise consumers must use the per-signal
         # fields above and cannot mistake a weighted average for a real range.
         distance_sources = [s for s in signals if s.distance_cm is not None]
-        if len(distance_sources) == 1:
+        # Once more than one modality is active, even a sole numeric range
+        # must not be labelled "fused": it could be misread as the range of
+        # the visually detected object.
+        if len(signals) == 1 and len(distance_sources) == 1:
             result.fused_distance_cm = distance_sources[0].distance_cm
 
         # ── Conservative warning decision ────────────────────────────

@@ -1,7 +1,9 @@
-"""
-NetraSense Multi-Modal Sensor Fusion & Ensemble Model
-Fuses Ultrasonic Sensor Distance + YOLO Vision Object Detection + Monocular Depth Estimation.
-Provides weighted probabilistic threat assessment, safety overrides, and explainable sensor contributions.
+"""Legacy experimental weighted fusion model.
+
+This module is retained solely to reproduce the pre-Phase-5 baseline in
+offline experiments. It is not imported by a production route. Its weighted
+consensus distance and probability-like outputs must not be used for live
+warnings because the modalities are not object-associated or calibrated.
 """
 
 from __future__ import annotations

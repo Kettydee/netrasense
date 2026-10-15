@@ -1,8 +1,8 @@
 """
 NetraSense Lightweight Arduino Sensor Bridge
 ============================================
-Streams live ultrasonic distance and buzzer commands between Arduino Uno
-and the NetraSense web dashboard over port 5000.
+Streams live ultrasonic distance between Arduino Uno and the NetraSense web
+dashboard over port 5000. The deployed firmware owns buzzer behavior locally.
 
 Requirements:
     pip install flask flask-cors pyserial
@@ -47,17 +47,6 @@ def on_sensor_reading(record):
     dist = record["distance_cm"]
     ts = record.get("timestamp")
     obstacle_evaluator.process_reading(dist, reading_timestamp=ts)
-    threat = classify_threat_level(dist)
-
-    # Automatic buzzer feedback control to Arduino
-    if threat == "CRITICAL":
-        reader.send_command({"buzzer": "CRITICAL"})
-    elif threat == "ALARM":
-        reader.send_command({"buzzer": "ALARM"})
-    elif threat == "WARNING":
-        reader.send_command({"buzzer": "WARNING"})
-    else:
-        reader.send_command({"buzzer": "OFF"})
 
 reader = ArduinoSerialReader(
     on_reading=on_sensor_reading,
@@ -240,11 +229,19 @@ def api_config():
 
 @app.route("/api/buzzer", methods=["POST"])
 def api_buzzer():
-    """Manual buzzer override endpoint."""
+    """Report that host buzzer overrides are unsupported by deployed firmware.
+
+    The response keeps the legacy ``success`` and ``pattern`` fields so
+    callers do not mistake a serial write for an acknowledged hardware action.
+    """
     data = request.get_json(silent=True) or {}
     pattern = data.get("pattern", "OFF").upper()
-    success = reader.send_command({"buzzer": pattern})
-    return jsonify({"success": success, "pattern": pattern})
+    return jsonify({
+        "success": False,
+        "pattern": pattern,
+        "supported": False,
+        "error": "Firmware does not implement host-controlled buzzer commands",
+    }), 501
 
 if __name__ == "__main__":
     logger.info("Starting NetraSense Arduino Serial Reader...")

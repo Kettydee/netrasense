@@ -632,13 +632,28 @@ def api_fuse():
     """
     with state_lock:
         data = request.get_json(silent=True) or {}
-        ultrasonic_cm = float(data.get("ultrasonic_cm")) if "ultrasonic_cm" in data else None
+        if "ultrasonic_cm" in data:
+            ultrasonic_cm = float(data["ultrasonic_cm"])
+            ultrasonic_threat = data.get("ultrasonic_threat")
+        else:
+            # GET and POST without an explicit measurement must use the same
+            # freshness gate as the live video pipeline, rather than silently
+            # dropping a current reading or reviving a stale one.
+            sensor = state.get("sensor_data")
+            sensor_age = time.monotonic() - state.get("sensor_last_update", 0.0)
+            if sensor is not None and state.get("sensor_last_update", 0.0) > 0 and sensor_age <= obstacle_evaluator.stale_timeout_s:
+                ultrasonic_cm = sensor.get("distance_cm")
+                ultrasonic_threat = sensor.get("threat_level")
+            else:
+                ultrasonic_cm = None
+                ultrasonic_threat = None
         depth_m = float(data.get("depth_m")) if "depth_m" in data else None
 
         detections = state.get("latest_detections", [])
 
         fusion_res = EnsembleClassifier().classify(
             ultrasonic_cm=ultrasonic_cm,
+            ultrasonic_threat=ultrasonic_threat,
             yolo_detections=detections,
             depth_distance_cm=depth_m * 100.0 if depth_m is not None else None,
         )

@@ -318,7 +318,10 @@ function EnsembleSignalCard({ ensemble }: { ensemble: EnsembleBreakdown }) {
           {/* Per-signal breakdown */}
           <div className="space-y-2">
             {signals.map((sig) => {
-              const active = sig.data.distance_cm !== null;
+              // A visual detection can be a valid warning observation without
+              // a metric distance; do not display it as absent solely because
+              // its range is intentionally unknown.
+              const active = sig.data.distance_cm !== null || sig.data.threat_level !== null;
               return (
                 <div
                   key={sig.name}
@@ -364,7 +367,9 @@ function EnsembleSignalCard({ ensemble }: { ensemble: EnsembleBreakdown }) {
             </span>
             <div className="flex items-center gap-3">
               <span className="font-mono text-sm font-black text-foreground tabular-nums">
-                {Math.round(ensemble.fused_distance_cm ?? 0)} cm
+                {ensemble.fused_distance_cm !== null
+                  ? `${Math.round(ensemble.fused_distance_cm)} cm`
+                  : "—"}
               </span>
               <span
                 className={`rounded-md px-2 py-0.5 text-[10px] font-black uppercase ${

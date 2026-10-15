@@ -109,6 +109,7 @@ export type EnsembleBreakdown = {
   fused_threat_level: HardwareThreatLevel | "NO DATA";
   confidence: number;
   signal_count: number;
+  sensing_state?: "FUSED" | "SENSOR DEGRADED" | "NO VALID DATA";
   ultrasonic: SignalBreakdown;
   yolo: SignalBreakdown;
   depth: SignalBreakdown;

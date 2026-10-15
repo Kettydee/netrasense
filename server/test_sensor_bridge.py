@@ -170,6 +170,16 @@ class SensorBridgeApiTests(unittest.TestCase):
         self.assertIn("status", hardware["ultrasonic"])
         self.assertIn("sensor_heartbeat_timeout_s", hardware["system"])
 
+    def test_buzzer_endpoint_never_claims_unsupported_firmware_control(self):
+        """A serial write cannot be presented as an acknowledged buzzer action."""
+        response = self.app.post("/api/buzzer", json={"pattern": "ALARM"})
+        data = response.get_json()
+        self.assertEqual(response.status_code, 501)
+        self.assertFalse(data["success"])
+        self.assertFalse(data["supported"])
+        self.assertEqual(data["pattern"], "ALARM")
+        self.assertIn("does not implement", data["error"])
+
 
 if __name__ == "__main__":
     unittest.main()
