@@ -64,3 +64,26 @@ class VisionFusionStateTests(unittest.TestCase):
             ])
         self.assertEqual(result.sensing_state, "FUSED")
         self.assertIsNone(result.fused_distance_cm)
+
+    def test_shutdown_releases_sensor_reader_and_camera(self):
+        class Reader:
+            stopped = False
+
+            def stop(self):
+                self.stopped = True
+
+        class Camera:
+            released = False
+
+            def release(self):
+                self.released = True
+
+        reader = Reader()
+        camera = Camera()
+        vision_server.state["sensor_reader"] = reader
+        vision_server.state["camera"] = camera
+
+        vision_server.shutdown_runtime()
+
+        self.assertTrue(reader.stopped)
+        self.assertTrue(camera.released)

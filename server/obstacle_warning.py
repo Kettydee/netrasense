@@ -245,7 +245,15 @@ class ObstacleWarningEvaluator:
 
         # Apply debounce logic
         state_changed = False
-        if target_state != self._current_state:
+        if target_state == ObstacleState.OBSTACLE_WARNING and target_state != self._current_state:
+            # Warning escalation is never debounced: a supported configuration
+            # may smooth a transition back to CLEAR, but it must not delay an
+            # observation that requires an immediate obstacle warning.
+            self._current_state = target_state
+            self._pending_state = None
+            self._pending_count = 0
+            state_changed = True
+        elif target_state != self._current_state:
             if self._pending_state == target_state:
                 self._pending_count += 1
             else:

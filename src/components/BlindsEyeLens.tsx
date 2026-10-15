@@ -786,12 +786,18 @@ export function BlindsEyeLens({
         }
         detections={
           engineMode === "yolo"
-            ? detections.map((d) => ({
-                label: d.label,
-                direction: d.direction,
-                distance_cm:
-                  d.distance_cm || (d.depth_meters ? Math.round(d.depth_meters * 100) : 120),
-              }))
+            ? detections.map((d) => {
+                const distanceCm =
+                  d.distance_cm ??
+                  (d.depth_meters !== undefined && d.depth_meters !== null
+                    ? Math.round(d.depth_meters * 100)
+                    : undefined);
+                return {
+                  label: d.label,
+                  direction: d.direction,
+                  ...(distanceCm !== undefined ? { distance_cm: distanceCm } : {}),
+                };
+              })
             : browserDetections
         }
       />

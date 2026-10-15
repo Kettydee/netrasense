@@ -9,7 +9,7 @@
  *       MODERATE PULSES: beep - pause - beep (70ms on, 160ms off, 950 Hz).
  *   - 2 Meters to 3 Meters (200 cm - 300 cm):
  *       SLOW GENTLE BEEPS: (80ms on, 450ms off, 800 Hz).
- *   - Above 3 Meters / Clear Pathway (>= 300 cm):
+ *   - Above 3 Meters / Clear Pathway (> 300 cm):
  *       COMPLETELY SILENT (OFF).
  *
  * Serial protocol (USB telemetry):
@@ -166,7 +166,7 @@ void loop() {
       Serial.println(",\"valid\":true}");
 
       // 2. Safe, pleasant sound frequencies & rhythms:
-      if (distanceCm >= 300.0f) {
+      if (distanceCm > 300.0f) {
         buzzerPattern = 0; // > 3 Meters -> Completely SILENT
       } else if (distanceCm >= 200.0f) {
         buzzerPattern = 1; // 2m - 3m -> Slow beeps

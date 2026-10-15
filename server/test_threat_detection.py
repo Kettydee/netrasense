@@ -9,6 +9,7 @@ from __future__ import annotations
 import statistics
 import time
 import unittest
+from pathlib import Path
 
 from serial_sensor import normalize_sensor_data
 
@@ -35,6 +36,12 @@ class ThreatDetectionTests(unittest.TestCase):
         for distance_cm, expected_level in expected.items():
             with self.subTest(distance_cm=distance_cm):
                 self.assertEqual(normalize_sensor_data(str(distance_cm))["threat_level"], expected_level)
+
+    def test_firmware_uses_the_shared_300_cm_boundary(self) -> None:
+        """The local buzzer must not call the canonical 300 cm warning clear."""
+        firmware = (Path(__file__).resolve().parent.parent / "arduino" / "ultrasonic_sensor.ino").read_text()
+        self.assertIn("if (distanceCm > 300.0f)", firmware)
+        self.assertNotIn("if (distanceCm >= 300.0f)", firmware)
 
 
 def run_latency_report() -> None:

@@ -1105,7 +1105,22 @@ def main():
 
     print(f"\nNetraSense YOLO Stream running at http://localhost:{args.port}/video_feed")
     print(f"Telemetry API running at http://localhost:{args.port}/api/latest\n")
-    app.run(host=args.host, port=args.port, debug=False, threaded=True)
+    try:
+        app.run(host=args.host, port=args.port, debug=False, threaded=True)
+    finally:
+        shutdown_runtime()
+
+
+def shutdown_runtime() -> None:
+    """Release local hardware resources when the vision server exits."""
+    with state_lock:
+        sensor_reader = state.get("sensor_reader")
+        camera = state.get("camera")
+
+    if sensor_reader is not None:
+        sensor_reader.stop()
+    if camera is not None:
+        camera.release()
 
 
 if __name__ == '__main__':

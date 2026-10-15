@@ -591,8 +591,12 @@ function DashboardPage() {
         const snapshot = sensorSnapshotRef.current;
         const usbDistance = snapshot.usbFresh ? (snapshot.webSerial?.distance_cm ?? null) : null;
         const currentSensorDist = usbDistance ?? snapshot.hw?.ultrasonic?.distance_cm ?? null;
+        // telemetry_stream requires a real metric distance. A camera-only
+        // detection remains visible through liveVision, but must not be stored
+        // as a fabricated 0 cm ultrasonic encounter.
+        if (currentSensorDist === null) return;
         const currentThreat =
-          currentSensorDist !== null ? classifyDistance(currentSensorDist) : "Normal";
+          classifyDistance(currentSensorDist);
         const isObstacle = currentThreat !== "Normal";
         let newDodged = localDailyDodged;
         const newDist = localDailyDistM + 15;
@@ -620,7 +624,7 @@ function DashboardPage() {
           id: `vis-${timestamp}-${Math.random().toString(36).slice(2, 6)}`,
           user_id: userId || "guest",
           detected_object: event.object.charAt(0).toUpperCase() + event.object.slice(1),
-          distance_cm: currentSensorDist ?? 0,
+          distance_cm: currentSensorDist,
           threat_level: currentThreat,
           action_taken:
             currentSensorDist !== null
@@ -714,7 +718,7 @@ function DashboardPage() {
     isWebSerialConnected &&
     webSerialData !== null &&
     webSerialAgeSeconds !== null &&
-    webSerialAgeSeconds < SENSOR_HEARTBEAT_TIMEOUT_S;
+    webSerialAgeSeconds <= SENSOR_HEARTBEAT_TIMEOUT_S;
 
   // Keep the snapshot ref current so memoized callbacks never read stale data.
   useEffect(() => {
@@ -790,7 +794,7 @@ function DashboardPage() {
   const currentObject =
     isLiveVisionActive && liveVision.object
       ? liveVision.object.charAt(0).toUpperCase() + liveVision.object.slice(1)
-      : currentDistance < 300
+      : currentDistance <= 300
         ? "Obstacle"
         : "Pathway";
 
@@ -1102,7 +1106,7 @@ function DashboardPage() {
 
             <div aria-live="polite" className="mt-3 text-base font-semibold">
               {hasSensorData && liveDistance !== null ? (
-                liveDistance >= 300 ? (
+                liveDistance > 300 ? (
                   <p className="flex items-center gap-2">
                     <span aria-hidden="true">🟢</span>
                     <span>Clear pathway ahead ({liveDistance} cm) — Normal</span>
@@ -1268,11 +1272,13 @@ function DashboardPage() {
                   }`}
                 >
                   {isWebSerialConnected
-                    ? webSerialData
-                      ? isObstacleWarning
-                        ? "OBSTACLE WARNING (USB)"
-                        : "CLEAR (USB)"
-                      : "CONNECTED · NO READINGS"
+                    ? !isWebSerialFresh
+                      ? "SENSOR UNAVAILABLE (USB)"
+                      : webSerialData
+                        ? isObstacleWarning
+                          ? "OBSTACLE WARNING (USB)"
+                          : "CLEAR (USB)"
+                        : "CONNECTED · NO READINGS"
                     : obstacleState === "OBSTACLE_WARNING"
                       ? "OBSTACLE WARNING"
                       : obstacleState === "CLEAR"

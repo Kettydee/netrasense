@@ -188,6 +188,21 @@ class ObstacleWarningEvaluatorTests(unittest.TestCase):
         r3 = self.evaluator.process_reading(306.0, current_time=100.2)
         self.assertEqual(r3.state, ObstacleState.CLEAR)
 
+    def test_debounce_never_delays_warning_escalation(self):
+        """Debounce may smooth CLEAR recovery but must not delay a warning."""
+        evaluator = ObstacleWarningEvaluator(debounce_count=3)
+        evaluator.process_reading(350.0, current_time=100.0)
+
+        warning = evaluator.process_reading(80.0, current_time=100.1)
+        self.assertEqual(warning.state, ObstacleState.OBSTACLE_WARNING)
+        self.assertTrue(warning.alert_triggered)
+
+        # Recovery remains debounced, avoiding a rapid warning/clear oscillation.
+        self.assertEqual(
+            evaluator.process_reading(350.0, current_time=100.2).state,
+            ObstacleState.OBSTACLE_WARNING,
+        )
+
     def test_configurable_threshold_and_timeout(self):
         """Evaluator thresholds and timeouts are runtime-configurable."""
         self.evaluator.update_config(warning_threshold_cm=150.0, stale_timeout_s=1.0)
