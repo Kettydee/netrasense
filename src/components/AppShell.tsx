@@ -96,6 +96,21 @@ const NAV_GROUPS = [
 
 type ThemeMode = "light" | "dark" | "system";
 
+function applyTheme(mode: ThemeMode) {
+  const root = document.documentElement;
+  if (mode === "dark") {
+    root.classList.add("dark");
+  } else if (mode === "light") {
+    root.classList.remove("dark");
+  } else {
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+  }
+}
+
 export function AppShell({ title, description, children, actions }: AppShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [theme, setTheme] = useState<ThemeMode>("system");
@@ -106,21 +121,6 @@ export function AppShell({ title, description, children, actions }: AppShellProp
     setTheme(savedTheme);
     applyTheme(savedTheme);
   }, []);
-
-  const applyTheme = (mode: ThemeMode) => {
-    const root = document.documentElement;
-    if (mode === "dark") {
-      root.classList.add("dark");
-    } else if (mode === "light") {
-      root.classList.remove("dark");
-    } else {
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        root.classList.add("dark");
-      } else {
-        root.classList.remove("dark");
-      }
-    }
-  };
 
   const handleThemeChange = (newTheme: ThemeMode) => {
     setTheme(newTheme);
@@ -296,13 +296,6 @@ export function AppShell({ title, description, children, actions }: AppShellProp
                       : "🔌 CONNECT USB"}
                   </span>
                 </div>
-                <span className="font-mono text-[9px] opacity-70">
-                  {isSensorConnected
-                    ? isUsbConnected
-                      ? "COM"
-                      : (hwStatus?.port ?? "ARDUINO")
-                    : "CLICK HERE"}
-                </span>
               </button>
             ) : (
               <button
@@ -416,7 +409,7 @@ export function AppShell({ title, description, children, actions }: AppShellProp
                 title="Connect directly to Arduino Uno via USB"
               >
                 <span className="size-2 rounded-full bg-white animate-pulse" />
-                <span>🔌 Connect USB Glasses</span>
+                <span>🔌 Connect USB</span>
               </Button>
             )}
 

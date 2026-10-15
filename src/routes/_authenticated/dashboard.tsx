@@ -49,7 +49,6 @@ import {
   type ObstacleWarningInfo,
 } from "@/lib/sensor";
 import { webSerialManager, type WebSerialReading } from "@/lib/webSerial";
-import type { VisionTelemetryEvent } from "@/components/BlindsEyeLens";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   ssr: false,
@@ -403,7 +402,6 @@ function DashboardPage() {
   const [liveVision, setLiveVision] = useState<{
     object: string;
     timestamp: number;
-    direction?: string | undefined;
   } | null>(null);
   const [liveIncidents, setLiveIncidents] = useState<Telemetry[]>([]);
   const lastLoggedVisionRef = useRef<Map<string, number>>(new Map());
@@ -572,12 +570,11 @@ function DashboardPage() {
 
   // Sync vision detections to daily stats and lifetime metrics
   const handleVisionTelemetry = useCallback(
-    (event: VisionTelemetryEvent) => {
+    (event: { object: string }) => {
       const timestamp = Date.now();
       setLiveVision({
         object: event.object,
         timestamp,
-        direction: event.direction,
       });
 
       const lastLogged = lastLoggedVisionRef.current.get(event.object) || 0;
@@ -1019,7 +1016,6 @@ function DashboardPage() {
             </h2>
             <BlindsEyeLens
               onVisionTelemetry={handleVisionTelemetry}
-              onCameraStatusChange={handleCameraStatusChange}
             />
           </section>
 
@@ -1100,6 +1096,7 @@ function DashboardPage() {
                   ) : (
                     <span>⚪ {NO_DATA_SENTINEL}</span>
                   )}
+                  <span className="text-[10px] opacity-75 font-mono">({sensorFreshnessText})</span>
                 </span>
               </div>
             </div>
@@ -1133,16 +1130,8 @@ function DashboardPage() {
                   <span>USB connected — waiting for the first sensor reading…</span>
                 </p>
               ) : isLiveVisionActive ? (
-                <p className="flex flex-wrap items-center gap-2">
+                <p className="flex items-center gap-2">
                   <span>{currentObject} detected</span>
-                  <Button
-                    size="sm"
-                    variant="link"
-                    className="h-auto p-0 text-emerald-400 font-bold underline hover:text-emerald-300 cursor-pointer inline-flex items-center gap-1"
-                    onClick={() => void webSerialManager.connect()}
-                  >
-                    🔌 Click to link USB Glasses (measure distance)
-                  </Button>
                 </p>
               ) : telemetryQuery.isLoading ? (
                 <p>Connecting to the sensor stream…</p>
@@ -1223,7 +1212,7 @@ function DashboardPage() {
                     onClick={() => webSerialManager.connect()}
                     title="Direct in-browser USB connection (Zero Python / Zero Terminal needed)"
                   >
-                    🔌 Connect USB Glasses
+                    🔌 Connect USB
                   </Button>
                 )}
                 <span
@@ -1339,7 +1328,7 @@ function DashboardPage() {
                 className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 py-2.5 rounded-xl cursor-pointer"
                 onClick={() => webSerialManager.connect()}
               >
-                <span>🔌 Connect USB Glasses</span>
+                <span>🔌 Connect USB</span>
               </Button>
             ) : (
               <Button
@@ -1348,7 +1337,7 @@ function DashboardPage() {
                 className="w-full mt-4 border-rose-500/50 text-rose-400 hover:bg-rose-500/10 font-bold flex items-center justify-center gap-2 py-2.5 rounded-xl cursor-pointer"
                 onClick={() => webSerialManager.disconnect()}
               >
-                <span>Disconnect USB Glasses</span>
+                <span>Disconnect USB</span>
               </Button>
             )}
           </section>

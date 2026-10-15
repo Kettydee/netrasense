@@ -18,7 +18,7 @@ import { CAMERA_STREAM_URL_KEY } from "@/components/CameraFeed";
 import { VoiceSelector } from "@/components/VoiceSelector";
 import { CameraDeviceSelector } from "@/components/CameraDeviceSelector";
 import { speak } from "@/lib/netrasense";
-import { webSerialManager } from "@/lib/webSerial";
+import { SmartAssistiveSuite } from "@/components/SmartAssistiveSuite";
 
 interface YoloDetection {
   label: string;
@@ -42,11 +42,8 @@ interface YoloStatus {
   detections: YoloDetection[];
 }
 
-import { SmartAssistiveSuite } from "@/components/SmartAssistiveSuite";
-
 export interface VisionTelemetryEvent {
   object: string;
-  direction?: "left" | "center" | "right";
 }
 
 interface BlindsEyeLensProps {
@@ -390,10 +387,8 @@ export function BlindsEyeLens({
                 : centerX > canvas.width * 0.66
                   ? "right"
                   : "center";
-
             onVisionTelemetry?.({
               object: top.class,
-              direction: topDir,
             });
 
             // Remove duplicates for display summary
@@ -443,10 +438,12 @@ export function BlindsEyeLens({
     }
   };
 
-  const detections = serverStatus?.detections ?? [];
-  const leftDets = detections.filter((d) => d.direction === "left");
+  const detections = serverStatus?.detections ?? [];  const leftDets = detections.filter((d) => d.direction === "left");
   const centerDets = detections.filter((d) => d.direction === "center");
   const rightDets = detections.filter((d) => d.direction === "right");
+  const _leftDets = leftDets;
+  const _centerDets = centerDets;
+  const _rightDets = rightDets;
 
   return (
     <div className="surface-card overflow-hidden p-5 sm:p-6">
@@ -561,13 +558,6 @@ export function BlindsEyeLens({
                   >
                     Use Browser Camera
                   </Button>
-                  <Button
-                    size="sm"
-                    className="bg-emerald-600 text-white hover:bg-emerald-500 font-bold border border-emerald-400/50 shadow-md shadow-emerald-950/40"
-                    onClick={() => webSerialManager.connect()}
-                  >
-                    🔌 Connect USB Glasses
-                  </Button>
                 </div>
               </div>
             )}
@@ -646,21 +636,21 @@ export function BlindsEyeLens({
                 <Compass className="size-3.5 text-primary" /> Left Zone
               </span>
               <span className="text-xs font-semibold text-foreground">
-                {leftDets.length} object{leftDets.length === 1 ? "" : "s"}
+                {_leftDets.length} object{_leftDets.length === 1 ? "" : "s"}
               </span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {leftDets.length === 0 ? (
+              {_leftDets.length === 0 ? (
                 <span className="text-xs text-muted-foreground italic">Clear</span>
               ) : (
-                leftDets.map((d, i) => (
+                _leftDets.map((d, i) => (
                   <span
                     key={i}
                     className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-bold ${threatColor(
                       d.threat_level,
                     )}`}
                   >
-                    {d.label} {d.depth_meters ? `(${d.depth_meters}m)` : ""}
+                    {d.label}
                   </span>
                 ))
               )}
@@ -674,21 +664,21 @@ export function BlindsEyeLens({
                 <AlertTriangle className="size-3.5 text-primary" /> Center (Path)
               </span>
               <span className="text-xs font-semibold text-foreground">
-                {centerDets.length} object{centerDets.length === 1 ? "" : "s"}
+                {_centerDets.length} object{_centerDets.length === 1 ? "" : "s"}
               </span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {centerDets.length === 0 ? (
+              {_centerDets.length === 0 ? (
                 <span className="text-xs text-muted-foreground italic">Path Clear</span>
               ) : (
-                centerDets.map((d, i) => (
+                _centerDets.map((d, i) => (
                   <span
                     key={i}
                     className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-bold ${threatColor(
                       d.threat_level,
                     )}`}
                   >
-                    {d.label} {d.depth_meters ? `(${d.depth_meters}m)` : ""}
+                    {d.label}
                   </span>
                 ))
               )}
@@ -702,21 +692,21 @@ export function BlindsEyeLens({
                 <Compass className="size-3.5 text-primary" /> Right Zone
               </span>
               <span className="text-xs font-semibold text-foreground">
-                {rightDets.length} object{rightDets.length === 1 ? "" : "s"}
+                {_rightDets.length} object{_rightDets.length === 1 ? "" : "s"}
               </span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {rightDets.length === 0 ? (
+              {_rightDets.length === 0 ? (
                 <span className="text-xs text-muted-foreground italic">Clear</span>
               ) : (
-                rightDets.map((d, i) => (
+                _rightDets.map((d, i) => (
                   <span
                     key={i}
                     className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-bold ${threatColor(
                       d.threat_level,
                     )}`}
                   >
-                    {d.label} {d.depth_meters ? `(${d.depth_meters}m)` : ""}
+                    {d.label}
                   </span>
                 ))
               )}
@@ -783,8 +773,7 @@ export function BlindsEyeLens({
                 browserDetectedItem !== "Lens Inactive"
               ? [browserDetectedItem]
               : []
-        }
-        detections={
+        }        detections={
           engineMode === "yolo"
             ? detections.map((d) => {
                 const distanceCm =
