@@ -255,9 +255,9 @@ function EnsembleSignalCard({ ensemble }: { ensemble: EnsembleBreakdown }) {
   const hasData = ensemble.signal_count > 0 && ensemble.fused_threat_level !== "NO DATA";
 
   const signals = [
-    { name: "Ultrasonic", icon: "🔊", data: ensemble.ultrasonic, weight: "50%" },
-    { name: "YOLO Vision", icon: "👁", data: ensemble.yolo, weight: "30%" },
-    { name: "Depth Est.", icon: "📐", data: ensemble.depth, weight: "20%" },
+    { name: "Ultrasonic", icon: "🔊", data: ensemble.ultrasonic, policy: "direct range" },
+    { name: "YOLO Vision", icon: "👁", data: ensemble.yolo, policy: "visual evidence" },
+    { name: "Depth Est.", icon: "📐", data: ensemble.depth, policy: "optional range" },
   ];
 
   const confidencePct = Math.round(ensemble.confidence * 100);
@@ -291,6 +291,9 @@ function EnsembleSignalCard({ ensemble }: { ensemble: EnsembleBreakdown }) {
         <h3 className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground">
           Ensemble Signal Fusion
         </h3>
+        <span className="rounded border border-border px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+          {ensemble.sensing_state ?? "SENSING STATE UNKNOWN"}
+        </span>
         {hasData && (
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-bold text-muted-foreground">SIGNAL AGREEMENT</span>
@@ -335,7 +338,7 @@ function EnsembleSignalCard({ ensemble }: { ensemble: EnsembleBreakdown }) {
                       <p className="text-xs font-bold text-foreground">
                         {sig.name}
                         <span className="ml-1.5 font-normal text-muted-foreground">
-                          ({sig.weight})
+                          ({sig.policy})
                         </span>
                       </p>
                       <p className="text-[10px] text-muted-foreground">
@@ -349,7 +352,9 @@ function EnsembleSignalCard({ ensemble }: { ensemble: EnsembleBreakdown }) {
                         active ? "text-foreground" : "text-zinc-500"
                       }`}
                     >
-                      {active ? `${Math.round(sig.data.distance_cm!)} cm` : "—"}
+                      {active && sig.data.distance_cm !== null
+                        ? `${Math.round(sig.data.distance_cm)} cm`
+                        : "—"}
                     </span>
                     <p className={`text-[10px] font-bold ${threatColor(sig.data.threat_level)}`}>
                       {active ? sig.data.threat_level ?? "—" : "OFF"}

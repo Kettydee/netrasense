@@ -120,7 +120,7 @@ class ArduinoSerialReaderTests(unittest.TestCase):
         with self._readings_lock:
             return [r["distance_cm"] for r in self._readings]
 
-    def _make_reader(self, script, on_reading=None):
+    def _make_reader(self, script, on_reading=None, on_invalid=None):
         self.fake = FakeSerialModule(script)
         serial_sensor.serial = self.fake
         self.reader = serial_sensor.ArduinoSerialReader(
@@ -129,6 +129,7 @@ class ArduinoSerialReaderTests(unittest.TestCase):
             baudrate=9600,
             reconnect_delay=0.05,
             reset_delay=0.01,
+            on_invalid=on_invalid,
         )
         return self.reader
 
@@ -150,6 +151,17 @@ class ArduinoSerialReaderTests(unittest.TestCase):
         # so none of them could refresh a freshness timestamp.
         self.assertEqual(self._distances(), [73, 80])
         self.assertEqual(reader.connected_port, "FAKE0")
+
+    def test_invalid_lines_notify_consumer_without_becoming_readings(self):
+        invalid_events = []
+        reader = self._make_reader(
+            [([b'{"distance_cm": 80, "valid": true}\n', b'{"distance_cm": null, "valid": false, "status": "NO_ECHO"}\n'], False)],
+            on_invalid=invalid_events.append,
+        )
+        reader.start()
+        self.assertTrue(_wait_until(lambda: len(self._distances()) == 1 and len(invalid_events) == 1))
+        self.assertEqual(self._distances(), [80])
+        self.assertEqual(invalid_events[0]["error"], "Invalid ultrasonic telemetry")
 
     def test_callback_exception_does_not_kill_reader_thread(self):
         calls: list = []

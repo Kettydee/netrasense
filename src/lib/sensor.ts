@@ -67,6 +67,7 @@ export type UltrasonicStatus = {
   is_error?: boolean;
   is_unavailable?: boolean;
   age_seconds?: number | null;
+  invalid_telemetry?: { timestamp: string; error: string; raw_line?: string } | null;
 };
 
 export type CameraHwStatus = {

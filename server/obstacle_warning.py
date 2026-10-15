@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Any
 
+from threat_levels import classify_distance_cm
+
 
 class ObstacleState(str, Enum):
     """The four required operational states of the obstacle detection system."""
@@ -160,11 +162,10 @@ class ObstacleWarningEvaluator:
             return "NONE"
         if distance_cm > self.warning_threshold_cm:
             return "NORMAL"
-        if distance_cm >= 100.0:
-            return "WARNING"
-        if distance_cm >= 50.0:
-            return "ALARM"
-        return "CRITICAL"
+        # The default 300 cm threshold uses the shared canonical classifier.
+        # A configured warning threshold changes only NORMAL versus WARNING;
+        # the 100/50 cm alarm boundaries remain common system semantics.
+        return classify_distance_cm(distance_cm)
 
     def process_reading(
         self,

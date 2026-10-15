@@ -37,19 +37,29 @@ obstacle_evaluator = ObstacleWarningEvaluator(
 latest_reading = None
 last_reading_time = 0.0
 reading_count = 0
+last_invalid_telemetry = None
 
 def on_sensor_reading(record):
-    global latest_reading, last_reading_time, reading_count
+    global latest_reading, last_reading_time, reading_count, last_invalid_telemetry
     latest_reading = record
     last_reading_time = time.time()
     reading_count += 1
+    last_invalid_telemetry = None
 
     dist = record["distance_cm"]
     ts = record.get("timestamp")
     obstacle_evaluator.process_reading(dist, reading_timestamp=ts)
 
+
+def on_invalid_sensor_telemetry(event):
+    """Expose a failed measurement without refreshing valid telemetry."""
+    global last_invalid_telemetry
+    last_invalid_telemetry = event
+    obstacle_evaluator.process_reading(None, reading_timestamp=event.get("timestamp"))
+
 reader = ArduinoSerialReader(
     on_reading=on_sensor_reading,
+    on_invalid=on_invalid_sensor_telemetry,
     port="auto",
     baudrate=9600,
     device_id="NETRA-001"
@@ -66,7 +76,8 @@ def _telemetry_fresh():
     age = obstacle_evaluator.evaluate().age_seconds
     if age is None:
         return False, None
-    return age < obstacle_evaluator.stale_timeout_s, age
+    # Equality is fresh across bridge, evaluator, and vision server.
+    return age <= obstacle_evaluator.stale_timeout_s, age
 
 
 def _sensor_status() -> dict:
@@ -124,7 +135,7 @@ def api_latest():
     has_reading = latest_reading is not None
     # Aligned with the vision server: a live port handle plus fresh data are
     # both required before telemetry is presented as active hardware data.
-    telemetry_active = fresh and has_reading and status["connected"]
+    telemetry_active = fresh and has_reading and status["connected"] and last_invalid_telemetry is None
 
     if telemetry_active and latest_reading is not None:
         dist = latest_reading["distance_cm"]
@@ -177,6 +188,7 @@ def api_latest():
             "last_error": status["last_error"]
         },
         "obstacle_warning": obs_dict,
+        "invalid_telemetry": last_invalid_telemetry,
         "hardware_status": {
             "system": {
                 "status": "ONLINE" if status["connected"] else "NO HARDWARE",

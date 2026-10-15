@@ -37,6 +37,7 @@ class SensorBridgeApiTests(unittest.TestCase):
         sensor_bridge.latest_reading = None
         sensor_bridge.last_reading_time = 0.0
         sensor_bridge.reading_count = 0
+        sensor_bridge.last_invalid_telemetry = None
         sensor_bridge.obstacle_evaluator.reset()
         sensor_bridge.obstacle_evaluator.update_config(stale_timeout_s=3.0)
         sensor_bridge.reader.connected_port = None
@@ -179,6 +180,28 @@ class SensorBridgeApiTests(unittest.TestCase):
         self.assertFalse(data["supported"])
         self.assertEqual(data["pattern"], "ALARM")
         self.assertIn("does not implement", data["error"])
+
+    def test_invalid_telemetry_hides_prior_valid_reading_without_refreshing_age(self):
+        self._prime_reading(distance_cm=350.0)
+        age_before = sensor_bridge.obstacle_evaluator.evaluate().age_seconds
+        sensor_bridge.on_invalid_sensor_telemetry({
+            "timestamp": "2026-10-15T00:00:01Z", "error": "Invalid ultrasonic telemetry",
+        })
+        data = self.app.get("/api/latest").get_json()
+        self.assertIsNone(data["sensor_data"])
+        self.assertEqual(data["threat_level"], "NO DATA")
+        self.assertTrue(data["obstacle_warning"]["is_error"])
+        self.assertIsNotNone(data["invalid_telemetry"])
+        self.assertGreaterEqual(sensor_bridge.obstacle_evaluator.evaluate().age_seconds, age_before)
+
+    def test_freshness_timeout_equality_is_active(self):
+        self._prime_reading(distance_cm=120.0)
+        original = sensor_bridge.obstacle_evaluator.evaluate
+        try:
+            sensor_bridge.obstacle_evaluator.evaluate = lambda: type("E", (), {"age_seconds": 3.0})()
+            self.assertTrue(sensor_bridge._telemetry_fresh()[0])
+        finally:
+            sensor_bridge.obstacle_evaluator.evaluate = original
 
 
 if __name__ == "__main__":

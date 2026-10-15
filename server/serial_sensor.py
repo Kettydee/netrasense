@@ -17,6 +17,8 @@ import time
 from datetime import datetime, timezone
 from typing import Callable, Optional
 
+from threat_levels import classify_distance_cm
+
 try:
     import serial
     from serial.tools import list_ports
@@ -38,13 +40,7 @@ def classify_threat_level(distance_cm: float) -> str:
     Boundaries are deterministic: 300 cm is WARNING, 100 cm is WARNING, and
     50 cm is ALARM. NORMAL therefore starts at 300.01 cm for decimal sensors.
     """
-    if distance_cm > 300:
-        return "NORMAL"
-    if distance_cm >= 100:
-        return "WARNING"
-    if distance_cm >= 50:
-        return "ALARM"
-    return "CRITICAL"
+    return classify_distance_cm(distance_cm)
 
 
 def utc_timestamp() -> str:
@@ -188,8 +184,10 @@ class ArduinoSerialReader:
         max_distance_cm: float = 400.0,
         reconnect_delay: float = 2.0,
         reset_delay: float = 1.5,
+        on_invalid: Optional[Callable[[dict[str, str]], None]] = None,
     ) -> None:
         self.on_reading = on_reading
+        self.on_invalid = on_invalid
         self.port = port
         self.baudrate = baudrate
         self.device_id = device_id
@@ -268,6 +266,15 @@ class ArduinoSerialReader:
                         )
                         if record is None:
                             LOGGER.warning("Discarded invalid ultrasonic reading: %r", raw_line[:100])
+                            if self.on_invalid:
+                                try:
+                                    self.on_invalid({
+                                        "timestamp": utc_timestamp(),
+                                        "error": "Invalid ultrasonic telemetry",
+                                        "raw_line": raw_line[:100].decode("utf-8", errors="replace").strip(),
+                                    })
+                                except Exception:
+                                    LOGGER.exception("Invalid-reading callback raised; serial reader continues")
                             continue
                         try:
                             self.on_reading(record)

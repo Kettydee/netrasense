@@ -57,6 +57,19 @@ class ReliabilityAwareFusionTests(unittest.TestCase):
         result = self.ensemble.classify(ultrasonic_cm=40.0, ultrasonic_threat="NORMAL")
         self.assertEqual(result.fused_threat_level, "CRITICAL")
 
+    def test_exact_distance_boundaries_match_canonical_policy(self) -> None:
+        expected = {
+            49.9: "CRITICAL", 50.0: "ALARM", 50.1: "ALARM",
+            99.9: "ALARM", 100.0: "WARNING", 100.1: "WARNING",
+            299.9: "WARNING", 300.0: "WARNING", 300.1: "NORMAL",
+        }
+        for distance_cm, threat in expected.items():
+            with self.subTest(distance_cm=distance_cm):
+                self.assertEqual(
+                    self.ensemble.classify(ultrasonic_cm=distance_cm).fused_threat_level,
+                    threat,
+                )
+
     def test_multiple_visual_objects_do_not_share_one_ultrasonic_range(self) -> None:
         result = self.ensemble.classify(
             ultrasonic_cm=80.0,

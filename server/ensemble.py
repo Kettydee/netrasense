@@ -34,15 +34,17 @@ import math
 from dataclasses import dataclass, field
 from typing import Optional
 
+from threat_levels import classify_distance_cm
+
 # ── Threat level definitions (shared across all signals) ─────────────
 THREAT_LEVELS = ("NORMAL", "WARNING", "ALARM", "CRITICAL")
 
 # Distance thresholds for threat classification (cm)
 THRESHOLDS = {
-    "CRITICAL": (0, 50),      # 0–50 cm
-    "ALARM":    (50, 100),     # 50–100 cm
-    "WARNING":  (100, 300),    # 100–300 cm
-    "NORMAL":   (300, 400),    # 300+ cm
+    "CRITICAL": (0, 50),      # below 50 cm
+    "ALARM":    (50, 100),    # 50 cm to below 100 cm
+    "WARNING":  (100, 300),   # 100 cm to 300 cm inclusive
+    "NORMAL":   (300, 400),   # above 300 cm
 }
 
 # Map threat level to a numeric severity for conservative warning selection.
@@ -389,13 +391,7 @@ class EnsembleClassifier:
         """Convert a distance measurement to a threat level."""
         if distance_cm is None:
             return None
-        if distance_cm <= 50:
-            return "CRITICAL"
-        if distance_cm <= 100:
-            return "ALARM"
-        if distance_cm <= 300:
-            return "WARNING"
-        return "NORMAL"
+        return classify_distance_cm(distance_cm)
 
 
 # ── Standalone test ──────────────────────────────────────────────────

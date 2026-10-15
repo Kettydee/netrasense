@@ -275,6 +275,12 @@ class ObstacleWarningEvaluatorTests(unittest.TestCase):
             "WARNING",
         )
 
+    def test_timeout_boundary_is_fresh_at_equality(self):
+        self.evaluator.process_reading(350.0, current_time=100.0)
+        self.assertTrue(self.evaluator.evaluate(current_time=103.0).is_clear)
+        self.assertTrue(self.evaluator.evaluate(current_time=102.999).is_clear)
+        self.assertTrue(self.evaluator.evaluate(current_time=103.001).is_unavailable)
+
 
 if __name__ == "__main__":
     unittest.main()

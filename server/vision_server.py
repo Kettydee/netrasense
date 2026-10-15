@@ -117,6 +117,7 @@ state = {
     # Heartbeat bookkeeping — populated by update_sensor_data()
     "sensor_last_update": 0.0,   # time.monotonic() of last valid reading
     "sensor_total_readings": 0,  # lifetime count of accepted readings
+    "sensor_invalid_telemetry": None,
     # Last obstacle warning evaluation
     "latest_warning_eval": None,
 }
@@ -137,12 +138,49 @@ def update_sensor_data(record):
         state["sensor_data"] = record
         state["sensor_last_update"] = time.monotonic()
         state["sensor_total_readings"] += 1
+        state["sensor_invalid_telemetry"] = None
 
         # Evaluate configurable obstacle warning logic
         dist = record.get("distance_cm") if record else None
         ts = record.get("timestamp") if record else None
         warning_eval = obstacle_evaluator.process_reading(dist, reading_timestamp=ts)
         state["latest_warning_eval"] = warning_eval.to_dict()
+        _refresh_ensemble_locked()
+
+
+def update_invalid_sensor_telemetry(event):
+    """Record invalid telemetry without extending the last valid heartbeat."""
+    with state_lock:
+        state["sensor_invalid_telemetry"] = event
+        warning_eval = obstacle_evaluator.process_reading(
+            None, reading_timestamp=event.get("timestamp"),
+        )
+        state["latest_warning_eval"] = warning_eval.to_dict()
+        _refresh_ensemble_locked()
+
+
+def _refresh_ensemble_locked(detections=None):
+    """Refresh fusion from current validated inputs; caller holds state_lock."""
+    ensemble = state.get("ensemble")
+    if not ensemble:
+        return None
+    now = time.monotonic()
+    sensor = state.get("sensor_data")
+    sensor_last_update = state.get("sensor_last_update", 0.0)
+    sensor_fresh = (
+        state.get("sensor_invalid_telemetry") is None
+        and sensor is not None
+        and sensor_last_update > 0
+        and (now - sensor_last_update) <= obstacle_evaluator.stale_timeout_s
+    )
+    active_detections = state.get("latest_detections", []) if detections is None else detections
+    result = ensemble.classify(
+        ultrasonic_cm=sensor.get("distance_cm") if sensor_fresh else None,
+        ultrasonic_threat=sensor.get("threat_level") if sensor_fresh else None,
+        yolo_detections=active_detections,
+    )
+    state["ensemble_result"] = result.to_dict()
+    return result
 
 def init_vision_engine(args):
     print("=" * 60)
@@ -212,6 +250,7 @@ def init_vision_engine(args):
     if args.serial_port:
         sensor_reader = ArduinoSerialReader(
             on_reading=update_sensor_data,
+            on_invalid=update_invalid_sensor_telemetry,
             port=args.serial_port,
             baudrate=args.serial_baudrate,
             device_id=args.sensor_device_id,
@@ -288,6 +327,7 @@ def _build_hardware_status() -> dict:
         arduino_connected
         and sensor_data is not None
         and arduino_last_update > 0
+        and state.get("sensor_invalid_telemetry") is None
         and (now - arduino_last_update) <= obstacle_evaluator.stale_timeout_s
     ):
         ultrasonic_active = True
@@ -370,6 +410,7 @@ def _build_hardware_status() -> dict:
             "is_error": obs_dict["is_error"],
             "is_unavailable": obs_dict["is_unavailable"],
             "age_seconds": obs_dict["age_seconds"],
+            "invalid_telemetry": state.get("sensor_invalid_telemetry"),
         },
         "obstacle_warning": obs_dict,
         "camera": {
@@ -399,6 +440,9 @@ def generate_frames():
             tts = state["tts"]
 
         if camera is None:
+            with state_lock:
+                state["latest_detections"] = []
+                _refresh_ensemble_locked(detections=[])
             time.sleep(0.1)
             continue
 
@@ -410,6 +454,8 @@ def generate_frames():
                 if cam and not cam.isOpened():
                     with cam._lock:
                         cam.last_error = "Camera stopped producing frames"
+                state["latest_detections"] = []
+                _refresh_ensemble_locked(detections=[])
             time.sleep(0.05)
             continue
 
@@ -460,26 +506,11 @@ def generate_frames():
                 closest_obj = d.label
 
         # ── Run ensemble classifier ──────────────────────────────────
-        ensemble = state.get("ensemble")
-        sensor = state.get("sensor_data")
-        # Only feed the ensemble a FRESH ultrasonic measurement: a stale
-        # reading must never be presented as a live signal in the fusion
-        # breakdown or reused as a current distance.
-        sensor_last_update = state.get("sensor_last_update", 0.0)
-        sensor_fresh = (
-            sensor is not None
-            and sensor_last_update > 0
-            and (time.monotonic() - sensor_last_update) <= obstacle_evaluator.stale_timeout_s
-        )
         ensemble_result = None
-        if ensemble:
-            ensemble_result = ensemble.classify(
-                ultrasonic_cm=sensor.get("distance_cm") if sensor_fresh else None,
-                ultrasonic_threat=sensor.get("threat_level") if sensor_fresh else None,
-                yolo_detections=det_dicts,
-                depth_distance_cm=None,  # depth_map centroid used per-detection
-                yolo_closest_cm=closest_dist if closest_obj else None,
-            )
+        with state_lock:
+            state["latest_detections"] = det_dicts
+            ensemble_result = _refresh_ensemble_locked(detections=det_dicts)
+        if ensemble_result:
             # Use ensemble's fused threat level as the authoritative value
             if ensemble_result.has_data:
                 fused_to_title = {
@@ -495,7 +526,6 @@ def generate_frames():
                         closest_obj = "Obstacle"
 
         with state_lock:
-            state["latest_detections"] = det_dicts
             state["fps"] = round(fps, 1)
             state["threat_level"] = highest_threat
             state["ensemble_result"] = ensemble_result.to_dict() if ensemble_result else None
@@ -641,7 +671,7 @@ def api_fuse():
             # dropping a current reading or reviving a stale one.
             sensor = state.get("sensor_data")
             sensor_age = time.monotonic() - state.get("sensor_last_update", 0.0)
-            if sensor is not None and state.get("sensor_last_update", 0.0) > 0 and sensor_age <= obstacle_evaluator.stale_timeout_s:
+            if sensor is not None and state.get("sensor_invalid_telemetry") is None and state.get("sensor_last_update", 0.0) > 0 and sensor_age <= obstacle_evaluator.stale_timeout_s:
                 ultrasonic_cm = sensor.get("distance_cm")
                 ultrasonic_threat = sensor.get("threat_level")
             else:
