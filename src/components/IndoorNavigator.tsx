@@ -62,7 +62,7 @@ export function IndoorNavigator({ getFrameBase64 }: IndoorNavigatorProps) {
         setIsAnalyzing(false);
       }
     },
-    [getFrameBase64, destination]
+    [getFrameBase64, destination],
   );
 
   const startNavigation = (destLabel: string) => {
@@ -150,7 +150,9 @@ export function IndoorNavigator({ getFrameBase64 }: IndoorNavigatorProps) {
                 <span className="text-sm sm:text-base font-black text-foreground">
                   Navigating to: <span className="text-sky-400">{destination}</span>
                 </span>
-                <p className="text-xs text-muted-foreground mt-0.5">Turn-by-turn waypoint guidance</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Turn-by-turn waypoint guidance
+                </p>
               </div>
             </div>
 

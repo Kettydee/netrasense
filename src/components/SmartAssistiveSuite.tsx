@@ -32,6 +32,27 @@ interface SmartAssistiveSuiteProps {
 
 type TabType = "seek" | "face" | "nav" | "scene";
 
+type SpeechRecognitionEventLike = {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+};
+
+type SpeechRecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+type WindowWithSpeechRecognition = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
+
 export function SmartAssistiveSuite({
   getFrameBase64,
   detectedObjects = [],
@@ -46,7 +67,7 @@ export function SmartAssistiveSuite({
   const [currentResultText, setCurrentResultText] = useState<string>("");
   const [isListening, setIsListening] = useState<boolean>(false);
 
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   // Describe Surroundings
   const handleDescribeScene = useCallback(async () => {
@@ -108,8 +129,9 @@ export function SmartAssistiveSuite({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    const speechWindow = window as WindowWithSpeechRecognition;
     const SpeechRecognitionClass =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
 
     if (!SpeechRecognitionClass) return;
 
@@ -118,9 +140,10 @@ export function SmartAssistiveSuite({
     recognition.interimResults = false;
     recognition.lang = "en-IN";
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event) => {
       const last = event.results.length - 1;
-      const transcript = event.results[last][0].transcript.toLowerCase().trim();
+      const transcript = event.results[last]?.[0]?.transcript?.toLowerCase().trim();
+      if (!transcript) return;
 
       if (
         transcript.includes("find") ||
@@ -169,7 +192,9 @@ export function SmartAssistiveSuite({
       if (isListening) {
         try {
           recognition.start();
-        } catch {}
+        } catch {
+          setIsListening(false);
+        }
       }
     };
 
@@ -178,7 +203,9 @@ export function SmartAssistiveSuite({
     return () => {
       try {
         recognition.stop();
-      } catch {}
+      } catch {
+        // Recognition can already be stopped when the component unmounts.
+      }
     };
   }, [isListening, handleDescribeScene, handleReadCurrency]);
 
@@ -197,7 +224,9 @@ export function SmartAssistiveSuite({
       try {
         recognitionRef.current.start();
         setIsListening(true);
-        toast.success("Voice commands active! Say 'Find bottle', 'Who is in front', or 'Describe scene'");
+        toast.success(
+          "Voice commands active! Say 'Find bottle', 'Who is in front', or 'Describe scene'",
+        );
         speak("Voice commands activated.");
       } catch {
         toast.error("Could not start voice recognition.");
@@ -206,21 +235,24 @@ export function SmartAssistiveSuite({
   };
 
   // Convert string detections into object format if needed
-  const normalizedDetections = detections.length > 0
-    ? detections
-    : detectedObjects.map((text) => {
-        let direction = "center";
-        if (text.toLowerCase().includes("left")) direction = "left";
-        if (text.toLowerCase().includes("right")) direction = "right";
-        return {
-          label: text.replace(/\s+on\s+(left|center|right)/i, "").trim(),
-          direction,
-          distance_cm: 120,
-        };
-      });
+  const normalizedDetections =
+    detections.length > 0
+      ? detections
+      : detectedObjects.map((text) => {
+          let direction = "center";
+          if (text.toLowerCase().includes("left")) direction = "left";
+          if (text.toLowerCase().includes("right")) direction = "right";
+          return {
+            label: text.replace(/\s+on\s+(left|center|right)/i, "").trim(),
+            direction,
+            distance_cm: 120,
+          };
+        });
 
   return (
-    <div className={`mt-6 rounded-3xl border border-border/80 bg-card/70 p-6 sm:p-7 shadow-sm backdrop-blur-sm ${className}`}>
+    <div
+      className={`mt-6 rounded-3xl border border-border/80 bg-card/70 p-6 sm:p-7 shadow-sm backdrop-blur-sm ${className}`}
+    >
       {/* Header with Title & Hands-Free Mic */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-5">
         <div className="flex items-center gap-3.5">
@@ -350,7 +382,11 @@ export function SmartAssistiveSuite({
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Say: <span className="font-semibold text-primary">&ldquo;What&apos;s around me?&rdquo;</span> for room walkthrough.
+                  Say:{" "}
+                  <span className="font-semibold text-primary">
+                    &ldquo;What&apos;s around me?&rdquo;
+                  </span>{" "}
+                  for room walkthrough.
                 </p>
               </Button>
 
@@ -371,7 +407,8 @@ export function SmartAssistiveSuite({
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Hold cash or medicine signs. Say: <span className="font-semibold text-emerald-400">&ldquo;Read this&rdquo;</span>.
+                  Hold cash or medicine signs. Say:{" "}
+                  <span className="font-semibold text-emerald-400">&ldquo;Read this&rdquo;</span>.
                 </p>
               </Button>
             </div>

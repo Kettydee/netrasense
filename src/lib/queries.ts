@@ -40,10 +40,7 @@ export type TelemetryPage = {
  * Fetch a single page of telemetry records.
  * Also returns the total count for pagination controls.
  */
-export async function fetchTelemetryPage(
-  page: number,
-  pageSize: number,
-): Promise<TelemetryPage> {
+export async function fetchTelemetryPage(page: number, pageSize: number): Promise<TelemetryPage> {
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
@@ -53,9 +50,7 @@ export async function fetchTelemetryPage(
       .select("*")
       .order("created_at", { ascending: false })
       .range(from, to),
-    supabase
-      .from("telemetry_stream")
-      .select("id", { count: "exact", head: true }),
+    supabase.from("telemetry_stream").select("id", { count: "exact", head: true }),
   ]);
 
   if (pageResult.error) throw pageResult.error;

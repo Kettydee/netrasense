@@ -2,6 +2,52 @@ export const GEMINI_API_KEY_STORAGE_KEY = "netrasense:gemini_api_key";
 export const ENROLLED_FACES_STORAGE_KEY = "netrasense:enrolled_face_profiles";
 export const FAMILIAR_CONTACTS_KEY = "netrasense:familiar_faces";
 
+type JsonRecord = Record<string, unknown>;
+
+type GeminiPart = {
+  text?: string;
+  inlineData?: { mimeType: string; data: string };
+};
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null;
+}
+
+function getString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function getGeminiResponseText(response: unknown): string | undefined {
+  if (!isRecord(response) || !Array.isArray(response["candidates"])) return undefined;
+  const candidate = response["candidates"][0];
+  if (
+    !isRecord(candidate) ||
+    !isRecord(candidate["content"]) ||
+    !Array.isArray(candidate["content"]["parts"])
+  ) {
+    return undefined;
+  }
+  return getString(
+    isRecord(candidate["content"]["parts"][0])
+      ? candidate["content"]["parts"][0]["text"]
+      : undefined,
+  )?.trim();
+}
+
+function getStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function getClearanceStatus(value: unknown): "Safe" | "Caution" | "Blocked" {
+  return value === "Safe" || value === "Caution" || value === "Blocked" ? value : "Safe";
+}
+
 /** Resolve the backend server URL for local Python vision / proxy service. */
 function getServerUrl(): string {
   if (typeof window === "undefined") return "http://localhost:5000";
@@ -20,7 +66,7 @@ export function getResolvedGeminiApiKey(explicitKey?: string): string {
     const fromStorage = window.localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY)?.trim();
     if (fromStorage) return fromStorage;
   }
-  const fromEnv = (import.meta as any).env?.VITE_GEMINI_API_KEY?.trim();
+  const fromEnv = import.meta.env["VITE_GEMINI_API_KEY"]?.trim();
   if (fromEnv) return fromEnv;
   return "";
 }
@@ -43,18 +89,18 @@ export async function callGemini(
   contents: unknown[],
   generationConfig: unknown = { temperature: 0.1, maxOutputTokens: 600 },
   apiKey?: string,
-): Promise<any> {
+): Promise<unknown> {
   const resolvedKey = getResolvedGeminiApiKey(apiKey);
 
   if (resolvedKey) {
-    let lastError: any = null;
+    let lastError: Error | null = null;
 
     for (const model of GEMINI_MODELS) {
       try {
         // Strip thinkingConfig for models that don't support it (only 2.5 supports it)
-        const modelGenConfig = { ...(generationConfig as any) };
+        const modelGenConfig = isRecord(generationConfig) ? { ...generationConfig } : {};
         if (!model.startsWith("gemini-2.5")) {
-          delete modelGenConfig.thinkingConfig;
+          delete modelGenConfig["thinkingConfig"];
         }
 
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${resolvedKey}`;
@@ -85,7 +131,6 @@ export async function callGemini(
 
         if (res.status === 401 || res.status === 403) {
           const keyErr = new Error(`INVALID_KEY (${res.status}): ${errText}`);
-          (keyErr as any).status = res.status;
           throw keyErr;
         }
 
@@ -97,15 +142,15 @@ export async function callGemini(
 
         lastError = new Error(`HTTP_${res.status}: ${errText}`);
         continue;
-      } catch (directErr: any) {
-        if (directErr?.message?.includes("INVALID_KEY")) {
+      } catch (directErr: unknown) {
+        if (getErrorMessage(directErr).includes("INVALID_KEY")) {
           throw directErr;
         }
-        lastError = directErr;
+        lastError = directErr instanceof Error ? directErr : new Error(getErrorMessage(directErr));
       }
     }
 
-    if (lastError && String(lastError.message).includes("RATE_LIMIT")) {
+    if (lastError?.message.includes("RATE_LIMIT")) {
       throw lastError;
     }
   }
@@ -127,7 +172,7 @@ export async function callGemini(
   throw new Error(
     resolvedKey
       ? "AI vision service is momentarily busy or rate-limited. Please try again shortly."
-      : "No active Gemini API Key found. Please add your free Gemini API Key in Settings."
+      : "No active Gemini API Key found. Please add your free Gemini API Key in Settings.",
   );
 }
 
@@ -140,7 +185,9 @@ export async function hasGeminiKey(apiKey?: string): Promise<boolean> {
       const data = (await res.json()) as { has_key: boolean };
       return Boolean(data.has_key);
     }
-  } catch {}
+  } catch {
+    return false;
+  }
   return false;
 }
 
@@ -155,7 +202,9 @@ export async function setGeminiApiKeyOnServer(apiKey: string): Promise<boolean> 
       const data = (await res.json()) as { has_key: boolean };
       return data.has_key;
     }
-  } catch {}
+  } catch {
+    return false;
+  }
   return false;
 }
 
@@ -177,8 +226,22 @@ export function getStoredFaceProfiles(): EnrolledFaceProfile[] {
   if (typeof window === "undefined") return [];
   try {
     const stored = window.localStorage.getItem(ENROLLED_FACES_STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {}
+    if (stored) {
+      const parsed: unknown = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (profile): profile is EnrolledFaceProfile =>
+            isRecord(profile) &&
+            typeof profile["id"] === "string" &&
+            typeof profile["name"] === "string" &&
+            typeof profile["imageBase64"] === "string" &&
+            typeof profile["enrolledAt"] === "string",
+        );
+      }
+    }
+  } catch {
+    return [];
+  }
   return [];
 }
 
@@ -252,13 +315,23 @@ export async function enrollFaceBiometric(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, frame: imageBase64 }),
     });
-    return await res.json();
-  } catch (err: any) {
-    return {
-      success: false,
-      error: `Could not reach local server at ${serverUrl}.`,
-    };
+    const data: unknown = await res.json();
+    if (isRecord(data) && typeof data["success"] === "boolean") {
+      const message = getString(data["message"]);
+      const error = getString(data["error"]);
+      return {
+        success: data["success"],
+        ...(message ? { message } : {}),
+        ...(error ? { error } : {}),
+      };
+    }
+  } catch {
+    // Preserve the existing unavailable-server result below.
   }
+  return {
+    success: false,
+    error: `Could not reach local server at ${serverUrl}.`,
+  };
 }
 
 export async function fetchEnrolledFaces(
@@ -267,10 +340,27 @@ export async function fetchEnrolledFaces(
   try {
     const res = await fetch(`${serverUrl}/api/face/list`, { cache: "no-store" });
     if (res.ok) {
-      const data = await res.json();
-      return data.faces || [];
+      const data: unknown = await res.json();
+      if (isRecord(data) && Array.isArray(data["faces"])) {
+        return data["faces"].flatMap((face) =>
+          isRecord(face) &&
+          typeof face["name"] === "string" &&
+          typeof face["enrolled_at"] === "string" &&
+          typeof face["samples_count"] === "number"
+            ? [
+                {
+                  name: face["name"],
+                  enrolled_at: face["enrolled_at"],
+                  samples_count: face["samples_count"],
+                },
+              ]
+            : [],
+        );
+      }
     }
-  } catch {}
+  } catch {
+    return [];
+  }
   return [];
 }
 
@@ -284,8 +374,8 @@ export async function deleteEnrolledFace(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     });
-    const data = await res.json();
-    return Boolean(data.success);
+    const data: unknown = await res.json();
+    return isRecord(data) && Boolean(data["success"]);
   } catch {
     return false;
   }
@@ -359,7 +449,7 @@ Keep your tone calm, reassuring, and concise so it can be spoken aloud immediate
       apiKey,
     );
 
-    const text = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const text = getGeminiResponseText(response);
     if (text) {
       return { summary: text, source: "gemini" };
     }
@@ -411,7 +501,7 @@ ${langInstruction}
       apiKey,
     );
 
-    const text = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const text = getGeminiResponseText(response);
     if (text) {
       return { speech: text, extractedText: text, source: "gemini" };
     }
@@ -527,7 +617,7 @@ export async function identifyFaceAndMood(
     const compressedLiveUrl = await compressFaceImage(imageBase64, 480);
     const liveBase64 = compressedLiveUrl.replace(/^data:image\/\w+;base64,/, "");
 
-    const parts: any[] = [];
+    const parts: GeminiPart[] = [];
 
     if (storedProfiles.length > 0) {
       const promptText = `You are NetraSense AI, an intelligent assistive biometric face and emotion identifier for visually impaired users.
@@ -608,18 +698,21 @@ Respond with a valid JSON object matching this schema:
       apiKey,
     );
 
-    const rawText = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+    const rawText = getGeminiResponseText(response) || "";
     if (!rawText) {
       throw new Error("EMPTY_AI_RESPONSE");
     }
 
-    let jsonStr = rawText.replace(/^```(json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    let jsonStr = rawText
+      .replace(/^```(json)?\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
     const match = jsonStr.match(/\{[\s\S]*\}/);
     if (match) {
       jsonStr = match[0];
     }
 
-    let parsed: any;
+    let parsed: unknown;
     try {
       parsed = JSON.parse(jsonStr);
     } catch {
@@ -627,20 +720,23 @@ Respond with a valid JSON object matching this schema:
       parsed = JSON.parse(jsonStr);
     }
 
+    const result = isRecord(parsed) ? parsed : {};
     return {
-      speech: parsed.speech || "A person is in front of you.",
-      peopleCount: parsed.peopleCount ?? 1,
-      identifiedName: parsed.identifiedName || undefined,
-      confidence: parsed.confidence,
-      mood: parsed.mood || "Attentive",
-      moodEmoji: parsed.moodEmoji || "👤",
-      distanceEstimate: parsed.distanceEstimate || "1 to 2 meters ahead",
-      actionDescription: parsed.actionDescription || "In front of camera",
+      speech: getString(result["speech"]) || "A person is in front of you.",
+      peopleCount: typeof result["peopleCount"] === "number" ? result["peopleCount"] : 1,
+      ...(getString(result["identifiedName"])
+        ? { identifiedName: getString(result["identifiedName"]) }
+        : {}),
+      ...(typeof result["confidence"] === "number" ? { confidence: result["confidence"] } : {}),
+      mood: getString(result["mood"]) || "Attentive",
+      moodEmoji: getString(result["moodEmoji"]) || "👤",
+      distanceEstimate: getString(result["distanceEstimate"]) || "1 to 2 meters ahead",
+      actionDescription: getString(result["actionDescription"]) || "In front of camera",
       source: "gemini",
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Gemini face/mood identifier failed:", err);
-    const msg = String(err?.message || err);
+    const msg = getErrorMessage(err);
 
     if (msg.includes("RATE_LIMIT") || msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {
       return {
@@ -656,7 +752,8 @@ Respond with a valid JSON object matching this schema:
 
     if (msg.includes("INVALID_KEY") || msg.includes("401") || msg.includes("403")) {
       return {
-        speech: "Your Gemini API key appears invalid or expired. Please check your key in Settings.",
+        speech:
+          "Your Gemini API key appears invalid or expired. Please check your key in Settings.",
         peopleCount: 0,
         mood: "Key Error",
         moodEmoji: "🔑",
@@ -668,7 +765,8 @@ Respond with a valid JSON object matching this schema:
   }
 
   return {
-    speech: "No person detected in front of the camera. Please center your face in the camera view.",
+    speech:
+      "No person detected in front of the camera. Please center your face in the camera view.",
     peopleCount: 0,
     mood: "Ready",
     moodEmoji: "👤",
@@ -726,16 +824,22 @@ Rules:
       apiKey,
     );
 
-    const rawText = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-    const cleanJson = rawText.replace(/^```(json)?\s*/i, "").replace(/\s*```$/, "").trim();
-    const parsed = JSON.parse(cleanJson);
+    const rawText = getGeminiResponseText(response) || "";
+    const cleanJson = rawText
+      .replace(/^```(json)?\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
+    const parsed: unknown = JSON.parse(cleanJson);
+    const result = isRecord(parsed) ? parsed : {};
 
     return {
-      instruction: parsed.instruction || `Step ${currentStep}: Move forward carefully towards ${destination}.`,
-      isArrived: Boolean(parsed.isArrived),
-      clearanceStatus: parsed.clearanceStatus || "Safe",
-      obstaclesInPath: parsed.obstaclesInPath || [],
-      keyLandmarks: parsed.keyLandmarks || [],
+      instruction:
+        getString(result["instruction"]) ||
+        `Step ${currentStep}: Move forward carefully towards ${destination}.`,
+      isArrived: Boolean(result["isArrived"]),
+      clearanceStatus: getClearanceStatus(result["clearanceStatus"]),
+      obstaclesInPath: getStringArray(result["obstaclesInPath"]),
+      keyLandmarks: getStringArray(result["keyLandmarks"]),
       source: "gemini",
     };
   } catch (err) {

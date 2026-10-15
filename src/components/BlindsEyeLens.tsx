@@ -64,13 +64,13 @@ export function BlindsEyeLens({
   const [serverStatus, setServerStatus] = useState<YoloStatus | null>(null);
   const [serverCheckKey, setServerCheckKey] = useState<number>(0);
 
-interface BrowserObjectDetectionModel {
-  detect: (
-    img: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement,
-    maxNumBoxes?: number,
-    minScore?: number,
-  ) => Promise<Array<{ bbox: [number, number, number, number]; class: string; score: number }>>;
-}
+  interface BrowserObjectDetectionModel {
+    detect: (
+      img: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement,
+      maxNumBoxes?: number,
+      minScore?: number,
+    ) => Promise<Array<{ bbox: [number, number, number, number]; class: string; score: number }>>;
+  }
 
   // In-browser Camera state
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -347,7 +347,7 @@ interface BrowserObjectDetectionModel {
 
             // Check if this distinct object in this zone has been announced
             const lastAnnounced = announcedObjectsRef.current.get(trackKey);
-            if (!lastAnnounced || (now - lastAnnounced) > 4000) {
+            if (!lastAnnounced || now - lastAnnounced > 4000) {
               newItemsToAnnounce.push(`${prediction.class} on the ${dir.toLowerCase()}`);
               announcedObjectsRef.current.set(trackKey, now);
             }
@@ -369,7 +369,11 @@ interface BrowserObjectDetectionModel {
             } else if (newItemsToAnnounce.length === 2) {
               message = `${newItemsToAnnounce[0] ?? ""}, and ${newItemsToAnnounce[1] ?? ""}`;
             } else {
-              message = `${newItemsToAnnounce.slice(0, 3).join(", ")}, and ${newItemsToAnnounce[3] ?? ""}`.replace(/,\s*and\s*$/, "");
+              message =
+                `${newItemsToAnnounce.slice(0, 3).join(", ")}, and ${newItemsToAnnounce[3] ?? ""}`.replace(
+                  /,\s*and\s*$/,
+                  "",
+                );
             }
             speakBrowser(message);
           }
@@ -399,11 +403,7 @@ interface BrowserObjectDetectionModel {
               predictions.map((p) => {
                 const cX = p.bbox[0] + p.bbox[2] / 2;
                 const dir =
-                  cX < canvas.width * 0.33
-                    ? "left"
-                    : cX > canvas.width * 0.66
-                      ? "right"
-                      : "center";
+                  cX < canvas.width * 0.33 ? "left" : cX > canvas.width * 0.66 ? "right" : "center";
                 return {
                   label: p.class,
                   direction: dir,
@@ -467,7 +467,9 @@ interface BrowserObjectDetectionModel {
               {isServerLive && engineMode === "yolo"
                 ? `YOLO11 · ${serverStatus?.mode ?? "all"} mode · ${serverStatus?.fps ?? 0} FPS`
                 : engineMode === "browser"
-                  ? (browserModel ? "COCO-SSD loaded" : "Loading browser AI...")
+                  ? browserModel
+                    ? "COCO-SSD loaded"
+                    : "Loading browser AI..."
                   : "Server not connected"}
             </p>
           </div>
@@ -534,9 +536,7 @@ interface BrowserObjectDetectionModel {
               <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
                 <Radio className="size-10 text-white/70 animate-pulse" />
                 <div>
-                  <p className="text-base font-bold text-white">
-                    YOLO Vision Server Not Connected
-                  </p>
+                  <p className="text-base font-bold text-white">YOLO Vision Server Not Connected</p>
                   <p className="mt-1 text-xs text-white/80 max-w-sm">
                     Start the local AI engine with{" "}
                     <code className="rounded bg-white/15 px-1.5 py-0.5 font-mono text-cyan-300">
@@ -790,8 +790,7 @@ interface BrowserObjectDetectionModel {
                 label: d.label,
                 direction: d.direction,
                 distance_cm:
-                  d.distance_cm ||
-                  (d.depth_meters ? Math.round(d.depth_meters * 100) : 120),
+                  d.distance_cm || (d.depth_meters ? Math.round(d.depth_meters * 100) : 120),
               }))
             : browserDetections
         }

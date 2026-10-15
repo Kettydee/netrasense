@@ -28,6 +28,31 @@ interface SmartSceneDescriberProps {
   detectedObjects?: string[];
 }
 
+type SpeechRecognitionEventLike = {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+};
+
+type SpeechRecognitionErrorEventLike = {
+  error: string;
+};
+
+type SpeechRecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+type WindowWithSpeechRecognition = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
+
 export function SmartSceneDescriber({
   getFrameBase64,
   detectedObjects = [],
@@ -40,80 +65,94 @@ export function SmartSceneDescriber({
   const [isListening, setIsListening] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
 
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   // Trigger Scene Description (English + Hindi)
-  const handleDescribeScene = useCallback(async (langOverride?: "en" | "hi") => {
-    const chosenLang = langOverride || language;
-    const frame = getFrameBase64();
-    if (!frame) {
-      const msg = chosenLang === "hi"
-        ? "कैमरा सक्रिय नहीं है। कृपया पहले कैमरा शुरू करें।"
-        : "Please ensure the camera is active to analyze the scene.";
-      toast.error(msg);
-      speak(msg);
-      return;
-    }
+  const handleDescribeScene = useCallback(
+    async (langOverride?: "en" | "hi") => {
+      const chosenLang = langOverride || language;
+      const frame = getFrameBase64();
+      if (!frame) {
+        const msg =
+          chosenLang === "hi"
+            ? "कैमरा सक्रिय नहीं है। कृपया पहले कैमरा शुरू करें।"
+            : "Please ensure the camera is active to analyze the scene.";
+        toast.error(msg);
+        speak(msg);
+        return;
+      }
 
-    setIsProcessing(true);
-    setActiveAction("scene");
-    const scanMsg = chosenLang === "hi" ? "माहौल स्कैन हो रहा है..." : "Scanning surroundings...";
-    toast.info(scanMsg);
-    speak(scanMsg);
+      setIsProcessing(true);
+      setActiveAction("scene");
+      const scanMsg = chosenLang === "hi" ? "माहौल स्कैन हो रहा है..." : "Scanning surroundings...";
+      toast.info(scanMsg);
+      speak(scanMsg);
 
-    try {
-      const result = await describeSurroundings(frame, undefined, detectedObjects, chosenLang);
-      setSceneResult(result);
-      setCurrencyResult(null);
-      speak(result.summary);
-      toast.success(chosenLang === "hi" ? "माहौल का विवरण तैयार!" : "Scene described!");
-    } catch (err) {
-      console.error(err);
-      toast.error(chosenLang === "hi" ? "माहौल नहीं देख पाए।" : "Could not describe scene.");
-    } finally {
-      setIsProcessing(false);
-      setActiveAction(null);
-    }
-  }, [getFrameBase64, detectedObjects, language]);
+      try {
+        const result = await describeSurroundings(frame, undefined, detectedObjects, chosenLang);
+        setSceneResult(result);
+        setCurrencyResult(null);
+        speak(result.summary);
+        toast.success(chosenLang === "hi" ? "माहौल का विवरण तैयार!" : "Scene described!");
+      } catch (err) {
+        console.error(err);
+        toast.error(chosenLang === "hi" ? "माहौल नहीं देख पाए।" : "Could not describe scene.");
+      } finally {
+        setIsProcessing(false);
+        setActiveAction(null);
+      }
+    },
+    [getFrameBase64, detectedObjects, language],
+  );
 
   // Trigger Currency / Document Reader (English + Hindi)
-  const handleReadCurrency = useCallback(async (langOverride?: "en" | "hi") => {
-    const chosenLang = langOverride || language;
-    const frame = getFrameBase64();
-    if (!frame) {
-      const msg = chosenLang === "hi"
-        ? "कैमरा सक्रिय नहीं है। कृपया पहले कैमरा शुरू करें।"
-        : "Please ensure the camera is active to read currency or text.";
-      toast.error(msg);
-      speak(msg);
-      return;
-    }
+  const handleReadCurrency = useCallback(
+    async (langOverride?: "en" | "hi") => {
+      const chosenLang = langOverride || language;
+      const frame = getFrameBase64();
+      if (!frame) {
+        const msg =
+          chosenLang === "hi"
+            ? "कैमरा सक्रिय नहीं है। कृपया पहले कैमरा शुरू करें।"
+            : "Please ensure the camera is active to read currency or text.";
+        toast.error(msg);
+        speak(msg);
+        return;
+      }
 
-    setIsProcessing(true);
-    setActiveAction("currency");
-    const scanMsg = chosenLang === "hi" ? "पैसे और टेक्स्ट स्कैन हो रहे हैं..." : "Scanning currency and text...";
-    toast.info(scanMsg);
-    speak(scanMsg);
+      setIsProcessing(true);
+      setActiveAction("currency");
+      const scanMsg =
+        chosenLang === "hi"
+          ? "पैसे और टेक्स्ट स्कैन हो रहे हैं..."
+          : "Scanning currency and text...";
+      toast.info(scanMsg);
+      speak(scanMsg);
 
-    try {
-      const result = await readCurrencyAndText(frame, undefined, chosenLang);
-      setCurrencyResult(result);
-      setSceneResult(null);
-      speak(result.speech);
-      toast.success(chosenLang === "hi" ? "पढ़ना पूरा हुआ!" : "Readout complete!");
-    } catch (err) {
-      console.error(err);
-      toast.error(chosenLang === "hi" ? "पैसे या टेक्स्ट नहीं पढ़ सके।" : "Could not read currency/text.");
-    } finally {
-      setIsProcessing(false);
-      setActiveAction(null);
-    }
-  }, [getFrameBase64, language]);
+      try {
+        const result = await readCurrencyAndText(frame, undefined, chosenLang);
+        setCurrencyResult(result);
+        setSceneResult(null);
+        speak(result.speech);
+        toast.success(chosenLang === "hi" ? "पढ़ना पूरा हुआ!" : "Readout complete!");
+      } catch (err) {
+        console.error(err);
+        toast.error(
+          chosenLang === "hi" ? "पैसे या टेक्स्ट नहीं पढ़ सके।" : "Could not read currency/text.",
+        );
+      } finally {
+        setIsProcessing(false);
+        setActiveAction(null);
+      }
+    },
+    [getFrameBase64, language],
+  );
 
   // Voice Command Listener Setup (SpeechRecognition - English + Hindi)
   useEffect(() => {
+    const speechWindow = window as WindowWithSpeechRecognition;
     const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
 
     if (!SpeechRecognition) return;
 
@@ -123,9 +162,10 @@ export function SmartSceneDescriber({
     // en-IN recognizes Indian English, Hinglish, and bilingual queries smoothly
     recognition.lang = language === "hi" ? "hi-IN" : "en-IN";
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event) => {
       const lastResultIndex = event.results.length - 1;
-      const transcript = event.results[lastResultIndex][0].transcript.toLowerCase().trim();
+      const transcript = event.results[lastResultIndex]?.[0]?.transcript?.toLowerCase().trim();
+      if (!transcript) return;
 
       const isHindiScene =
         transcript.includes("aas paas") ||
@@ -176,7 +216,7 @@ export function SmartSceneDescriber({
       }
     };
 
-    recognition.onerror = (e: any) => {
+    recognition.onerror = (e) => {
       console.warn("Speech recognition error:", e.error);
       setIsListening(false);
     };
@@ -196,7 +236,9 @@ export function SmartSceneDescriber({
     return () => {
       try {
         recognition.stop();
-      } catch {}
+      } catch {
+        // Recognition can already be stopped when the component unmounts.
+      }
     };
   }, [handleDescribeScene, handleReadCurrency, isListening, language]);
 
@@ -296,7 +338,8 @@ export function SmartSceneDescriber({
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Say: <span className="font-semibold text-primary">"What's around me?"</span> to get a full room walkthrough.
+            Say: <span className="font-semibold text-primary">"What's around me?"</span> to get a
+            full room walkthrough.
           </p>
         </Button>
 
@@ -318,7 +361,8 @@ export function SmartSceneDescriber({
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Hold cash, medicine, or signs. Say: <span className="font-semibold text-emerald-400">"Read this"</span>.
+            Hold cash, medicine, or signs. Say:{" "}
+            <span className="font-semibold text-emerald-400">"Read this"</span>.
           </p>
         </Button>
       </div>
@@ -358,7 +402,11 @@ export function SmartSceneDescriber({
                 onClick={() => copyToClipboard(currentResultText)}
                 aria-label="Copy description"
               >
-                {copied ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />}
+                {copied ? (
+                  <Check className="size-3.5 text-emerald-400" />
+                ) : (
+                  <Copy className="size-3.5" />
+                )}
               </Button>
             </div>
           </div>

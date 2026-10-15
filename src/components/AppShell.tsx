@@ -276,20 +276,32 @@ export function AppShell({ title, description, children, actions }: AppShellProp
                     ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
                     : "border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
                 }`}
-                title={isSensorConnected ? "Click to disconnect USB" : "Click to connect USB device"}
+                title={
+                  isSensorConnected ? "Click to disconnect USB" : "Click to connect USB device"
+                }
               >
                 <div className="flex items-center gap-2 truncate">
                   <span
                     className={`size-2 rounded-full ${
-                      isSensorConnected ? "bg-emerald-500 animate-pulse" : "bg-emerald-400 animate-ping"
+                      isSensorConnected
+                        ? "bg-emerald-500 animate-pulse"
+                        : "bg-emerald-400 animate-ping"
                     }`}
                   />
                   <span className="truncate">
-                    {isSensorConnected ? (isUsbConnected ? "USB ONLINE" : "DEVICE ONLINE") : "🔌 CONNECT USB"}
+                    {isSensorConnected
+                      ? isUsbConnected
+                        ? "USB ONLINE"
+                        : "DEVICE ONLINE"
+                      : "🔌 CONNECT USB"}
                   </span>
                 </div>
                 <span className="font-mono text-[9px] opacity-70">
-                  {isSensorConnected ? (isUsbConnected ? "COM" : hwStatus?.port ?? "ARDUINO") : "CLICK HERE"}
+                  {isSensorConnected
+                    ? isUsbConnected
+                      ? "COM"
+                      : (hwStatus?.port ?? "ARDUINO")
+                    : "CLICK HERE"}
                 </span>
               </button>
             ) : (
@@ -307,7 +319,9 @@ export function AppShell({ title, description, children, actions }: AppShellProp
               >
                 <span
                   className={`size-3 rounded-full ${
-                    isSensorConnected ? "bg-emerald-500 animate-pulse" : "bg-emerald-400 animate-ping"
+                    isSensorConnected
+                      ? "bg-emerald-500 animate-pulse"
+                      : "bg-emerald-400 animate-ping"
                   }`}
                 />
               </button>
@@ -362,12 +376,18 @@ export function AppShell({ title, description, children, actions }: AppShellProp
             <span>
               Python server unreachable — sensor data, camera feed and AI are offline.
               <span className="ml-2 font-normal text-amber-600/70 dark:text-amber-400/70">
-                Start with: <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">python vision_server.py</code>
+                Start with:{" "}
+                <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">
+                  python vision_server.py
+                </code>
               </span>
             </span>
           </div>
         )}
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-border/50 pb-4" data-print-hidden>
+        <header
+          className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-border/50 pb-4"
+          data-print-hidden
+        >
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
             {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}

@@ -214,7 +214,10 @@ function DistanceMeter({
             {hasData ? `${distance} cm` : "--"}
           </span>
         </div>
-        <div className="mt-2 h-5 w-full overflow-hidden rounded-full bg-zinc-800/80 border border-zinc-700/50" aria-hidden="true">
+        <div
+          className="mt-2 h-5 w-full overflow-hidden rounded-full bg-zinc-800/80 border border-zinc-700/50"
+          aria-hidden="true"
+        >
           <div
             className={`h-full rounded-full transition-all duration-75 ${hasData ? barColor : "bg-zinc-600/30"}`}
             style={{ width: hasData ? `${Math.max(4, pct * 100)}%` : "0%" }}
@@ -342,7 +345,7 @@ function EnsembleSignalCard({ ensemble }: { ensemble: EnsembleBreakdown }) {
                         </span>
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        {active ? sig.data.threat_level ?? "—" : "No signal"}
+                        {active ? (sig.data.threat_level ?? "—") : "No signal"}
                       </p>
                     </div>
                   </div>
@@ -357,7 +360,7 @@ function EnsembleSignalCard({ ensemble }: { ensemble: EnsembleBreakdown }) {
                         : "—"}
                     </span>
                     <p className={`text-[10px] font-bold ${threatColor(sig.data.threat_level)}`}>
-                      {active ? sig.data.threat_level ?? "—" : "OFF"}
+                      {active ? (sig.data.threat_level ?? "—") : "OFF"}
                     </p>
                   </div>
                 </div>
@@ -377,9 +380,9 @@ function EnsembleSignalCard({ ensemble }: { ensemble: EnsembleBreakdown }) {
                   : "—"}
               </span>
               <span
-                className={`rounded-md px-2 py-0.5 text-[10px] font-black uppercase ${
-                  threatColor(ensemble.fused_threat_level)
-                } bg-card border border-border`}
+                className={`rounded-md px-2 py-0.5 text-[10px] font-black uppercase ${threatColor(
+                  ensemble.fused_threat_level,
+                )} bg-card border border-border`}
               >
                 {ensemble.fused_threat_level}
               </span>
@@ -445,21 +448,27 @@ function DashboardPage() {
   // Local persistent state keyed by date for instant offline/guest/online sync
   const [localDailyDodged, setLocalDailyDodged] = useState<number>(() => {
     if (typeof window !== "undefined") {
-      return Number(window.localStorage.getItem(`netrasense:dodged_${userId || "guest"}_${today}`) || 0);
+      return Number(
+        window.localStorage.getItem(`netrasense:dodged_${userId || "guest"}_${today}`) || 0,
+      );
     }
     return 0;
   });
 
   const [localDailyDistM, setLocalDailyDistM] = useState<number>(() => {
     if (typeof window !== "undefined") {
-      return Number(window.localStorage.getItem(`netrasense:dist_${userId || "guest"}_${today}`) || 0);
+      return Number(
+        window.localStorage.getItem(`netrasense:dist_${userId || "guest"}_${today}`) || 0,
+      );
     }
     return 0;
   });
 
   const [localLifetimeMinutes, setLocalLifetimeMinutes] = useState<number>(() => {
     if (typeof window !== "undefined") {
-      return Number(window.localStorage.getItem(`netrasense:lifetime_mins_${userId || "guest"}`) || 0);
+      return Number(
+        window.localStorage.getItem(`netrasense:lifetime_mins_${userId || "guest"}`) || 0,
+      );
     }
     return 0;
   });
@@ -476,7 +485,10 @@ function DashboardPage() {
       setLocalLifetimeMinutes((prev) => {
         const next = prev + 1;
         if (typeof window !== "undefined") {
-          window.localStorage.setItem(`netrasense:lifetime_mins_${userId || "guest"}`, String(next));
+          window.localStorage.setItem(
+            `netrasense:lifetime_mins_${userId || "guest"}`,
+            String(next),
+          );
         }
         return next;
       });
@@ -512,9 +524,30 @@ function DashboardPage() {
   const DEFAULT_STATUS: import("@/lib/sensor").UnifiedStatusResponse = {
     hardware: {
       system: { status: "NO HARDWARE" as const, sensor_heartbeat_timeout_s: 3 },
-      arduino: { connected: false, port: null, last_error: null, status: "DISCONNECTED" as const, last_update: 0, total_readings: 0 },
-      ultrasonic: { active: false, distance_cm: null, threat_level: null, device_id: null, timestamp: null, status: "NOT ACTIVE" as const },
-      camera: { connected: false, fps: 0, source: null, last_frame_timestamp: null, last_error: null, status: "DISCONNECTED" as const },
+      arduino: {
+        connected: false,
+        port: null,
+        last_error: null,
+        status: "DISCONNECTED" as const,
+        last_update: 0,
+        total_readings: 0,
+      },
+      ultrasonic: {
+        active: false,
+        distance_cm: null,
+        threat_level: null,
+        device_id: null,
+        timestamp: null,
+        status: "NOT ACTIVE" as const,
+      },
+      camera: {
+        connected: false,
+        fps: 0,
+        source: null,
+        last_frame_timestamp: null,
+        last_error: null,
+        status: "DISCONNECTED" as const,
+      },
       ai: { loaded: false, processing: false, model: null, status: "NOT READY" as const },
     },
     sensor_data: null,
@@ -527,12 +560,12 @@ function DashboardPage() {
   const statusQuery = useQuery({
     queryKey: ["unified-status"],
     queryFn: fetchUnifiedStatus,
-    refetchInterval: 250,  // Fast 250ms polling for low-latency sensor synchronization
+    refetchInterval: 250, // Fast 250ms polling for low-latency sensor synchronization
     retry: false,
     placeholderData: () => DEFAULT_STATUS,
   });
 
-  const hw = statusQuery.data?.hardware;  // shorthand
+  const hw = statusQuery.data?.hardware; // shorthand
 
   const todayStats = statsQuery.data?.find((s) => s.date === today);
   const yesterdayStats = statsQuery.data?.find((s) => s.date === yesterday);
@@ -558,22 +591,29 @@ function DashboardPage() {
         const snapshot = sensorSnapshotRef.current;
         const usbDistance = snapshot.usbFresh ? (snapshot.webSerial?.distance_cm ?? null) : null;
         const currentSensorDist = usbDistance ?? snapshot.hw?.ultrasonic?.distance_cm ?? null;
-        const currentThreat = currentSensorDist !== null ? classifyDistance(currentSensorDist) : "Normal";
+        const currentThreat =
+          currentSensorDist !== null ? classifyDistance(currentSensorDist) : "Normal";
         const isObstacle = currentThreat !== "Normal";
         let newDodged = localDailyDodged;
-        let newDist = localDailyDistM + 15;
+        const newDist = localDailyDistM + 15;
 
         if (isObstacle) {
           newDodged += 1;
           setLocalDailyDodged(newDodged);
           if (typeof window !== "undefined") {
-            window.localStorage.setItem(`netrasense:dodged_${userId || "guest"}_${today}`, String(newDodged));
+            window.localStorage.setItem(
+              `netrasense:dodged_${userId || "guest"}_${today}`,
+              String(newDodged),
+            );
           }
         }
 
         setLocalDailyDistM(newDist);
         if (typeof window !== "undefined") {
-          window.localStorage.setItem(`netrasense:dist_${userId || "guest"}_${today}`, String(newDist));
+          window.localStorage.setItem(
+            `netrasense:dist_${userId || "guest"}_${today}`,
+            String(newDist),
+          );
         }
 
         const newIncident: Telemetry = {
@@ -582,7 +622,10 @@ function DashboardPage() {
           detected_object: event.object.charAt(0).toUpperCase() + event.object.slice(1),
           distance_cm: currentSensorDist ?? 0,
           threat_level: currentThreat,
-          action_taken: currentSensorDist !== null ? "Ultrasonic Sensor + Camera Detection" : "Camera Detection",
+          action_taken:
+            currentSensorDist !== null
+              ? "Ultrasonic Sensor + Camera Detection"
+              : "Camera Detection",
           created_at: new Date().toISOString(),
         };
 
@@ -591,43 +634,43 @@ function DashboardPage() {
         // Persist daily stats to database for registered users
         if (userId && !userId.startsWith("demo-")) {
           void Promise.resolve(
-            supabase
-              .from("telemetry_stream")
-              .insert({
-                user_id: userId,
-                detected_object: newIncident.detected_object,
-                distance_cm: newIncident.distance_cm,
-                threat_level: newIncident.threat_level,
-                action_taken: newIncident.action_taken,
-              })
-          ).then(() => {
-            queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
-          }).catch(() => {
-            // Silently ignore — telemetry insert is best-effort
-          });
+            supabase.from("telemetry_stream").insert({
+              user_id: userId,
+              detected_object: newIncident.detected_object,
+              distance_cm: newIncident.distance_cm,
+              threat_level: newIncident.threat_level,
+              action_taken: newIncident.action_taken,
+            }),
+          )
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ["telemetry", userId] });
+            })
+            .catch(() => {
+              // Silently ignore — telemetry insert is best-effort
+            });
 
           const totalDodged = (todayStats?.obstacles_avoided ?? 0) + (isObstacle ? 1 : 0);
           const totalDistM = Number(todayStats?.safe_distance_walked_m ?? 0) + 15;
           const totalMins = (todayStats?.active_session_minutes ?? 0) + 1;
 
           void Promise.resolve(
-            supabase
-              .from("daily_stats")
-              .upsert(
-                {
-                  user_id: userId,
-                  date: today,
-                  obstacles_avoided: totalDodged,
-                  safe_distance_walked_m: totalDistM,
-                  active_session_minutes: totalMins,
-                },
-                { onConflict: "user_id,date" },
-              )
-          ).then(() => {
-            queryClient.invalidateQueries({ queryKey: ["daily-stats", userId] });
-          }).catch(() => {
-            // Silently ignore — daily stats upsert is best-effort
-          });
+            supabase.from("daily_stats").upsert(
+              {
+                user_id: userId,
+                date: today,
+                obstacles_avoided: totalDodged,
+                safe_distance_walked_m: totalDistM,
+                active_session_minutes: totalMins,
+              },
+              { onConflict: "user_id,date" },
+            ),
+          )
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ["daily-stats", userId] });
+            })
+            .catch(() => {
+              // Silently ignore — daily stats upsert is best-effort
+            });
         }
       }
     },
@@ -736,18 +779,20 @@ function DashboardPage() {
     : hasBackendSensorData;
 
   // Distance is STRICTLY from the physical ultrasonic sensor (never from the webcam):
-  const liveDistance = hasSensorData && rawHwDistance !== null
-    ? Number(rawHwDistance.toFixed(1))
-    : null;
+  const liveDistance =
+    hasSensorData && rawHwDistance !== null ? Number(rawHwDistance.toFixed(1)) : null;
   // The live distance gauge is sourced exclusively from the ultrasonic sensor.
   // Camera detections identify objects but do not include a measured distance.
   const isLiveVisionActive = !!(liveVision && now - liveVision.timestamp < 5000);
   const currentDistance = liveDistance ?? MAX_DISTANCE_CM;
 
   // Active object identification strictly from webcam:
-  const currentObject = isLiveVisionActive && liveVision.object
-    ? (liveVision.object.charAt(0).toUpperCase() + liveVision.object.slice(1))
-    : (currentDistance < 300 ? "Obstacle" : "Pathway");
+  const currentObject =
+    isLiveVisionActive && liveVision.object
+      ? liveVision.object.charAt(0).toUpperCase() + liveVision.object.slice(1)
+      : currentDistance < 300
+        ? "Obstacle"
+        : "Pathway";
 
   // ── Authoritative 4-State Obstacle Warning Logic ─────────────────
   // Distinguishes between:
@@ -784,7 +829,9 @@ function DashboardPage() {
         : null));
 
   const sensorFreshnessText: string = isSensorUnavailable
-    ? (sensorAgeSeconds !== null ? `Stale (${sensorAgeSeconds.toFixed(1)}s ago)` : "Unavailable")
+    ? sensorAgeSeconds !== null
+      ? `Stale (${sensorAgeSeconds.toFixed(1)}s ago)`
+      : "Unavailable"
     : isSensorError
       ? "Sensor Error"
       : sensorAgeSeconds !== null
@@ -792,19 +839,27 @@ function DashboardPage() {
         : "Live";
 
   // Authoritative Threat level matching distance zones (strictly derived from physical distance):
-  const sensorLevel = hasSensorData && rawHwThreat
-    ? hardwareThreatToUiLevel(rawHwThreat)
-    : hasSensorData && liveDistance !== null
-      ? classifyDistance(liveDistance)
-      : "Normal";
+  const sensorLevel =
+    hasSensorData && rawHwThreat
+      ? hardwareThreatToUiLevel(rawHwThreat)
+      : hasSensorData && liveDistance !== null
+        ? classifyDistance(liveDistance)
+        : "Normal";
 
   const level: ThreatLevel = sensorLevel;
 
-  const liveThreatLabel = hasSensorData && rawHwThreat
-    ? rawHwThreat
-    : hasSensorData && liveDistance !== null
-      ? (level === "Collision" ? "CRITICAL" : level === "Alarming" ? "ALARM" : level === "Warning" ? "WARNING" : "NORMAL")
-      : NO_DATA_SENTINEL;
+  const liveThreatLabel =
+    hasSensorData && rawHwThreat
+      ? rawHwThreat
+      : hasSensorData && liveDistance !== null
+        ? level === "Collision"
+          ? "CRITICAL"
+          : level === "Alarming"
+            ? "ALARM"
+            : level === "Warning"
+              ? "WARNING"
+              : "NORMAL"
+        : NO_DATA_SENTINEL;
 
   useEffect(() => {
     if (!voiceOn) return;
@@ -866,10 +921,7 @@ function DashboardPage() {
     (!profileQuery.data.full_name || !profileQuery.data.impairment_level);
 
   // 1. Obstacles dodged TODAY (refreshes to 0 on next day)
-  const obstaclesToday = Math.max(
-    todayStats?.obstacles_avoided ?? 0,
-    localDailyDodged,
-  );
+  const obstaclesToday = Math.max(todayStats?.obstacles_avoided ?? 0, localDailyDodged);
   const obstacleTrend = obstaclesToday - (yesterdayStats?.obstacles_avoided ?? 0);
 
   // 2. Safe distance explored TODAY (refreshes to 0 on next day)
@@ -1004,9 +1056,7 @@ function DashboardPage() {
                           ? "SENSOR ERROR"
                           : "SENSOR UNAVAILABLE"}
                   </span>
-                  <span className="text-[10px] opacity-75 font-mono">
-                    ({sensorFreshnessText})
-                  </span>
+                  <span className="text-[10px] opacity-75 font-mono">({sensorFreshnessText})</span>
                 </span>
                 <span
                   className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-black uppercase tracking-wider border ${
@@ -1103,11 +1153,7 @@ function DashboardPage() {
                   <CuteLeafLoader text="Connecting to sensor stream..." size="md" />
                 </div>
               ) : (
-                <DistanceMeter
-                  distance={currentDistance}
-                  level={level}
-                  hasData={hasSensorData}
-                />
+                <DistanceMeter distance={currentDistance} level={level} hasData={hasSensorData} />
               )}
             </div>
 
@@ -1178,19 +1224,19 @@ function DashboardPage() {
                 )}
                 <span
                   className={`flex items-center gap-1.5 text-xs font-bold ${
-                    systemStatus === "ONLINE"
-                      ? "text-emerald-400"
-                      : "text-zinc-400"
+                    systemStatus === "ONLINE" ? "text-emerald-400" : "text-zinc-400"
                   }`}
                 >
                   <span
                     className={`size-2 rounded-full ${
-                      systemStatus === "ONLINE"
-                        ? "bg-emerald-400 animate-pulse"
-                        : "bg-zinc-400"
+                      systemStatus === "ONLINE" ? "bg-emerald-400 animate-pulse" : "bg-zinc-400"
                     }`}
                   />
-                  {systemStatus === "ONLINE" ? (isWebSerialConnected ? "ONLINE (USB)" : "ONLINE") : "NO HARDWARE"}
+                  {systemStatus === "ONLINE"
+                    ? isWebSerialConnected
+                      ? "ONLINE (USB)"
+                      : "ONLINE"
+                    : "NO HARDWARE"}
                 </span>
               </div>
             </div>
@@ -1201,9 +1247,7 @@ function DashboardPage() {
                 <span className="text-muted-foreground font-medium">Arduino Serial</span>
                 <span
                   className={`font-mono text-xs font-bold ${
-                    arduinoStatus.includes("CONNECTED")
-                      ? "text-emerald-400"
-                      : "text-zinc-400"
+                    arduinoStatus.includes("CONNECTED") ? "text-emerald-400" : "text-zinc-400"
                   }`}
                 >
                   {arduinoStatus}
@@ -1224,14 +1268,18 @@ function DashboardPage() {
                   }`}
                 >
                   {isWebSerialConnected
-                    ? (webSerialData ? (isObstacleWarning ? "OBSTACLE WARNING (USB)" : "CLEAR (USB)") : "CONNECTED · NO READINGS")
-                    : (obstacleState === "OBSTACLE_WARNING"
-                        ? "OBSTACLE WARNING"
-                        : obstacleState === "CLEAR"
-                          ? "CLEAR"
-                          : obstacleState === "SENSOR_ERROR"
-                            ? "SENSOR ERROR"
-                            : "SENSOR UNAVAILABLE")}
+                    ? webSerialData
+                      ? isObstacleWarning
+                        ? "OBSTACLE WARNING (USB)"
+                        : "CLEAR (USB)"
+                      : "CONNECTED · NO READINGS"
+                    : obstacleState === "OBSTACLE_WARNING"
+                      ? "OBSTACLE WARNING"
+                      : obstacleState === "CLEAR"
+                        ? "CLEAR"
+                        : obstacleState === "SENSOR_ERROR"
+                          ? "SENSOR ERROR"
+                          : "SENSOR UNAVAILABLE"}
                 </span>
               </li>
               {/* Camera Stream */}
@@ -1258,11 +1306,7 @@ function DashboardPage() {
                 <span className="text-muted-foreground font-medium">AI Engine</span>
                 <span
                   className={`font-mono text-xs font-bold ${
-                    aiProcessing
-                      ? "text-cyan-400"
-                      : aiLoaded
-                        ? "text-amber-400"
-                        : "text-zinc-400"
+                    aiProcessing ? "text-cyan-400" : aiLoaded ? "text-amber-400" : "text-zinc-400"
                   }`}
                 >
                   {hw?.ai?.model ? `${hw.ai.model} · ${aiStatus}` : aiStatus}
@@ -1338,7 +1382,9 @@ function DashboardPage() {
               Recent incidents
             </h2>
             <ul className="mt-4 space-y-2" aria-live="polite" data-now={now}>
-              {telemetryQuery.isLoading && allIncidents.length === 0 && <Skeleton className="h-14 rounded-lg" />}
+              {telemetryQuery.isLoading && allIncidents.length === 0 && (
+                <Skeleton className="h-14 rounded-lg" />
+              )}
               {allIncidents.length === 0 && !telemetryQuery.isLoading && (
                 <li className="text-sm text-muted-foreground">
                   No encounters logged yet. Readings appear here the moment they arrive.

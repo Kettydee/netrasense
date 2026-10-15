@@ -96,7 +96,8 @@ export function CameraDeviceSelector({
         <Select value={selectedId} onValueChange={handleChange}>
           <SelectTrigger className="h-8 w-[210px] sm:w-[240px] text-xs font-bold rounded-xl border border-border bg-card/80 text-foreground shadow-xs flex items-center justify-between gap-1.5 px-2.5">
             <div className="flex items-center gap-1.5 truncate">
-              {hasDroidCam && /droidcam/i.test(cameras.find((c) => c.deviceId === selectedId)?.label || "") ? (
+              {hasDroidCam &&
+              /droidcam/i.test(cameras.find((c) => c.deviceId === selectedId)?.label || "") ? (
                 <Smartphone className="size-3.5 text-emerald-400 shrink-0" />
               ) : (
                 <Camera className="size-3.5 text-primary shrink-0" />
@@ -155,7 +156,9 @@ export function CameraDeviceSelector({
           className="size-8 p-0 rounded-xl"
           title="Refresh camera devices list"
         >
-          <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin text-primary" : "text-muted-foreground"}`} />
+          <RefreshCw
+            className={`size-3.5 ${isRefreshing ? "animate-spin text-primary" : "text-muted-foreground"}`}
+          />
         </Button>
       </div>
 
@@ -190,7 +193,8 @@ export function CameraDeviceSelector({
               <div>
                 <p className="font-bold text-foreground">Open DroidCam on Phone & PC</p>
                 <p className="text-muted-foreground mt-0.5">
-                  Launch the DroidCam app on your phone and the DroidCam Client on your laptop. Make sure both are connected to the same Wi-Fi (or USB).
+                  Launch the DroidCam app on your phone and the DroidCam Client on your laptop. Make
+                  sure both are connected to the same Wi-Fi (or USB).
                 </p>
               </div>
             </div>
@@ -200,9 +204,13 @@ export function CameraDeviceSelector({
                 2
               </div>
               <div>
-                <p className="font-bold text-foreground">Click &ldquo;Start&rdquo; in DroidCam PC Client</p>
+                <p className="font-bold text-foreground">
+                  Click &ldquo;Start&rdquo; in DroidCam PC Client
+                </p>
                 <p className="text-muted-foreground mt-0.5">
-                  Enter your phone&apos;s Wi-Fi IP into the PC Client and click <strong>Start</strong>. You should see your phone&apos;s camera feed inside the PC Client.
+                  Enter your phone&apos;s Wi-Fi IP into the PC Client and click{" "}
+                  <strong>Start</strong>. You should see your phone&apos;s camera feed inside the PC
+                  Client.
                 </p>
               </div>
             </div>
@@ -212,15 +220,20 @@ export function CameraDeviceSelector({
                 3
               </div>
               <div>
-                <p className="font-bold text-foreground">Select &ldquo;DroidCam Source&rdquo; in NetraSense</p>
+                <p className="font-bold text-foreground">
+                  Select &ldquo;DroidCam Source&rdquo; in NetraSense
+                </p>
                 <p className="text-muted-foreground mt-0.5">
-                  In the camera dropdown above, select <strong>DroidCam Source 2</strong> or <strong>DroidCam Source 3</strong> and click <strong>Open Camera</strong>.
+                  In the camera dropdown above, select <strong>DroidCam Source 2</strong> or{" "}
+                  <strong>DroidCam Source 3</strong> and click <strong>Open Camera</strong>.
                 </p>
               </div>
             </div>
 
             <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-300 font-semibold leading-relaxed">
-              💡 <strong>Tip:</strong> If DroidCam doesn&apos;t show in the dropdown yet, click the <RefreshCw className="inline size-3 mx-0.5" /> <strong>Refresh</strong> icon right after starting the DroidCam PC Client.
+              💡 <strong>Tip:</strong> If DroidCam doesn&apos;t show in the dropdown yet, click the{" "}
+              <RefreshCw className="inline size-3 mx-0.5" /> <strong>Refresh</strong> icon right
+              after starting the DroidCam PC Client.
             </div>
 
             <div className="flex justify-end pt-2">

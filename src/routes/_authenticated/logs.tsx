@@ -133,29 +133,44 @@ function LogsPage() {
       {/* Metrics Summary Row */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <div className="surface-card p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Records</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Total Records
+          </p>
           <p className="mt-1 text-2xl font-black">{fullQuery.data?.length ?? 0}</p>
         </div>
         <div className="surface-card p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">High Risk</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            High Risk
+          </p>
           <p className="mt-1 text-2xl font-black text-rose-500">{criticalCount}</p>
         </div>
         <div className="surface-card p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Safe (Normal)</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Safe (Normal)
+          </p>
           <p className="mt-1 text-2xl font-black text-emerald-500">{normalCount}</p>
         </div>
         <div className="surface-card p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Avg Proximity</p>
-          <p className="mt-1 text-2xl font-black">{avgDistance} <span className="text-sm text-muted-foreground">cm</span></p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Avg Proximity
+          </p>
+          <p className="mt-1 text-2xl font-black">
+            {avgDistance} <span className="text-sm text-muted-foreground">cm</span>
+          </p>
         </div>
         <div className="surface-card p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Most Detected</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Most Detected
+          </p>
           <p className="mt-1 text-lg font-black truncate">{mostDetected}</p>
         </div>
         <div className="surface-card p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Detection Rate</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Detection Rate
+          </p>
           <p className="mt-1 text-2xl font-black">
-            {fullQuery.data?.length ? Math.round((criticalCount / fullQuery.data.length) * 100) : 0}<span className="text-sm text-muted-foreground">%</span>
+            {fullQuery.data?.length ? Math.round((criticalCount / fullQuery.data.length) * 100) : 0}
+            <span className="text-sm text-muted-foreground">%</span>
           </p>
         </div>
       </div>
@@ -177,13 +192,22 @@ function LogsPage() {
                 className="pl-9"
                 placeholder="Stairs, vehicle, pole…"
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(0);
+                }}
               />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="log-level">Threat classification</Label>
-            <Select value={level} onValueChange={(v) => { setLevel(v); setPage(0); }}>
+            <Select
+              value={level}
+              onValueChange={(v) => {
+                setLevel(v);
+                setPage(0);
+              }}
+            >
               <SelectTrigger id="log-level">
                 <SelectValue />
               </SelectTrigger>
@@ -210,17 +234,24 @@ function LogsPage() {
             {totalCount} record{totalCount === 1 ? "" : "s"}
           </h2>
           <div className="flex items-center gap-2">
-            <Label htmlFor="page-size" className="text-xs text-muted-foreground whitespace-nowrap">Rows per page</Label>
+            <Label htmlFor="page-size" className="text-xs text-muted-foreground whitespace-nowrap">
+              Rows per page
+            </Label>
             <Select
               value={String(pageSize)}
-              onValueChange={(v) => { setPageSize(Number(v)); setPage(0); }}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setPage(0);
+              }}
             >
               <SelectTrigger id="page-size" className="w-20 h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {PAGE_SIZE_OPTIONS.map((n) => (
-                  <SelectItem key={n} value={n}>{n}</SelectItem>
+                  <SelectItem key={n} value={n}>
+                    {n}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -243,11 +274,21 @@ function LogsPage() {
               <caption className="sr-only">Historical obstacle detection records</caption>
               <thead className="bg-muted/40 border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th scope="col" className="px-5 py-3.5">Timestamp</th>
-                  <th scope="col" className="px-5 py-3.5">Detected Object</th>
-                  <th scope="col" className="px-5 py-3.5">Distance</th>
-                  <th scope="col" className="px-5 py-3.5">Threat Level</th>
-                  <th scope="col" className="px-5 py-3.5">Action Taken</th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Timestamp
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Detected Object
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Distance
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Threat Level
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Action Taken
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">

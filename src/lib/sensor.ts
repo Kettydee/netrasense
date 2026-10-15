@@ -34,10 +34,7 @@ export type ArduinoStatus = {
 };
 
 export type ObstacleWarningState =
-  | "OBSTACLE_WARNING"
-  | "CLEAR"
-  | "SENSOR_ERROR"
-  | "SENSOR_UNAVAILABLE";
+  "OBSTACLE_WARNING" | "CLEAR" | "SENSOR_ERROR" | "SENSOR_UNAVAILABLE";
 
 export type ObstacleWarningInfo = {
   state: ObstacleWarningState;
@@ -233,7 +230,14 @@ export async function fetchHardwareStatus(): Promise<HardwareStatus> {
       timestamp: data.sensor_data?.timestamp ?? null,
       status: data.sensor_data ? "ACTIVE" : "NOT ACTIVE",
     },
-    camera: { connected: false, fps: 0, source: null, last_frame_timestamp: null, last_error: null, status: "DISCONNECTED" },
+    camera: {
+      connected: false,
+      fps: 0,
+      source: null,
+      last_frame_timestamp: null,
+      last_error: null,
+      status: "DISCONNECTED",
+    },
     ai: { loaded: false, processing: false, model: null, status: "NOT READY" },
   };
 }

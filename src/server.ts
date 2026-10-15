@@ -9,9 +9,8 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
-const serverEntry: ServerEntry = (
-  (defaultServerEntry as { default?: ServerEntry }).default ?? defaultServerEntry
-) as ServerEntry;
+const serverEntry: ServerEntry = ((defaultServerEntry as { default?: ServerEntry }).default ??
+  defaultServerEntry) as ServerEntry;
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
@@ -48,7 +47,8 @@ export default {
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
-      const details = error instanceof Error ? `${error.message}\n${error.stack ?? ""}` : String(error);
+      const details =
+        error instanceof Error ? `${error.message}\n${error.stack ?? ""}` : String(error);
       return new Response(renderErrorPage(details), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },

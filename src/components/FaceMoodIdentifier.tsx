@@ -109,7 +109,9 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
       setResult(res);
       speak(res.speech);
       if (res.identifiedName) {
-        toast.success(`Recognized ${res.identifiedName} (${res.confidence ? res.confidence + "%" : "Verified"})!`);
+        toast.success(
+          `Recognized ${res.identifiedName} (${res.confidence ? res.confidence + "%" : "Verified"})!`,
+        );
         setCooldown(3); // brief 3s pacing
       } else if (res.mood === "Cooling Down" || res.actionDescription === "Rate limit active") {
         toast.warning("AI rate limit active. 10s cooldown started.");
@@ -309,7 +311,10 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
                       )}
                     </>
                   ) : (
-                    <Badge variant="outline" className="text-[11px] text-muted-foreground font-semibold px-2 py-0.5">
+                    <Badge
+                      variant="outline"
+                      className="text-[11px] text-muted-foreground font-semibold px-2 py-0.5"
+                    >
                       Guest / Unsaved
                     </Badge>
                   )}
@@ -369,7 +374,8 @@ export function FaceMoodIdentifier({ getFrameBase64 }: FaceMoodIdentifierProps) 
         <div className="flex flex-wrap items-center gap-2.5">
           {profiles.length === 0 ? (
             <span className="text-xs text-muted-foreground italic">
-              No contacts enrolled yet. Click &ldquo;Enroll Face&rdquo; to add caregivers or family with camera.
+              No contacts enrolled yet. Click &ldquo;Enroll Face&rdquo; to add caregivers or family
+              with camera.
             </span>
           ) : (
             profiles.map((p) => (

@@ -6,16 +6,22 @@
 
 let audioCtx: AudioContext | null = null;
 
+type AudioContextConstructor = new () => AudioContext;
+type WindowWithWebkitAudio = Window & { webkitAudioContext?: AudioContextConstructor };
+
 function getAudioContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
-  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  const AudioContextClass =
+    window.AudioContext || (window as WindowWithWebkitAudio).webkitAudioContext;
   if (!AudioContextClass) return null;
 
   if (!audioCtx || audioCtx.state === "closed") {
     audioCtx = new AudioContextClass();
   }
   if (audioCtx.state === "suspended") {
-    audioCtx.resume().catch(() => {});
+    void audioCtx.resume().catch((error: unknown) => {
+      console.warn("Unable to resume sonar audio context:", error);
+    });
   }
   return audioCtx;
 }
@@ -60,7 +66,7 @@ export function playSonarPing(distanceCm: number = 150) {
  * Controller for continuous adaptive sonar loop
  */
 export class SonarTracker {
-  private timerId: any = null;
+  private timerId: ReturnType<typeof setTimeout> | null = null;
   private isRunning: boolean = false;
   private currentDistance: number | null = null;
 

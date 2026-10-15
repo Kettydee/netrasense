@@ -148,8 +148,10 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
 export function speak(text: string, overrideVoiceId?: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
-  const savedVoiceId = overrideVoiceId || window.localStorage.getItem(AI_VOICE_STORAGE_KEY) || "nova";
-  const profile: AiVoiceProfile = AI_VOICE_PROFILES.find((p) => p.id === savedVoiceId) ?? AI_VOICE_PROFILES[0]!;
+  const savedVoiceId =
+    overrideVoiceId || window.localStorage.getItem(AI_VOICE_STORAGE_KEY) || "nova";
+  const profile: AiVoiceProfile =
+    AI_VOICE_PROFILES.find((p) => p.id === savedVoiceId) ?? AI_VOICE_PROFILES[0]!;
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.pitch = profile.pitch;
@@ -177,7 +179,9 @@ export function speak(text: string, overrideVoiceId?: string) {
       voices[0];
 
     const hindiVoice =
-      voices.find((v) => v.lang.startsWith("hi") || /hindi|हिन्दी|swara|madhur|lekha/i.test(v.name)) ||
+      voices.find(
+        (v) => v.lang.startsWith("hi") || /hindi|हिन्दी|swara|madhur|lekha/i.test(v.name),
+      ) ||
       voices.find((v) => v.lang === "en-IN" || /neerja|heera|rishi/i.test(v.name)) ||
       null;
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router";
 import { Moon, Radio, Sparkles, Sun, Video, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import { GEMINI_API_KEY_STORAGE_KEY } from "@/lib/aiVision";
@@ -104,13 +104,17 @@ function SettingsPage() {
                   persist("announceNormal", v ? "on" : "off");
                   // Wire to Python AnnouncementTracker
                   try {
-                    const serverUrl = window.localStorage.getItem("netrasense:sensorServerUrl") || "http://localhost:5000";
+                    const serverUrl =
+                      window.localStorage.getItem("netrasense:sensorServerUrl") ||
+                      "http://localhost:5000";
                     await fetch(`${serverUrl.replace(/\/$/, "")}/api/config`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ announce_normal: v }),
                     });
-                  } catch { /* server offline — setting saved locally */ }
+                  } catch {
+                    /* server offline — setting saved locally */
+                  }
                 }}
               />
             </div>
@@ -241,7 +245,9 @@ function SettingsPage() {
                 Gemini API Key (Optional)
               </Label>
               <p className="mb-3 text-sm text-muted-foreground">
-                Powers real-time natural language scene descriptions (*"What's around me?"*) and smart optical currency denomination / medicine document reading. You can get a free key from{" "}
+                Powers real-time natural language scene descriptions (*"What's around me?"*) and
+                smart optical currency denomination / medicine document reading. You can get a free
+                key from{" "}
                 <a
                   href="https://aistudio.google.com/apikey"
                   target="_blank"
@@ -249,7 +255,8 @@ function SettingsPage() {
                   className="font-medium text-primary underline underline-offset-4"
                 >
                   Google AI Studio
-                </a>.
+                </a>
+                .
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
@@ -268,7 +275,9 @@ function SettingsPage() {
                     try {
                       const { setGeminiApiKeyOnServer } = await import("@/lib/aiVision");
                       await setGeminiApiKeyOnServer(next);
-                    } catch {}
+                    } catch (error) {
+                      console.warn("Could not sync Gemini API key to the local server:", error);
+                    }
                     toast.success(next ? "Gemini API key saved!" : "Gemini API key cleared.");
                     speak(next ? "Gemini API key saved." : "Gemini API key cleared.");
                   }}

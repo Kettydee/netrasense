@@ -8,15 +8,46 @@ export type WebSerialReading = {
   timestamp: string;
 };
 
+type SerialPortInfo = {
+  usbVendorId?: number;
+};
+
+type SerialPortLike = {
+  readable: ReadableStream<Uint8Array> | null;
+  open: (options: { baudRate: number }) => Promise<void>;
+  close: () => Promise<void>;
+  getInfo?: () => SerialPortInfo;
+};
+
+type SerialApi = {
+  getPorts: () => Promise<SerialPortLike[]>;
+  requestPort: (options: { filters: SerialPortInfo[] }) => Promise<SerialPortLike>;
+  addEventListener: (type: "connect", listener: () => void) => void;
+};
+
+type NavigatorWithSerial = Navigator & { serial?: SerialApi };
+
+function getSerialApi(): SerialApi | undefined {
+  return (navigator as NavigatorWithSerial).serial;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 export class WebSerialReader {
-  private port: any = null;
-  private reader: any = null;
+  private port: SerialPortLike | null = null;
+  private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
   private isReading = false;
   private onReadingCallbacks = new Set<(reading: WebSerialReading) => void>();
   private onStatusCallbacks = new Set<(connected: boolean, error?: string) => void>();
 
   public isSupported(): boolean {
-    return typeof window !== "undefined" && "serial" in navigator;
+    return typeof window !== "undefined" && getSerialApi() !== undefined;
   }
 
   public isConnected(): boolean {
@@ -27,16 +58,21 @@ export class WebSerialReader {
     if (!this.isSupported()) return false;
     this.setupConnectListener();
     try {
-      const ports = await (navigator as any).serial.getPorts();
+      const ports = await getSerialApi()?.getPorts();
       // getPorts() can include previously authorized Bluetooth serial devices.
       // Only auto-connect when exactly one recognized USB serial adapter exists.
       const usbVendorIds = new Set([0x2341, 0x2a03, 0x1a86, 0x10c4, 0x0403, 0x2e8a]);
-      const usbPorts = (ports ?? []).filter((port: any) => usbVendorIds.has(port.getInfo?.().usbVendorId));
-      if (usbPorts.length === 1) {
-        return await this.openPort(usbPorts[0]);
+      const usbPorts = (ports ?? []).filter((port) => {
+        const vendorId = port.getInfo?.().usbVendorId;
+        return vendorId !== undefined && usbVendorIds.has(vendorId);
+      });
+      const [usbPort] = usbPorts;
+      if (usbPorts.length === 1 && usbPort) {
+        return await this.openPort(usbPort);
       }
     } catch {
-      // ignore
+      // An authorized device may have been disconnected between enumeration and opening.
+      return false;
     }
     return false;
   }
@@ -52,7 +88,9 @@ export class WebSerialReader {
     try {
       // Limit the chooser to common Arduino boards and USB-to-serial adapters,
       // so paired audio/Bluetooth devices are not mistaken for the sensor.
-      const port = await (navigator as any).serial.requestPort({
+      const serial = getSerialApi();
+      if (!serial) return false;
+      const port = await serial.requestPort({
         filters: [
           { usbVendorId: 0x2341 }, // Arduino
           { usbVendorId: 0x2a03 }, // Arduino
@@ -63,26 +101,27 @@ export class WebSerialReader {
         ],
       });
       return await this.openPort(port);
-    } catch (err: any) {
+    } catch (err: unknown) {
       this.isReading = false;
-      this.notifyStatus(false, err?.message || "Failed to connect to USB device");
+      this.notifyStatus(false, getErrorMessage(err, "Failed to connect to USB device"));
       return false;
     }
   }
 
   private setupConnectListener() {
-    if (this.isSupported() && typeof navigator !== "undefined" && (navigator as any).serial) {
+    const serial = typeof navigator !== "undefined" ? getSerialApi() : undefined;
+    if (this.isSupported() && serial) {
       try {
-        (navigator as any).serial.addEventListener("connect", () => {
+        serial.addEventListener("connect", () => {
           void this.autoConnectIfAuthorized();
         });
       } catch {
-        // ignore
+        // A browser without connect-event support can still connect through the chooser.
       }
     }
   }
 
-  private async openPort(selectedPort: any): Promise<boolean> {
+  private async openPort(selectedPort: SerialPortLike): Promise<boolean> {
     try {
       if (this.port) {
         await this.disconnect();
@@ -102,9 +141,9 @@ export class WebSerialReader {
       // Start continuous background read loop
       this.readLoop();
       return true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       this.isReading = false;
-      this.notifyStatus(false, err?.message || "Could not open serial port at 9600 baud");
+      this.notifyStatus(false, getErrorMessage(err, "Could not open serial port at 9600 baud"));
       return false;
     }
   }
@@ -116,7 +155,7 @@ export class WebSerialReader {
         await this.reader.cancel();
       }
     } catch {
-      // ignore
+      // Cancellation is best-effort; port cleanup still runs below.
     }
 
     try {
@@ -124,7 +163,7 @@ export class WebSerialReader {
         await this.closePort();
       }
     } catch {
-      // ignore
+      // The port may already be closed after a physical disconnect.
     } finally {
       this.port = null;
       this.reader = null;
@@ -182,14 +221,14 @@ export class WebSerialReader {
           try {
             reader.releaseLock();
           } catch {
-            // ignore
+            // A disconnected stream can release its lock automatically.
           }
           this.reader = null;
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (this.isReading) {
           this.isReading = false;
-          this.notifyStatus(false, err?.message || "USB serial reading stopped");
+          this.notifyStatus(false, getErrorMessage(err, "USB serial reading stopped"));
         }
         break;
       }
@@ -207,24 +246,30 @@ export class WebSerialReader {
         const match = line.match(/\{[^}]+\}/);
         if (match) {
           try {
-            const parsed = JSON.parse(match[0]);
+            const parsed: unknown = JSON.parse(match[0]);
+            if (!isRecord(parsed)) return;
             // Explicit validity markers from the firmware take precedence:
             // a failed measurement must never become a distance.
-            const valid = parsed.valid ?? parsed.is_valid;
+            const valid = parsed["valid"] ?? parsed["is_valid"];
             const status =
-              typeof parsed.status === "string" ? parsed.status.trim().toLowerCase() : null;
+              typeof parsed["status"] === "string" ? parsed["status"].trim().toLowerCase() : null;
             const flaggedValid =
               valid !== undefined && valid !== null
                 ? valid === true || valid === 1 || valid === "true"
                 : status === null || OK_STATUSES.includes(status);
             if (!flaggedValid) return;
-            const val = parsed.distance_cm ?? parsed.distance ?? parsed.dist ?? parsed.cm ?? parsed.d;
+            const val =
+              parsed["distance_cm"] ??
+              parsed["distance"] ??
+              parsed["dist"] ??
+              parsed["cm"] ??
+              parsed["d"];
             if (val === null || val === undefined) return;
             if (typeof val === "number" && isFinite(val)) {
               rawDistance = val;
             }
           } catch {
-            // ignore JSON parse error
+            // Non-JSON serial lines are handled by the legacy text parsers below.
           }
         }
       }
@@ -237,7 +282,9 @@ export class WebSerialReader {
 
       // 3. Labeled text: "Distance: 142.3 cm", "Distance = 142", "dist: 142", "Sonar: 142"
       if (rawDistance === null) {
-        const labeledMatch = line.match(/(?:distance|dist|sonar|range|obstacle)[\s:=]+([-+]?\d+(?:\.\d+)?)/i);
+        const labeledMatch = line.match(
+          /(?:distance|dist|sonar|range|obstacle)[\s:=]+([-+]?\d+(?:\.\d+)?)/i,
+        );
         if (labeledMatch && labeledMatch[1]) {
           const val = parseFloat(labeledMatch[1]);
           if (!isNaN(val) && isFinite(val)) rawDistance = val;
@@ -294,12 +341,12 @@ export class WebSerialReader {
       for (const cb of this.onReadingCallbacks) {
         try {
           cb(reading);
-        } catch {
-          // ignore callback error
+        } catch (error) {
+          console.warn("Web serial reading callback failed:", error);
         }
       }
-    } catch {
-      // ignore malformed lines
+    } catch (error) {
+      console.warn("Ignoring malformed web serial line:", error);
     }
   }
 
@@ -307,7 +354,7 @@ export class WebSerialReader {
     try {
       if (this.port) await this.port.close();
     } catch {
-      // ignore
+      // The port can already be closed by a browser disconnect event.
     }
   }
 
@@ -315,8 +362,8 @@ export class WebSerialReader {
     for (const cb of this.onStatusCallbacks) {
       try {
         cb(connected, error);
-      } catch {
-        // ignore
+      } catch (error) {
+        console.warn("Web serial status callback failed:", error);
       }
     }
   }

@@ -225,12 +225,18 @@ function ContactsPage() {
       )}
 
       {/* Delete confirmation dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Remove emergency contact?</DialogTitle>
             <DialogDescription>
-              This will permanently remove <strong>{deleteTarget?.contact_name}</strong> from your emergency contacts. You can re-add them later.
+              This will permanently remove <strong>{deleteTarget?.contact_name}</strong> from your
+              emergency contacts. You can re-add them later.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 mt-4">
@@ -285,7 +291,9 @@ function ContactsPage() {
                 aria-invalid={!!phoneError}
               />
               {phoneError && (
-                <p className="text-xs text-destructive font-medium" role="alert">{phoneError}</p>
+                <p className="text-xs text-destructive font-medium" role="alert">
+                  {phoneError}
+                </p>
               )}
             </div>
             <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">

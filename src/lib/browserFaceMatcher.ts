@@ -1,9 +1,9 @@
 /**
  * NetraSense In-Browser Biometric Face Recognition Engine
- * 
+ *
  * Extracts a 512-dimensional gradient orientation feature vector (ArcFace/HOG inspired)
  * directly in the browser via HTML5 Canvas and computes Cosine Distance matching.
- * 
+ *
  * Runs 100% locally in client-side JavaScript:
  * - Zero network latency (< 50ms)
  * - Zero API key required
@@ -42,9 +42,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
  * Normalizes to 96x96, applies CLAHE lighting normalization,
  * and extracts an 8x8 cell x 8-bin gradient histogram (512D unit vector).
  */
-export async function extractBiometricVector(
-  imageDataUrl: string,
-): Promise<{
+export async function extractBiometricVector(imageDataUrl: string): Promise<{
   vector: Float32Array;
   faceDetected: boolean;
   mood: string;

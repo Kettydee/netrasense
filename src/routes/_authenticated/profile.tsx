@@ -114,10 +114,7 @@ function ProfilePage() {
   }
 
   return (
-    <AppShell
-      title="Device & Profile"
-      description="Manage your personal and medical information"
-    >
+    <AppShell title="Device & Profile" description="Manage your personal and medical information">
       <div className="mx-auto max-w-3xl space-y-6">
         <section
           aria-labelledby="profile-form-heading"
@@ -130,7 +127,9 @@ function ProfilePage() {
           <form className="mt-4 space-y-5" onSubmit={handleSave}>
             {/* Row 1: Name + Age */}
             <fieldset className="space-y-4 rounded-xl border border-border p-4">
-              <legend className="px-1 text-sm font-bold text-muted-foreground">Personal details</legend>
+              <legend className="px-1 text-sm font-bold text-muted-foreground">
+                Personal details
+              </legend>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="p-name">Full name</Label>
@@ -160,7 +159,9 @@ function ProfilePage() {
 
             {/* Row 2: Blood group + Impairment */}
             <fieldset className="space-y-4 rounded-xl border border-border p-4">
-              <legend className="px-1 text-sm font-bold text-muted-foreground">Medical profile</legend>
+              <legend className="px-1 text-sm font-bold text-muted-foreground">
+                Medical profile
+              </legend>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 relative z-10">
                   <Label htmlFor="p-blood">Blood group</Label>
@@ -220,7 +221,9 @@ function ProfilePage() {
 
             {/* Row 4: Medical notes */}
             <fieldset className="space-y-4 rounded-xl border border-border p-4">
-              <legend className="px-1 text-sm font-bold text-muted-foreground">Critical medical notes</legend>
+              <legend className="px-1 text-sm font-bold text-muted-foreground">
+                Critical medical notes
+              </legend>
               <p className="text-xs text-muted-foreground -mt-2">
                 Important information for emergency responders — allergies, medications, conditions.
               </p>

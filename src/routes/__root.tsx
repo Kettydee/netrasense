@@ -54,8 +54,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         </p>
         {error && (
           <details className="mt-4 text-left bg-muted/60 p-3 rounded-lg text-xs font-mono overflow-auto max-h-48 border border-border">
-            <summary className="cursor-pointer text-muted-foreground font-semibold">Error details</summary>
-            <pre className="mt-2 whitespace-pre-wrap text-destructive">{error.message || String(error)}</pre>
+            <summary className="cursor-pointer text-muted-foreground font-semibold">
+              Error details
+            </summary>
+            <pre className="mt-2 whitespace-pre-wrap text-destructive">
+              {error.message || String(error)}
+            </pre>
           </details>
         )}
         <div className="mt-6 flex flex-wrap justify-center gap-2">

@@ -35,10 +35,7 @@ const COMMON_ESSENTIALS = [
   { id: "book", label: "Book / Paper", matchWords: ["book", "paper", "document"] },
 ];
 
-export function ObjectSeeker({
-  currentDetections = [],
-  isCameraActive = true,
-}: ObjectSeekerProps) {
+export function ObjectSeeker({ currentDetections = [], isCameraActive = true }: ObjectSeekerProps) {
   const [selectedTarget, setSelectedTarget] = useState<string>("cell phone");
   const [customInput, setCustomInput] = useState<string>("");
   const [sonarEnabled, setSonarEnabled] = useState<boolean>(true);
@@ -59,9 +56,7 @@ export function ObjectSeeker({
 
   // Check if selected target matches any current detection
   const targetConfig = COMMON_ESSENTIALS.find((e) => e.id === selectedTarget);
-  const matchWords = targetConfig
-    ? targetConfig.matchWords
-    : [selectedTarget.toLowerCase().trim()];
+  const matchWords = targetConfig ? targetConfig.matchWords : [selectedTarget.toLowerCase().trim()];
 
   const matchedDetection = currentDetections.find((d) => {
     const lowerLabel = d.label.toLowerCase();
@@ -100,9 +95,9 @@ export function ObjectSeeker({
       if (distanceCm && distanceCm <= 45) {
         prompt = `${targetLabel} is within reach directly in front of you!`;
       } else if (direction === "left") {
-        prompt = `Turn slightly left. ${targetLabel} is ${distanceCm ? Math.round(distanceCm / 100 * 10) / 10 + " meters" : "ahead"}.`;
+        prompt = `Turn slightly left. ${targetLabel} is ${distanceCm ? Math.round((distanceCm / 100) * 10) / 10 + " meters" : "ahead"}.`;
       } else if (direction === "right") {
-        prompt = `Turn slightly right. ${targetLabel} is ${distanceCm ? Math.round(distanceCm / 100 * 10) / 10 + " meters" : "ahead"}.`;
+        prompt = `Turn slightly right. ${targetLabel} is ${distanceCm ? Math.round((distanceCm / 100) * 10) / 10 + " meters" : "ahead"}.`;
       } else {
         prompt = `${targetLabel} straight ahead. Walk forward carefully.`;
       }
@@ -154,7 +149,10 @@ export function ObjectSeeker({
               className="w-full h-12 rounded-2xl border border-border bg-card pl-12 pr-4 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-xs transition-all"
             />
           </div>
-          <Button type="submit" className="h-12 px-6 rounded-2xl font-black text-sm bg-primary hover:bg-primary/90 shadow-xs">
+          <Button
+            type="submit"
+            className="h-12 px-6 rounded-2xl font-black text-sm bg-primary hover:bg-primary/90 shadow-xs"
+          >
             Seek
           </Button>
         </form>
@@ -219,7 +217,10 @@ export function ObjectSeeker({
                     Locked On
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[11px] text-muted-foreground uppercase px-2 py-0.5 font-bold">
+                  <Badge
+                    variant="outline"
+                    className="text-[11px] text-muted-foreground uppercase px-2 py-0.5 font-bold"
+                  >
                     Scanning
                   </Badge>
                 )}

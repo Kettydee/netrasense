@@ -100,8 +100,27 @@ export function RadarVisualization({
         {/* No-data overlay */}
         {!hasData && (
           <g>
-            <rect x="90" y="70" width="120" height="30" rx="6" fill="#0D1117" fillOpacity="0.85" stroke="#4B5563" strokeWidth="1" className="dark:fill-[#0D1117] fill-[#F8FAFC]" />
-            <text x="150" y="89" fill="#9CA3AF" fontSize="10" fontWeight="700" fontFamily="monospace" textAnchor="middle">
+            <rect
+              x="90"
+              y="70"
+              width="120"
+              height="30"
+              rx="6"
+              fill="#0D1117"
+              fillOpacity="0.85"
+              stroke="#4B5563"
+              strokeWidth="1"
+              className="dark:fill-[#0D1117] fill-[#F8FAFC]"
+            />
+            <text
+              x="150"
+              y="89"
+              fill="#9CA3AF"
+              fontSize="10"
+              fontWeight="700"
+              fontFamily="monospace"
+              textAnchor="middle"
+            >
               NO SENSOR DATA
             </text>
           </g>
@@ -198,63 +217,64 @@ export function RadarVisualization({
         </text>
 
         {/* Render Detected Objects Polar Coordinates */}
-        {hasData && activeItems.map((item) => {
-          const maxDistCm = 400;
-          const clampedDist = Math.max(10, Math.min(maxDistCm, item.distance_cm));
-          // Radius in SVG pixels: 180 at center, max radius = 130px
-          const r = (clampedDist / maxDistCm) * 130;
+        {hasData &&
+          activeItems.map((item) => {
+            const maxDistCm = 400;
+            const clampedDist = Math.max(10, Math.min(maxDistCm, item.distance_cm));
+            // Radius in SVG pixels: 180 at center, max radius = 130px
+            const r = (clampedDist / maxDistCm) * 130;
 
-          let angleDeg = 90; // center
-          if (item.direction === "left") angleDeg = 45;
-          if (item.direction === "right") angleDeg = 135;
+            let angleDeg = 90; // center
+            if (item.direction === "left") angleDeg = 45;
+            if (item.direction === "right") angleDeg = 135;
 
-          const angleRad = (angleDeg * Math.PI) / 180;
-          // polar to SVG cartesian: cx = 150 - r * cos(angleRad), cy = 180 - r * sin(angleRad)
-          const px = 150 - r * Math.cos(angleRad);
-          const py = 180 - r * Math.sin(angleRad);
+            const angleRad = (angleDeg * Math.PI) / 180;
+            // polar to SVG cartesian: cx = 150 - r * cos(angleRad), cy = 180 - r * sin(angleRad)
+            const px = 150 - r * Math.cos(angleRad);
+            const py = 180 - r * Math.sin(angleRad);
 
-          const colors = threatColorMap[item.threat_level] || threatColorMap.Normal;
+            const colors = threatColorMap[item.threat_level] || threatColorMap.Normal;
 
-          return (
-            <g key={item.id || `${item.label}-${item.distance_cm}`}>
-              {/* Radar pulse ring */}
-              <circle
-                cx={px}
-                cy={py}
-                r="10"
-                fill={colors.fill}
-                stroke={colors.stroke}
-                strokeWidth="1.5"
-                className="animate-ping [animation-duration:2.5s]"
-              />
-              <circle cx={px} cy={py} r="5" fill={colors.stroke} />
+            return (
+              <g key={item.id || `${item.label}-${item.distance_cm}`}>
+                {/* Radar pulse ring */}
+                <circle
+                  cx={px}
+                  cy={py}
+                  r="10"
+                  fill={colors.fill}
+                  stroke={colors.stroke}
+                  strokeWidth="1.5"
+                  className="animate-ping [animation-duration:2.5s]"
+                />
+                <circle cx={px} cy={py} r="5" fill={colors.stroke} />
 
-              {/* Data Tag Box */}
-              <rect
-                x={px - 32}
-                y={py - 24}
-                width="64"
-                height="16"
-                rx="4"
-                fill="#0D1117"
-                stroke={colors.stroke}
-                strokeWidth="1"
-                className="dark:fill-[#0D1117] fill-[#FFFFFF]"
-              />
-              <text
-                x={px}
-                y={py - 13}
-                fill={colors.text}
-                fontSize="9"
-                fontWeight="700"
-                fontFamily="monospace"
-                textAnchor="middle"
-              >
-                {item.label.toUpperCase()} {(item.distance_cm / 100).toFixed(1)}m
-              </text>
-            </g>
-          );
-        })}
+                {/* Data Tag Box */}
+                <rect
+                  x={px - 32}
+                  y={py - 24}
+                  width="64"
+                  height="16"
+                  rx="4"
+                  fill="#0D1117"
+                  stroke={colors.stroke}
+                  strokeWidth="1"
+                  className="dark:fill-[#0D1117] fill-[#FFFFFF]"
+                />
+                <text
+                  x={px}
+                  y={py - 13}
+                  fill={colors.text}
+                  fontSize="9"
+                  fontWeight="700"
+                  fontFamily="monospace"
+                  textAnchor="middle"
+                >
+                  {item.label.toUpperCase()} {(item.distance_cm / 100).toFixed(1)}m
+                </text>
+              </g>
+            );
+          })}
       </svg>
     </div>
   );
