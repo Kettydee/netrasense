@@ -202,6 +202,79 @@ class ObstacleWarningEvaluatorTests(unittest.TestCase):
         stale = self.evaluator.evaluate(current_time=101.2)
         self.assertEqual(stale.state, ObstacleState.SENSOR_UNAVAILABLE)
 
+    # ── Regression tests for confirmed defects ─────────────────────────────
+
+    def test_invalid_reading_does_not_refresh_valid_reading_timestamp(self):
+        """An invalid measurement must not extend the freshness of the last good reading."""
+        self.evaluator.process_reading(350.0, current_time=100.0)
+
+        err = self.evaluator.process_reading(float("nan"), current_time=101.0)
+        self.assertEqual(err.state, ObstacleState.SENSOR_ERROR)
+        self.assertFalse(err.is_clear)
+
+        # 2.9s after the last VALID reading (1.9s after the error): freshness
+        # is still measured from the valid reading, and the error state is
+        # reported — never a resurrected CLEAR.
+        mid = self.evaluator.evaluate(current_time=102.9)
+        self.assertFalse(mid.is_clear)
+        self.assertEqual(mid.state, ObstacleState.SENSOR_ERROR)
+
+        # 3.2s after the last VALID reading: stale → SENSOR_UNAVAILABLE.
+        stale = self.evaluator.evaluate(current_time=103.2)
+        self.assertEqual(stale.state, ObstacleState.SENSOR_UNAVAILABLE)
+        self.assertTrue(stale.is_unavailable)
+        self.assertFalse(stale.is_clear)
+
+    def test_repeated_evaluations_do_not_resurrect_stale_data(self):
+        """Evaluating repeatedly must never make an old reading fresh again."""
+        self.evaluator.process_reading(350.0, current_time=100.0)
+        for current_time in (104.0, 105.0, 120.0):
+            with self.subTest(current_time=current_time):
+                res = self.evaluator.evaluate(current_time=current_time)
+                self.assertEqual(res.state, ObstacleState.SENSOR_UNAVAILABLE)
+                self.assertFalse(res.is_clear)
+                self.assertFalse(res.is_warning)
+                self.assertIsNone(res.distance_cm)
+
+    def test_invalid_reading_after_clear_never_reports_clear(self):
+        """Invalid data following a CLEAR reading must not keep reporting CLEAR."""
+        self.evaluator.process_reading(350.0, current_time=100.0)
+        res = self.evaluator.process_reading("bad_packet", current_time=100.5)
+        self.assertEqual(res.state, ObstacleState.SENSOR_ERROR)
+        self.assertFalse(res.is_clear)
+        self.assertIsNone(res.distance_cm)
+
+    def test_threat_level_boundaries_match_shared_system_zones(self):
+        """Evaluator threat zones must match serial_sensor and the dashboard zones.
+
+        Canonical boundaries (see test_threat_detection): 301 NORMAL, 300 WARNING,
+        100 WARNING, 99 ALARM, 50 ALARM, 49 CRITICAL.
+        """
+        expected = {
+            301.0: "NORMAL",
+            300.0: "WARNING",
+            100.0: "WARNING",
+            99.0: "ALARM",
+            50.0: "ALARM",
+            49.0: "CRITICAL",
+        }
+        for distance_cm, threat in expected.items():
+            with self.subTest(distance_cm=distance_cm):
+                res = self.evaluator.process_reading(distance_cm, current_time=100.0)
+                self.assertEqual(res.threat_level, threat)
+
+    def test_configured_threshold_is_respected_by_threat_classification(self):
+        """Threat classification follows the configured warning threshold."""
+        self.evaluator.update_config(warning_threshold_cm=150.0)
+        self.assertEqual(
+            self.evaluator.process_reading(200.0, current_time=100.0).threat_level,
+            "NORMAL",
+        )
+        self.assertEqual(
+            self.evaluator.process_reading(150.0, current_time=100.1).threat_level,
+            "WARNING",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

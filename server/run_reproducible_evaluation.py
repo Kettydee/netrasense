@@ -1,21 +1,18 @@
 """Unified Reproducible Evaluation Pipeline for NetraSense YOLO11n.
 
 This script executes:
-1. Official Ultralytics validation (conf=0.001, iou=0.60) saving exact metrics.results_dict and box metrics.
+1. Official Ultralytics validation (conf=0.001, iou=0.60) preserving full-precision metrics.results_dict.
 2. Custom discrete operating-threshold evaluation across thresholds [0.10, 0.25, 0.45, 0.60] (IoU match=0.50).
-3. Complete provenance collection (weights SHA-256, environment, dataset paths).
+3. Complete provenance collection (ISO 8601 timestamp, weights SHA-256, environment, dataset paths).
 4. Direct serialization of JSON, CSV, and TXT artifacts from the single in-memory evaluation results object.
-
-Macro F1 Definition:
-- Macro Precision = arithmetic mean of per-class precision across active classes.
-- Macro Recall = arithmetic mean of per-class recall across active classes.
-- Macro F1 = arithmetic mean of per-class F1 across active classes.
-- Harmonic F1 of Macro P & R is reported separately under 'harmonic_f1_of_macro_p_r'.
+   - JSON preserves full floating-point precision.
+   - Human-readable TXT and presentation CSV format values appropriately.
 """
 
 from __future__ import annotations
 
 import csv
+from datetime import datetime, timezone
 import hashlib
 import json
 import platform
@@ -56,15 +53,16 @@ def run_full_pipeline(
     print("  NETRASENSE REPRODUCIBLE EVALUATION PIPELINE")
     print("=" * 80)
 
+    eval_timestamp_iso = datetime.now(timezone.utc).isoformat()
     weights_file = Path(weights_path)
     if not weights_file.exists():
-        # Check in current working directory or server/
         if (Path("server") / weights_path).exists():
             weights_file = Path("server") / weights_path
         else:
             raise FileNotFoundError(f"Model weights file not found: {weights_file}")
 
     weights_sha256 = compute_sha256(weights_file)
+    print(f"Timestamp UTC  : {eval_timestamp_iso}")
     print(f"Model Weights  : {weights_file.resolve()} (SHA-256: {weights_sha256})")
     print(f"Dataset YAML   : {data_yaml}")
     print(f"Image Size     : {imgsz}x{imgsz}")
@@ -72,11 +70,10 @@ def run_full_pipeline(
     print(f"Matching IoU   : {matching_iou}")
     print(f"Thresholds     : {thresholds}")
 
-    # Ensure output directory
     out_path = Path(output_dir)
     out_path.mkdir(parents=True, exist_ok=True)
 
-    # 1. Official Ultralytics Validation (Standard PR-Curve Integration)
+    # 1. Official Ultralytics Validation (Standard Full PR-Curve Integration, conf=0.001)
     print("\n[Step 1/3] Running official Ultralytics validator (conf=0.001)...")
     model = YOLO(str(weights_file))
     val_results = model.val(
@@ -94,7 +91,6 @@ def run_full_pipeline(
     names = model.names
     num_classes = len(names)
 
-    # Extract per-class official PR curve metrics
     box_metrics = val_results.box
     ap_class_idx = list(box_metrics.ap_class_index)
     official_per_class: Dict[str, Dict[str, Any]] = {}
@@ -108,40 +104,42 @@ def run_full_pipeline(
             ap = float(box_metrics.ap[idx])
             official_per_class[name] = {
                 "class_id": cid,
-                "precision": round(p, 4),
-                "recall": round(r, 4),
-                "f1_score": round(f1, 4),
-                "mAP50": round(ap50, 4),
-                "mAP50_95": round(ap, 4),
+                "precision": p,
+                "recall": r,
+                "f1_score": f1,
+                "mAP50": ap50,
+                "mAP50_95": ap,
             }
 
-    p_macro_val = official_results_dict.get("metrics/precision(B)", 0.0)
-    r_macro_val = official_results_dict.get("metrics/recall(B)", 0.0)
-    harmonic_f1_macro = (2 * p_macro_val * r_macro_val) / (p_macro_val + r_macro_val) if (p_macro_val + r_macro_val) > 0 else 0.0
+    p_macro_val = float(official_results_dict.get("metrics/precision(B)", 0.0))
+    r_macro_val = float(official_results_dict.get("metrics/recall(B)", 0.0))
+    harmonic_f1_macro = (2.0 * p_macro_val * r_macro_val) / (p_macro_val + r_macro_val) if (p_macro_val + r_macro_val) > 0 else 0.0
     arithmetic_macro_f1 = float(np.mean(box_metrics.f1)) if len(box_metrics.f1) > 0 else 0.0
 
     official_provenance = {
+        "evaluation_timestamp_iso": eval_timestamp_iso,
         "framework": "Ultralytics YOLO",
         "ultralytics_version": ultralytics.__version__,
         "torch_version": torch.__version__,
         "python_version": sys.version,
         "platform": platform.platform(),
+        "execution_device": "cpu",
         "weights_path": str(weights_file.resolve()),
         "weights_sha256": weights_sha256,
         "dataset_yaml": data_yaml,
         "dataset_split": "val",
         "image_size": imgsz,
-        "conf_cutoff": 0.001,
+        "inference_conf_cutoff": 0.001,
         "nms_iou": nms_iou,
-        "device": "cpu",
+        "matching_iou": matching_iou,
         "raw_results_dict": official_results_dict,
         "macro_metrics": {
-            "precision": round(p_macro_val, 4),
-            "recall": round(r_macro_val, 4),
-            "macro_f1_arithmetic": round(arithmetic_macro_f1, 4),
-            "harmonic_f1_of_macro_p_r": round(harmonic_f1_macro, 4),
-            "mAP50": round(official_results_dict.get("metrics/mAP50(B)", 0.0), 4),
-            "mAP50_95": round(official_results_dict.get("metrics/mAP50-95(B)", 0.0), 4),
+            "precision": p_macro_val,
+            "recall": r_macro_val,
+            "macro_f1_arithmetic": arithmetic_macro_f1,
+            "harmonic_f1_of_macro_p_r": harmonic_f1_macro,
+            "mAP50": float(official_results_dict.get("metrics/mAP50(B)", 0.0)),
+            "mAP50_95": float(official_results_dict.get("metrics/mAP50-95(B)", 0.0)),
         },
         "target_obstacle_classes": {
             k: v for k, v in official_per_class.items() if k in ["person", "car", "bicycle", "dog", "chair", "bus"]
@@ -156,9 +154,6 @@ def run_full_pipeline(
     label_dir = img_dir.parent.parent / "labels" / img_dir.name
 
     img_paths = sorted(list(img_dir.glob("*.jpg")))
-    print(f"Found {len(img_paths)} validation images in {img_dir}")
-    print(f"Reading labels from {label_dir}")
-
     ground_truth: Dict[str, List[Dict[str, Any]]] = {}
     gt_class_counts = {c: 0 for c in range(num_classes)}
 
@@ -185,7 +180,6 @@ def run_full_pipeline(
     active_classes = [c for c, count in gt_class_counts.items() if count > 0]
     print(f"Parsed {total_gt} total ground-truth instances across {len(active_classes)} active classes.")
 
-    # Generate predictions using conf=0.001 to retain full proposal pool
     raw_predictions = model.predict(
         source=[str(p) for p in img_paths],
         conf=0.001,
@@ -228,7 +222,6 @@ def run_full_pipeline(
                 gt_c = [g for g in img_gt if g["cls"] == c]
                 pred_c = [p for p in img_preds if p["cls"] == c]
 
-                # Call reusable production matching function
                 tp, fp, fn, _, _ = match_predictions_to_ground_truth(
                     predictions=pred_c,
                     ground_truth=gt_c,
@@ -238,13 +231,13 @@ def run_full_pipeline(
                 class_stats[c]["fp"] += fp
                 class_stats[c]["fn"] += fn
 
-        # Verify monotonicity of retained detections
+        # Non-increasing retained detections
         assert retained_preds_count <= prev_retained, (
             f"Monotonicity error: retained predictions increased from {prev_retained} to {retained_preds_count} at conf {tau}"
         )
         prev_retained = retained_preds_count
 
-        # Compute unrounded per-class metrics
+        # Compute full-precision per-class metrics directly from integer counts
         for c in range(num_classes):
             cs = class_stats[c]
             assert cs["tp"] + cs["fn"] == cs["gt"], f"Integrity error: TP + FN != GT for class {names[c]}"
@@ -261,10 +254,10 @@ def run_full_pipeline(
         )
         assert total_tp + total_fn == total_gt, f"Integrity error: Total TP + FN != Total GT ({total_gt})"
 
-        # Micro-averaged metrics (calculated from pooled totals before rounding)
+        # Micro-averaged metrics (calculated from pooled totals with full precision)
         micro_p, micro_r, micro_f1 = compute_metrics_from_counts(total_tp, total_fp, total_fn)
 
-        # Macro-averaged metrics (unweighted arithmetic means across active classes with GT > 0)
+        # Macro-averaged metrics (unweighted arithmetic means across active classes with GT > 0, full precision)
         macro_p = float(np.mean([class_stats[c]["precision"] for c in active_classes]))
         macro_r = float(np.mean([class_stats[c]["recall"] for c in active_classes]))
         macro_f1 = float(np.mean([class_stats[c]["f1_score"] for c in active_classes]))
@@ -279,9 +272,9 @@ def run_full_pipeline(
                 "true_positives": cs["tp"],
                 "false_positives": cs["fp"],
                 "false_negatives": cs["fn"],
-                "precision": round(cs["precision"], 4),
-                "recall": round(cs["recall"], 4),
-                "f1_score": round(cs["f1_score"], 4),
+                "precision": cs["precision"],
+                "recall": cs["recall"],
+                "f1_score": cs["f1_score"],
             }
 
         sweep_records.append({
@@ -291,16 +284,16 @@ def run_full_pipeline(
                 "total_tp": total_tp,
                 "total_fp": total_fp,
                 "total_fn": total_fn,
-                "precision": round(micro_p, 4),
-                "recall": round(micro_r, 4),
-                "f1_score": round(micro_f1, 4),
+                "precision": micro_p,
+                "recall": micro_r,
+                "f1_score": micro_f1,
             },
             "macro_averaged_metrics": {
                 "active_classes_count": len(active_classes),
-                "precision": round(macro_p, 4),
-                "recall": round(macro_r, 4),
-                "macro_f1": round(macro_f1, 4),
-                "harmonic_f1_of_macro_p_r": round(harmonic_macro_f1, 4),
+                "precision": macro_p,
+                "recall": macro_r,
+                "macro_f1": macro_f1,
+                "harmonic_f1_of_macro_p_r": harmonic_macro_f1,
             },
             "target_obstacle_classes": target_summary,
             "all_classes": {
@@ -309,15 +302,14 @@ def run_full_pipeline(
                     "fp": class_stats[c]["fp"],
                     "fn": class_stats[c]["fn"],
                     "gt": class_stats[c]["gt"],
-                    "precision": round(class_stats[c]["precision"], 4),
-                    "recall": round(class_stats[c]["recall"], 4),
-                    "f1_score": round(class_stats[c]["f1_score"], 4),
+                    "precision": class_stats[c]["precision"],
+                    "recall": class_stats[c]["recall"],
+                    "f1_score": class_stats[c]["f1_score"],
                 }
                 for c in active_classes
             },
         })
 
-    # Build Complete Unified Report
     full_report = {
         "report_title": "NetraSense YOLO11n Independent Reproducibility Audit & Evaluation Report",
         "evaluation_provenance": official_provenance,
@@ -364,13 +356,13 @@ def run_full_pipeline(
         ],
     }
 
-    # Save JSON Report
+    # 1. Save JSON Report (full floating-point precision)
     json_path = out_path / "validated_evaluation_report.json"
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(full_report, f, indent=2)
-    print(f"\n[SAVED] JSON: {json_path}")
+    print(f"\n[SAVED] JSON (Full Precision): {json_path}")
 
-    # Save CSV Report
+    # 2. Save CSV Report (presentation-oriented rounding to 4 decimals for rates, exact integers for counts)
     csv_path = out_path / "validated_confidence_threshold_comparison.csv"
     target_classes = ["person", "car", "bicycle", "dog", "chair", "bus"]
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
@@ -407,18 +399,18 @@ def run_full_pipeline(
             mi = r["micro_averaged_metrics"]
             ma = r["macro_averaged_metrics"]
             row = [
-                t,
+                f"{t:.2f}",
                 n_det,
                 mi["total_tp"],
                 mi["total_fp"],
                 mi["total_fn"],
-                mi["precision"],
-                mi["recall"],
-                mi["f1_score"],
-                ma["precision"],
-                ma["recall"],
-                ma["macro_f1"],
-                ma["harmonic_f1_of_macro_p_r"],
+                round(mi["precision"], 4),
+                round(mi["recall"], 4),
+                round(mi["f1_score"], 4),
+                round(ma["precision"], 4),
+                round(ma["recall"], 4),
+                round(ma["macro_f1"], 4),
+                round(ma["harmonic_f1_of_macro_p_r"], 4),
             ]
             tgts = r["target_obstacle_classes"]
             for cls in target_classes:
@@ -428,14 +420,14 @@ def run_full_pipeline(
                     c_data["true_positives"],
                     c_data["false_positives"],
                     c_data["false_negatives"],
-                    c_data["precision"],
-                    c_data["recall"],
-                    c_data["f1_score"],
+                    round(c_data["precision"], 4),
+                    round(c_data["recall"], 4),
+                    round(c_data["f1_score"], 4),
                 ])
             writer.writerow(row)
-    print(f"[SAVED] CSV: {csv_path}")
+    print(f"[SAVED] CSV (Presentation): {csv_path}")
 
-    # Save TXT Audit Report
+    # 3. Save TXT Audit Report
     txt_path = out_path / "evaluation_protocol_audit.txt"
     txt_content = f"""====================================================================================================
 NETRASENSE YOLO11n INDEPENDENT REPRODUCIBILITY AUDIT REPORT
@@ -443,6 +435,7 @@ NETRASENSE YOLO11n INDEPENDENT REPRODUCIBILITY AUDIT REPORT
 
 1. PROVENANCE & ENVIRONMENT
 ----------------------------------------------------------------------------------------------------
+Evaluation Timestamp : {official_provenance['evaluation_timestamp_iso']}
 Model Weights Path   : {official_provenance['weights_path']}
 Model Weights SHA-256: {official_provenance['weights_sha256']}
 Dataset YAML / Split : {data_yaml} / val ({img_dir})
@@ -453,6 +446,8 @@ Ultralytics Version  : {official_provenance['ultralytics_version']}
 PyTorch Version      : {official_provenance['torch_version']}
 Python Version       : {official_provenance['python_version'].split()[0]}
 Host Platform        : {official_provenance['platform']}
+Execution Device     : {official_provenance['execution_device']}
+Inference Settings   : imgsz={imgsz}, conf={official_provenance['inference_conf_cutoff']}, nms_iou={nms_iou}, matching_iou={matching_iou}
 
 2. BASELINE OFFICIAL ULTRALYTICS VALIDATION (Standard Full PR-Curve Integration, conf=0.001)
 ----------------------------------------------------------------------------------------------------

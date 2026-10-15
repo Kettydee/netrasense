@@ -35,7 +35,6 @@ from ensemble import EnsembleClassifier
 from dataset_collector import DatasetCollector
 from dataset_cleaner import DatasetCleaner
 from face_engine import FaceEngine
-from ensemble_model import MultiModalEnsembleModel
 from obstacle_warning import ObstacleWarningEvaluator, ObstacleState
 
 app = Flask(__name__)
@@ -127,8 +126,12 @@ state_lock = threading.Lock()
 def update_sensor_data(record):
     """Store the latest validated Arduino measurement for API clients.
 
-    Evaluates obstacle warning logic, tracks repeated measurements,
-    and sends the corresponding threat level back to the Arduino buzzer.
+    Evaluates obstacle warning logic and tracks repeated measurements.
+
+    The deployed firmware controls its buzzer locally from the HC-SR04
+    measurement and does not implement a host-to-firmware command parser.
+    Do not write unacknowledged "buzzer" JSON commands here: a successful
+    serial write is not evidence that the buzzer was controlled.
     """
     with state_lock:
         state["sensor_data"] = record
@@ -140,13 +143,6 @@ def update_sensor_data(record):
         ts = record.get("timestamp") if record else None
         warning_eval = obstacle_evaluator.process_reading(dist, reading_timestamp=ts)
         state["latest_warning_eval"] = warning_eval.to_dict()
-
-        # Send buzzer command to Arduino
-        reader = state.get("sensor_reader")
-        if reader:
-            threat = record.get("threat_level", "NORMAL")
-            reader.send_command({"buzzer": threat})
-
 
 def init_vision_engine(args):
     print("=" * 60)
@@ -260,6 +256,17 @@ def _build_hardware_status() -> dict:
             # a de-facto disconnection (e.g. cable pulled mid-read).
             arduino_connected = False
             arduino_last_error = f"No sensor data for {sensor_age:.1f}s (timeout {SENSOR_HEARTBEAT_TIMEOUT_S}s)"
+    elif arduino_connected:
+        # The port opened but no valid reading has ever arrived.  Opening a
+        # serial port is not evidence of an active sensor: after the heartbeat
+        # window, report missing telemetry instead of a healthy connection.
+        connected_since = sensor_reader.connected_since if sensor_reader else None
+        if connected_since is None or (now - connected_since) > SENSOR_HEARTBEAT_TIMEOUT_S:
+            arduino_connected = False
+            arduino_last_error = (
+                f"Serial port open but no sensor data received "
+                f"(timeout {SENSOR_HEARTBEAT_TIMEOUT_S}s)"
+            )
 
     arduino_status = "CONNECTED" if arduino_connected else "DISCONNECTED"
     if arduino_last_error and not arduino_connected:
@@ -455,11 +462,20 @@ def generate_frames():
         # ── Run ensemble classifier ──────────────────────────────────
         ensemble = state.get("ensemble")
         sensor = state.get("sensor_data")
+        # Only feed the ensemble a FRESH ultrasonic measurement: a stale
+        # reading must never be presented as a live signal in the fusion
+        # breakdown or reused as a current distance.
+        sensor_last_update = state.get("sensor_last_update", 0.0)
+        sensor_fresh = (
+            sensor is not None
+            and sensor_last_update > 0
+            and (time.monotonic() - sensor_last_update) <= obstacle_evaluator.stale_timeout_s
+        )
         ensemble_result = None
         if ensemble:
             ensemble_result = ensemble.classify(
-                ultrasonic_cm=sensor.get("distance_cm") if sensor else None,
-                ultrasonic_threat=sensor.get("threat_level") if sensor else None,
+                ultrasonic_cm=sensor.get("distance_cm") if sensor_fresh else None,
+                ultrasonic_threat=sensor.get("threat_level") if sensor_fresh else None,
                 yolo_detections=det_dicts,
                 depth_distance_cm=None,  # depth_map centroid used per-detection
                 yolo_closest_cm=closest_dist if closest_obj else None,
@@ -609,7 +625,11 @@ def api_capture():
 @app.route('/api/fuse', methods=['POST', 'GET'])
 @limiter.limit("30 per minute")
 def api_fuse():
-    """Execute multi-modal sensor fusion across Ultrasonic, YOLO, and Depth signals."""
+    """Execute the same reliability-aware policy as the live video path.
+
+    ``fused_distance_cm`` is null when more than one distance source is
+    present because those observations are not object-associated.
+    """
     with state_lock:
         data = request.get_json(silent=True) or {}
         ultrasonic_cm = float(data.get("ultrasonic_cm")) if "ultrasonic_cm" in data else None
@@ -617,21 +637,40 @@ def api_fuse():
 
         detections = state.get("latest_detections", [])
 
-        _ensemble_model = MultiModalEnsembleModel()
-        fusion_res = _ensemble_model.fuse(
-            ultrasonic_distance_cm=ultrasonic_cm,
+        fusion_res = EnsembleClassifier().classify(
+            ultrasonic_cm=ultrasonic_cm,
             yolo_detections=detections,
-            depth_meters=depth_m
+            depth_distance_cm=depth_m * 100.0 if depth_m is not None else None,
+        )
+
+        title_levels = {
+            "NORMAL": "Normal",
+            "WARNING": "Warning",
+            "ALARM": "Alarming",
+            "CRITICAL": "Collision",
+            "NO DATA": "NO DATA",
+        }
+        source_by_severity = max(
+            fusion_res.signals,
+            key=lambda signal: {"NORMAL": 0, "WARNING": 1, "ALARM": 2, "CRITICAL": 3}.get(
+                signal.threat_level or "", -1
+            ),
+            default=None,
         )
 
         return jsonify({
-            "threat_level": fusion_res.threat_level,
-            "threat_score": fusion_res.threat_score,
+            "threat_level": title_levels[fusion_res.fused_threat_level],
+            # Kept for response-shape compatibility. This ordinal encodes
+            # severity only; it is not a probability or calibrated score.
+            "threat_score": {
+                "NORMAL": 0.0, "WARNING": 1 / 3, "ALARM": 2 / 3, "CRITICAL": 1.0,
+            }.get(fusion_res.fused_threat_level),
             "fused_distance_cm": fusion_res.fused_distance_cm,
-            "dominant_modality": fusion_res.dominant_modality,
+            "dominant_modality": source_by_severity.source if source_by_severity else None,
             "confidence": fusion_res.confidence,
-            "recommended_action": fusion_res.recommended_action,
-            "modality_breakdown": fusion_res.modality_breakdown
+            "sensing_state": fusion_res.sensing_state,
+            "recommended_action": None,
+            "modality_breakdown": fusion_res.to_dict(),
         })
 
 

@@ -11,22 +11,27 @@ Tests:
    - Multiple overlapping ground-truth boxes (matched greedily to best IoU without stealing).
    - Empty predictions and empty ground truth handling.
 3. Direct loading and integrity verification of generated evaluation artifacts:
-   - Macro precision = arithmetic mean of per-class precision across active classes.
-   - Macro recall = arithmetic mean of per-class recall across active classes.
-   - Macro F1 = arithmetic mean of per-class F1 across active classes.
+   - Macro precision = arithmetic mean of per-class precision across active classes directly from counts.
+   - Macro recall = arithmetic mean of per-class recall across active classes directly from counts.
+   - Macro F1 = arithmetic mean of per-class F1 across active classes directly from counts.
    - Harmonic F1 of macro P & R is reported separately under 'harmonic_f1_of_macro_p_r'.
    - TP + FN == GT for every class and threshold.
    - Total retained predictions == Total TP + Total FP.
    - Aggregated micro counts equal sum of per-class counts.
    - Monotonic decrease of retained predictions as confidence threshold increases.
-4. Provenance and official Ultralytics baseline validation traceability:
-   - Validates official results_dict structure and baseline values against official validator outputs.
+4. Cross-file artifact consistency:
+   - Loads generated JSON, CSV, and TXT files and verifies matching detection counts
+     and consistent micro/macro metrics across all 4 thresholds.
+5. Provenance and official Ultralytics baseline validation traceability:
+   - Validates official results_dict structure, ISO 8601 timestamp, and baseline values.
 """
 
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
+import re
 import unittest
 import numpy as np
 
@@ -81,7 +86,6 @@ class TestProductionMatchingLogic(unittest.TestCase):
         self.assertEqual(tp, 1)
         self.assertEqual(fp, 1)
         self.assertEqual(fn, 0)
-        # Verify matched prediction index is index 1 (the 0.95 confidence box)
         self.assertEqual(m_preds, [1])
         self.assertEqual(m_gts, [0])
 
@@ -96,9 +100,7 @@ class TestProductionMatchingLogic(unittest.TestCase):
         self.assertEqual(fn, 1)
 
     def test_multiple_overlapping_ground_truth_boxes(self):
-        """Verify greedy assignment when multiple GT boxes overlap:
-        Prediction matches the candidate with highest IoU without duplicate assignment.
-        """
+        """Verify greedy assignment when multiple GT boxes overlap."""
         pred_box = np.array([0.0, 0.0, 10.0, 10.0])
         gt1 = {"cls": 0, "box": np.array([0.0, 0.0, 10.0, 12.0])}  # IoU = 100/120 = 0.8333
         gt2 = {"cls": 0, "box": np.array([0.0, 0.0, 10.0, 18.0])}  # IoU = 100/180 = 0.5556
@@ -130,19 +132,20 @@ class TestGeneratedEvaluationArtifacts(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Resolve authoritative path under server/evaluation_results
         candidates = [
-            Path("server/evaluation_results/confidence_sweep/validated_evaluation_report.json"),
-            Path("evaluation_results/confidence_sweep/validated_evaluation_report.json"),
+            Path("server/evaluation_results/confidence_sweep"),
+            Path("evaluation_results/confidence_sweep"),
         ]
-        report_path = None
+        base_dir = None
         for p in candidates:
-            if p.exists():
-                report_path = p
+            if (p / "validated_evaluation_report.json").exists():
+                base_dir = p
                 break
-        if report_path is None:
-            raise FileNotFoundError("validated_evaluation_report.json not found in candidate paths.")
-        with open(report_path, "r", encoding="utf-8") as f:
+        if base_dir is None:
+            raise FileNotFoundError("Evaluation artifacts directory not found.")
+
+        cls.base_dir = base_dir
+        with open(base_dir / "validated_evaluation_report.json", "r", encoding="utf-8") as f:
             cls.report = json.load(f)
 
     def test_provenance_and_model_weights_hash(self):
@@ -152,6 +155,10 @@ class TestGeneratedEvaluationArtifacts(unittest.TestCase):
         self.assertIn("ultralytics_version", prov)
         self.assertIn("torch_version", prov)
         self.assertIn("python_version", prov)
+        self.assertIn("evaluation_timestamp_iso", prov)
+        # Validate ISO 8601 timestamp format
+        iso_ts = prov.get("evaluation_timestamp_iso", "")
+        self.assertTrue(len(iso_ts) >= 19 and "T" in iso_ts, f"Invalid ISO timestamp: {iso_ts}")
         self.assertEqual(prov.get("dataset_yaml"), "coco128.yaml")
         self.assertEqual(len(prov.get("weights_sha256", "")), 64)
 
@@ -167,12 +174,12 @@ class TestGeneratedEvaluationArtifacts(unittest.TestCase):
         map50 = raw_dict["metrics/mAP50(B)"]
         self.assertAlmostEqual(map50, 0.6795, places=3)
 
-    def test_sweep_mathematical_conservation_and_macro_definitions(self):
+    def test_sweep_mathematical_conservation_and_unrounded_macro(self):
         """Verify that all sweep results satisfy counting identities and macro definitions:
+        - Computed directly from integer counts
         - Macro Precision = arithmetic mean of class precision
         - Macro Recall = arithmetic mean of class recall
         - Macro F1 = arithmetic mean of class F1
-        - Harmonic F1 of Macro P & R is separate under harmonic_f1_of_macro_p_r
         - TP + FN == GT for every class
         - Total retained predictions == Total TP + Total FP
         - Monotonic decrease of retained predictions as confidence increases
@@ -200,43 +207,90 @@ class TestGeneratedEvaluationArtifacts(unittest.TestCase):
             self.assertLessEqual(retained, prev_retained, f"Retained predictions did not decrease at conf {tau}")
             prev_retained = retained
 
-            # Per-class counts and macro aggregation verification
+            # Per-class counts and unrounded macro aggregation
             all_classes = record["all_classes"]
             class_p_list = []
             class_r_list = []
             class_f1_list = []
 
             for cname, cstat in all_classes.items():
-                tp = cstat["tp"]
-                fp = cstat["fp"]
-                fn = cstat["fn"]
-                gt = cstat["gt"]
+                tp = int(cstat["tp"])
+                fp = int(cstat["fp"])
+                fn = int(cstat["fn"])
+                gt = int(cstat["gt"])
                 self.assertEqual(tp + fn, gt, f"Class {cname} failed TP+FN==GT at conf {tau}")
 
                 p_calc, r_calc, f1_calc = compute_metrics_from_counts(tp, fp, fn)
-                self.assertAlmostEqual(p_calc, cstat["precision"], places=4)
-                self.assertAlmostEqual(r_calc, cstat["recall"], places=4)
-                self.assertAlmostEqual(f1_calc, cstat["f1_score"], places=4)
+                self.assertAlmostEqual(p_calc, cstat["precision"], places=7)
+                self.assertAlmostEqual(r_calc, cstat["recall"], places=7)
+                self.assertAlmostEqual(f1_calc, cstat["f1_score"], places=7)
 
-                class_p_list.append(cstat["precision"])
-                class_r_list.append(cstat["recall"])
-                class_f1_list.append(cstat["f1_score"])
+                class_p_list.append(p_calc)
+                class_r_list.append(r_calc)
+                class_f1_list.append(f1_calc)
 
-            # Verify Macro Precision = arithmetic mean of per-class precision
+            # Macro Precision directly from integer-based class precision
             expected_macro_p = float(np.mean(class_p_list))
-            self.assertAlmostEqual(macro["precision"], expected_macro_p, places=3)
+            self.assertAlmostEqual(macro["precision"], expected_macro_p, places=7)
 
-            # Verify Macro Recall = arithmetic mean of per-class recall
+            # Macro Recall directly from integer-based class recall
             expected_macro_r = float(np.mean(class_r_list))
-            self.assertAlmostEqual(macro["recall"], expected_macro_r, places=3)
+            self.assertAlmostEqual(macro["recall"], expected_macro_r, places=7)
 
-            # Verify Macro F1 = arithmetic mean of per-class F1
+            # Macro F1 directly from integer-based class F1
             expected_macro_f1 = float(np.mean(class_f1_list))
-            self.assertAlmostEqual(macro["macro_f1"], expected_macro_f1, places=3)
+            self.assertAlmostEqual(macro["macro_f1"], expected_macro_f1, places=7)
 
-            # Verify Harmonic F1 of Macro P & R
+            # Harmonic F1 of Macro P & R
             expected_harmonic_macro_f1 = (2.0 * expected_macro_p * expected_macro_r) / (expected_macro_p + expected_macro_r) if (expected_macro_p + expected_macro_r) > 0 else 0.0
-            self.assertAlmostEqual(macro["harmonic_f1_of_macro_p_r"], expected_harmonic_macro_f1, places=3)
+            self.assertAlmostEqual(macro["harmonic_f1_of_macro_p_r"], expected_harmonic_macro_f1, places=7)
+
+    def test_cross_artifact_consistency(self):
+        """Loads JSON, CSV, and TXT artifacts and verifies that detection counts
+        and micro/macro metrics match consistently across all 4 thresholds."""
+        json_path = self.base_dir / "validated_evaluation_report.json"
+        csv_path = self.base_dir / "validated_confidence_threshold_comparison.csv"
+        txt_path = self.base_dir / "evaluation_protocol_audit.txt"
+
+        self.assertTrue(json_path.exists())
+        self.assertTrue(csv_path.exists())
+        self.assertTrue(txt_path.exists())
+
+        # Load CSV
+        csv_rows = []
+        with open(csv_path, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                csv_rows.append(row)
+
+        self.assertEqual(len(csv_rows), 4)
+
+        # Load TXT content
+        txt_content = txt_path.read_text(encoding="utf-8")
+
+        # Compare JSON vs CSV vs TXT for all 4 thresholds
+        sweep = self.report["custom_fixed_threshold_sweep"]
+        for i, record in enumerate(sweep):
+            tau = record["confidence_threshold"]
+            retained = record["retained_predictions_count"]
+            micro_tp = record["micro_averaged_metrics"]["total_tp"]
+            micro_fp = record["micro_averaged_metrics"]["total_fp"]
+            micro_fn = record["micro_averaged_metrics"]["total_fn"]
+
+            csv_row = csv_rows[i]
+            self.assertAlmostEqual(float(csv_row["Confidence_Threshold"]), tau, places=2)
+            self.assertEqual(int(csv_row["Retained_Detections"]), retained)
+            self.assertEqual(int(csv_row["Micro_TP"]), micro_tp)
+            self.assertEqual(int(csv_row["Micro_FP"]), micro_fp)
+            self.assertEqual(int(csv_row["Micro_FN"]), micro_fn)
+
+            # Check TXT table contains exact confidence and retained count
+            # Table format: "0.10 | 1077 "
+            pattern = rf"{tau:.2f}\s*\|\s*{retained}\s*\|"
+            self.assertIsNotNone(
+                re.search(pattern, txt_content),
+                f"TXT table missing expected row for conf={tau:.2f}, retained={retained}",
+            )
 
 
 if __name__ == "__main__":

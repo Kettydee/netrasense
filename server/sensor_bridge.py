@@ -31,24 +31,20 @@ obstacle_evaluator = ObstacleWarningEvaluator(
     delta_alert_threshold_cm=15.0,
 )
 
-# Global sensor state
-latest_reading = {
-    "distance_cm": 150.0,
-    "timestamp": None,
-    "device_id": "NETRA-001",
-}
-is_connected = False
-active_port = None
+# Global sensor state — no reading is assumed until real hardware reports one.
+# (Intentionally untyped: sensor_bridge has no future-annotations import and
+# must import cleanly on Python 3.9.)
+latest_reading = None
 last_reading_time = 0.0
+reading_count = 0
 
 def on_sensor_reading(record):
-    global latest_reading, is_connected, active_port, last_reading_time
+    global latest_reading, last_reading_time, reading_count
     latest_reading = record
-    is_connected = True
     last_reading_time = time.time()
-    active_port = reader.connected_port
+    reading_count += 1
 
-    dist = record.get("distance_cm", 150)
+    dist = record["distance_cm"]
     ts = record.get("timestamp")
     obstacle_evaluator.process_reading(dist, reading_timestamp=ts)
     threat = classify_threat_level(dist)
@@ -70,13 +66,61 @@ reader = ArduinoSerialReader(
     device_id="NETRA-001"
 )
 
+
+def _telemetry_fresh():
+    """Return ``(fresh, age_seconds)`` from the latest valid reading timestamp.
+
+    Freshness comes from the obstacle evaluator's own bookkeeping (which is
+    updated only by validated readings) so telemetry freshness and the reported
+    obstacle state can never disagree.
+    """
+    age = obstacle_evaluator.evaluate().age_seconds
+    if age is None:
+        return False, None
+    return age < obstacle_evaluator.stale_timeout_s, age
+
+
+def _sensor_status() -> dict:
+    """Build sensor status from runtime evidence only.
+
+    Distinguishes serial disconnection (no port handle) from missing telemetry
+    (port open but no fresh readings) so a healthy state is never claimed when
+    the sensor status is unknown or the data is stale.
+    """
+    fresh, age = _telemetry_fresh()
+    port = reader.connected_port
+    if port is None:
+        connected = False
+        last_error = reader.last_error or "Serial port not connected"
+    elif not fresh:
+        connected = False
+        if age is None:
+            last_error = "Serial port open but no sensor data received yet"
+        else:
+            last_error = (
+                f"No sensor data for {age:.1f}s "
+                f"(timeout {obstacle_evaluator.stale_timeout_s:.1f}s)"
+            )
+    else:
+        connected = True
+        last_error = None
+    return {
+        "connected": connected,
+        "port": port,
+        "last_error": last_error,
+        "fresh": fresh,
+        "age": age,
+    }
+
 @app.route("/", methods=["GET"])
 def index():
+    status = _sensor_status()
+    fresh = status["fresh"]
     return jsonify({
         "service": "NetraSense Arduino Sensor Bridge",
-        "status": "online" if is_connected else "scanning",
-        "port": active_port,
-        "latest_distance_cm": latest_reading.get("distance_cm")
+        "status": "online" if status["connected"] else "scanning",
+        "port": status["port"],
+        "latest_distance_cm": latest_reading.get("distance_cm") if fresh and latest_reading else None
     })
 
 @app.route("/api/latest", methods=["GET"])
@@ -86,46 +130,89 @@ def api_latest():
     obs_eval = obstacle_evaluator.evaluate()
     obs_dict = obs_eval.to_dict()
 
-    fresh = (now - last_reading_time) < obstacle_evaluator.stale_timeout_s if last_reading_time > 0 else False
-    dist = latest_reading.get("distance_cm", 150.0)
-    raw_threat = classify_threat_level(dist)
+    status = _sensor_status()
+    fresh = status["fresh"]
+    has_reading = latest_reading is not None
+    # Aligned with the vision server: a live port handle plus fresh data are
+    # both required before telemetry is presented as active hardware data.
+    telemetry_active = fresh and has_reading and status["connected"]
 
-    ui_threat = (
-        "Collision" if raw_threat == "CRITICAL"
-        else "Alarming" if raw_threat == "ALARM"
-        else "Warning" if raw_threat == "WARNING"
-        else "Normal"
-    )
+    if telemetry_active and latest_reading is not None:
+        dist = latest_reading["distance_cm"]
+        raw_threat = latest_reading.get("threat_level") or classify_threat_level(dist)
+        sensor_data = latest_reading
+        ui_threat = (
+            "Collision" if raw_threat == "CRITICAL"
+            else "Alarming" if raw_threat == "ALARM"
+            else "Warning" if raw_threat == "WARNING"
+            else "Normal"
+        )
+    else:
+        # No fresh telemetry: never report a fabricated or stale threat level.
+        dist = None
+        raw_threat = None
+        sensor_data = None
+        ui_threat = "NO DATA"
+
+    arduino = {
+        "connected": status["connected"],
+        "port": status["port"],
+        "last_error": status["last_error"],
+        "status": "CONNECTED" if status["connected"] else "DISCONNECTED",
+        "last_update": last_reading_time,
+        "total_readings": reading_count,
+    }
+    ultrasonic = {
+        "active": telemetry_active,
+        "distance_cm": dist,
+        "threat_level": raw_threat,
+        "device_id": sensor_data.get("device_id") if sensor_data else None,
+        "timestamp": sensor_data.get("timestamp") if sensor_data else None,
+        "status": "ACTIVE" if telemetry_active else "NOT ACTIVE",
+        "obstacle_state": obs_dict["state"],
+        "is_warning": obs_dict["is_warning"],
+        "is_clear": obs_dict["is_clear"],
+        "is_error": obs_dict["is_error"],
+        "is_unavailable": obs_dict["is_unavailable"],
+        "age_seconds": obs_dict["age_seconds"],
+    }
 
     return jsonify({
         "timestamp": now,
         "fps": 0,
         "threat_level": ui_threat,
-        "sensor_data": latest_reading if fresh else None,
+        "sensor_data": sensor_data,
         "sensor_status": {
-            "connected": is_connected and fresh,
-            "port": active_port,
-            "last_error": reader.last_error if not fresh else None
+            "connected": status["connected"],
+            "port": status["port"],
+            "last_error": status["last_error"]
         },
         "obstacle_warning": obs_dict,
         "hardware_status": {
-            "arduino": {
-                "connected": is_connected and fresh,
-                "port": active_port,
-                "last_error": reader.last_error
+            "system": {
+                "status": "ONLINE" if status["connected"] else "NO HARDWARE",
+                "sensor_heartbeat_timeout_s": obstacle_evaluator.stale_timeout_s,
             },
-            "ultrasonic": {
-                "active": fresh,
-                "distance_cm": dist if fresh else None,
-                "threat_level": raw_threat,
-                "obstacle_state": obs_dict["state"],
-                "is_warning": obs_dict["is_warning"],
-                "is_clear": obs_dict["is_clear"],
-                "is_error": obs_dict["is_error"],
-                "is_unavailable": obs_dict["is_unavailable"],
-                "age_seconds": obs_dict["age_seconds"],
-            },
+            "arduino": arduino,
+            "ultrasonic": ultrasonic,
             "obstacle_warning": obs_dict,
+            # This bridge has no camera or AI engine; report their absence
+            # explicitly so consumers of the shared HardwareStatus shape see
+            # truthful values instead of missing keys.
+            "camera": {
+                "connected": False,
+                "fps": 0,
+                "source": None,
+                "last_frame_timestamp": None,
+                "last_error": None,
+                "status": "DISCONNECTED",
+            },
+            "ai": {
+                "loaded": False,
+                "processing": False,
+                "model": None,
+                "status": "NOT READY",
+            },
         }
     })
 

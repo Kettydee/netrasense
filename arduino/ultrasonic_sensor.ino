@@ -12,6 +12,15 @@
  *   - Above 3 Meters / Clear Pathway (>= 300 cm):
  *       COMPLETELY SILENT (OFF).
  *
+ * Serial protocol (USB telemetry):
+ *   Valid measurement:   {"distance_cm":123.4,"valid":true}
+ *   Failed measurement:  {"distance_cm":null,"valid":false,"status":"NO_ECHO"}
+ *                        {"distance_cm":null,"valid":false,"status":"OUT_OF_RANGE"}
+ *   A failed ultrasonic measurement (no echo / out of range) is NEVER reported
+ *   as a distance value, so the host can distinguish "path is clear" from
+ *   "sensor could not measure". The host keeps the last valid reading as
+ *   historical data with its original timestamp.
+ *
  * Pin Connections:
  *   HC-SR04 VCC  -> Arduino 5V
  *   HC-SR04 GND  -> Arduino GND
@@ -48,10 +57,15 @@ void buzzerOff() {
   digitalWrite(BUZZER_PIN, LOW);
 }
 
-float lastValidDistance = 400.0f;
-byte consecutiveMisses = 0;
+// Measurement outcomes
+const byte MEASURE_OK = 0;
+const byte MEASURE_NO_ECHO = 1;
+const byte MEASURE_OUT_OF_RANGE = 2;
 
-float measureSinglePulse() {
+// Single ultrasonic ping. Returns MEASURE_OK only for a genuine echo inside the
+// physical range; otherwise reports WHY the measurement failed instead of
+// substituting a fabricated distance (the old 400.0 cm sentinel).
+byte measureSinglePulse(float* outDistanceCm) {
   digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(4);
   digitalWrite(TRIG_PIN, HIGH);
@@ -59,26 +73,11 @@ float measureSinglePulse() {
   digitalWrite(TRIG_PIN, LOW);
 
   unsigned long durationUs = pulseIn(ECHO_PIN, HIGH, ECHO_TIMEOUT_US);
-  if (durationUs == 0) return 400.0f;
+  if (durationUs == 0) return MEASURE_NO_ECHO; // timeout: no echo received
   float dist = (float)durationUs * 0.0343f / 2.0f;
-  if (dist < 2.0f || dist > 380.0f) return 400.0f;
-  return dist;
-}
-
-// Distance measurement with single-ping dropout rejection (prevents rapid glitching)
-float measureDistanceCm() {
-  float current = measureSinglePulse();
-  if (current < 380.0f) {
-    consecutiveMisses = 0;
-    lastValidDistance = current;
-    return current;
-  }
-  consecutiveMisses++;
-  if (consecutiveMisses < 2) {
-    return lastValidDistance;
-  }
-  lastValidDistance = 400.0f;
-  return 400.0f;
+  if (dist < 2.0f || dist > 380.0f) return MEASURE_OUT_OF_RANGE;
+  *outDistanceCm = dist;
+  return MEASURE_OK;
 }
 
 // Non-blocking pulsed buzzer state machine (ALWAYS has pauses — NO continuous tone!)
@@ -157,25 +156,37 @@ void loop() {
   if (now - lastSampleTime >= SAMPLE_RATE_MS) {
     lastSampleTime = now;
 
-    float distanceCm = measureDistanceCm();
+    float distanceCm = 0.0f;
+    byte result = measureSinglePulse(&distanceCm);
 
-    // Broadcast live telemetry over USB to Dashboard
-    Serial.print("{\"distance_cm\":");
-    Serial.print(distanceCm, 1);
-    Serial.println("}");
+    if (result == MEASURE_OK) {
+      // Broadcast live telemetry over USB to Dashboard
+      Serial.print("{\"distance_cm\":");
+      Serial.print(distanceCm, 1);
+      Serial.println(",\"valid\":true}");
 
-    // 2. Safe, pleasant sound frequencies & rhythms:
-    if (distanceCm >= 300.0f) {
-      buzzerPattern = 0; // > 3 Meters -> Completely SILENT
-    } else if (distanceCm >= 200.0f) {
-      buzzerPattern = 1; // 2m - 3m -> Slow beeps
-      currentToneFreq = 800; // Gentle 800 Hz
-    } else if (distanceCm >= 100.0f) {
-      buzzerPattern = 2; // 1m - 2m -> Moderate beeps
-      currentToneFreq = 980; // Clear 980 Hz
+      // 2. Safe, pleasant sound frequencies & rhythms:
+      if (distanceCm >= 300.0f) {
+        buzzerPattern = 0; // > 3 Meters -> Completely SILENT
+      } else if (distanceCm >= 200.0f) {
+        buzzerPattern = 1; // 2m - 3m -> Slow beeps
+        currentToneFreq = 800; // Gentle 800 Hz
+      } else if (distanceCm >= 100.0f) {
+        buzzerPattern = 2; // 1m - 2m -> Moderate beeps
+        currentToneFreq = 980; // Clear 980 Hz
+      } else {
+        buzzerPattern = 3; // < 1 Meter -> Rapid urgent beep-pause-beep
+        currentToneFreq = 1200; // Crisp 1200 Hz (NOT screeching)
+      }
     } else {
-      buzzerPattern = 3; // < 1 Meter -> Rapid urgent beep-pause-beep
-      currentToneFreq = 1200; // Crisp 1200 Hz (NOT screeching)
+      // Failed measurement: report an explicit failure status, never a distance.
+      // The previous buzzer pattern is kept (unknown distance must not be
+      // reported as a clear/safe path).
+      if (result == MEASURE_NO_ECHO) {
+        Serial.println("{\"distance_cm\":null,\"valid\":false,\"status\":\"NO_ECHO\"}");
+      } else {
+        Serial.println("{\"distance_cm\":null,\"valid\":false,\"status\":\"OUT_OF_RANGE\"}");
+      }
     }
   }
 

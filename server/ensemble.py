@@ -1,18 +1,18 @@
 """
 NetraSense — Multi-Signal Ensemble Threat Classifier
 =====================================================
-Fuses three independent signal sources into a single authoritative threat
-assessment and distance estimate:
+Combines three independent signal sources into a conservative threat
+assessment without asserting that their distance measurements identify the
+same object:
 
 1. **Ultrasonic sensor** (HC-SR04 via Arduino) — direct distance measurement
 2. **YOLO11 object detection** — label + bounding box + optional depth estimate
 3. **Depth Anything V2** — monocular depth map at detection centroids
 
-The ensemble produces:
-- A fused distance estimate (weighted by sensor reliability)
-- A threat level classification (weighted vote across all signals)
-- A confidence score (how many signals agree)
-- Per-signal contribution breakdown for transparency
+The ensemble produces a conservative warning decision and a per-modality
+breakdown.  It deliberately does *not* calculate an object distance by
+averaging the HC-SR04's beam measurement with visual/depth estimates: those
+measurements have no established object-level correspondence.
 
 Design Principles:
 - Every signal is optional; the ensemble degrades gracefully.
@@ -21,7 +21,8 @@ Design Principles:
 - YOLO detections are rich (label, direction, motion) but distance is less
   precise without depth fusion.
 - Depth Anything V2 provides dense depth but is monocular (scale ambiguity).
-- The final output must be strictly better than any single signal alone.
+- Effectiveness relative to any single signal is an experimental question and
+  must be measured; it is not assumed by this implementation.
 
 Run standalone for testing:
     python ensemble.py --test
@@ -44,7 +45,7 @@ THRESHOLDS = {
     "NORMAL":   (300, 400),    # 300+ cm
 }
 
-# Map threat level to a numeric severity for weighted voting
+# Map threat level to a numeric severity for conservative warning selection.
 SEVERITY_MAP = {
     "NORMAL":   0,
     "WARNING":  1,
@@ -82,6 +83,7 @@ class EnsembleResult:
     ultrasonic_threat: Optional[str] = None
     yolo_threat: Optional[str] = None
     depth_threat: Optional[str] = None
+    sensing_state: str = "NO VALID DATA"  # FUSED | SENSOR DEGRADED | NO VALID DATA
 
     @property
     def has_data(self) -> bool:
@@ -95,6 +97,7 @@ class EnsembleResult:
             "fused_threat_level": self.fused_threat_level,
             "confidence": round(self.confidence, 3),
             "signal_count": self.signal_count,
+            "sensing_state": self.sensing_state,
             "ultrasonic": {
                 "distance_cm": self.ultrasonic_distance,
                 "threat_level": self.ultrasonic_threat,
@@ -110,10 +113,9 @@ class EnsembleResult:
         }
 
 
-# ── Default weights (tuned for NetraSense hardware) ──────────────────
-# Ultrasonic gets highest weight because it's a direct time-of-flight
-# measurement. YOLO is next (real object detection). Depth gets lowest
-# because monocular depth has scale ambiguity.
+# ── Legacy weights retained for API/configuration compatibility ──────
+# The current safety policy does not use them to average distances or vote a
+# warning down; calibrated reliability weights require an experiment.
 DEFAULT_WEIGHTS = {
     "ultrasonic": 0.50,
     "yolo":       0.30,
@@ -238,7 +240,8 @@ class EnsembleClassifier:
         if not detections:
             return None
 
-        # Find the closest detection with a distance estimate
+        # Find the strongest detection.  A detector confidence is an ordering
+        # score, not a calibrated probability and is never used as one here.
         best_dist = closest_cm
         best_threat = None
         best_label = None
@@ -250,8 +253,10 @@ class EnsembleClassifier:
             dist = det.get("distance_cm")
             conf = det.get("confidence", 0)
 
-            if dist is not None and conf > best_conf:
-                best_dist = dist
+            # A detection without an estimated range is still useful visual
+            # evidence.  Keep its label/threat rather than discarding it.
+            if conf > best_conf:
+                best_dist = dist if dist is not None else closest_cm
                 best_threat = det.get("threat_level")
                 best_label = det.get("label")
                 best_direction = det.get("direction")
@@ -269,7 +274,10 @@ class EnsembleClassifier:
         return SignalInput(
             source="yolo",
             distance_cm=best_dist,
-            threat_level=best_threat or (self._distance_to_threat(best_dist) if best_dist else None),
+            # A usable visual detection is evidence of an object, but without
+            # a calibrated metric distance it can support WARNING only.  A
+            # detector must never make an unobserved path CLEAR.
+            threat_level=best_threat or (self._distance_to_threat(best_dist) if best_dist else "WARNING"),
             confidence=signal_confidence,
             label=best_label,
             direction=best_direction,
@@ -319,43 +327,41 @@ class EnsembleClassifier:
                 result.depth_distance = sig.distance_cm
                 result.depth_threat = sig.threat_level
 
-        # ── Weighted distance fusion ─────────────────────────────────
-        dist_signals = [s for s in signals if s.distance_cm is not None]
-        if dist_signals:
-            total_weight = sum(self._weights.get(s.source, 0.1) * s.confidence for s in dist_signals)
-            if total_weight > 0:
-                fused_dist = sum(
-                    s.distance_cm * self._weights.get(s.source, 0.1) * s.confidence
-                    for s in dist_signals
-                ) / total_weight
-                result.fused_distance_cm = round(fused_dist, 1)
+        # An HC-SR04 reading is a beam-range measurement, not the distance to
+        # any particular detected object.  Preserve it only when it is the
+        # sole distance source; otherwise consumers must use the per-signal
+        # fields above and cannot mistake a weighted average for a real range.
+        distance_sources = [s for s in signals if s.distance_cm is not None]
+        if len(distance_sources) == 1:
+            result.fused_distance_cm = distance_sources[0].distance_cm
 
-        # ── Weighted threat level voting ─────────────────────────────
-        threat_votes: dict[str, float] = {}
-        for sig in signals:
-            if sig.threat_level and sig.confidence >= MIN_SIGNAL_CONFIDENCE:
-                level = sig.threat_level.upper()
-                weight = self._weights.get(sig.source, 0.1) * sig.confidence
-                threat_votes[level] = threat_votes.get(level, 0) + weight
-
-        if threat_votes:
-            # Pick the threat level with the highest weighted vote
-            result.fused_threat_level = max(threat_votes, key=threat_votes.get)
-
-            # If no ultrasonic signal, use the fused distance to potentially
-            # escalate the threat level (YOLO-only scenarios)
-            if not any(s.source == "ultrasonic" for s in signals) and result.fused_distance_cm is not None:
-                dist_threat = self._distance_to_threat(result.fused_distance_cm)
-                dist_sev = SEVERITY_MAP.get(dist_threat, 0)
-                vote_sev = SEVERITY_MAP.get(result.fused_threat_level, 0)
-                # Use the more severe of (voted, distance-based)
-                if dist_sev > vote_sev:
-                    result.fused_threat_level = dist_threat
+        # ── Conservative warning decision ────────────────────────────
+        # Any valid warning is allowed to escalate the result.  This means a
+        # nearby ultrasonic obstacle still warns without a camera detection,
+        # and loss of ultrasound does not discard an otherwise usable visual
+        # detection.  Conversely, no modality may turn unavailable data into
+        # a CLEAR/NORMAL decision.
+        usable_levels = [
+            s.threat_level.upper()
+            for s in signals
+            if s.threat_level and s.confidence >= MIN_SIGNAL_CONFIDENCE
+        ]
+        if usable_levels:
+            result.fused_threat_level = max(usable_levels, key=lambda level: SEVERITY_MAP.get(level, -1))
         else:
             result.fused_threat_level = "NO DATA"
 
+        sources = {s.source for s in signals}
+        if not signals:
+            result.sensing_state = "NO VALID DATA"
+        elif len(sources) < 2:
+            result.sensing_state = "SENSOR DEGRADED"
+        else:
+            result.sensing_state = "FUSED"
+
         # ── Confidence score ─────────────────────────────────────────
-        # Confidence = weighted agreement across signals
+        # This is a deterministic agreement/coverage indicator, not a model
+        # probability.  It must not be presented as calibrated confidence.
         if len(signals) >= 2:
             severities = [SEVERITY_MAP.get(s.threat_level, 0) for s in signals if s.threat_level]
             if severities:

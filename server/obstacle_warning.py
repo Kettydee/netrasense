@@ -87,7 +87,7 @@ class ObstacleWarningEvaluator:
         debounce_count: int = DEFAULT_DEBOUNCE_COUNT,
         delta_alert_threshold_cm: float = DEFAULT_DELTA_ALERT_THRESHOLD_CM,
         min_distance_cm: float = DEFAULT_MIN_DISTANCE_CM,
-        max_distance_cm: float = DEFAULT_MAX_DISTANCE_cm if "DEFAULT_MAX_DISTANCE_cm" in locals() else 400.0,
+        max_distance_cm: float = DEFAULT_MAX_DISTANCE_CM,
     ) -> None:
         self.warning_threshold_cm = float(warning_threshold_cm)
         self.stale_timeout_s = float(stale_timeout_s)
@@ -149,16 +149,22 @@ class ObstacleWarningEvaluator:
         }
 
     def _classify_threat_level(self, distance_cm: Optional[float]) -> str:
-        """Map distance to threat level aligned with NetraSense zones."""
+        """Map distance to threat level aligned with NetraSense zones.
+
+        Boundaries must match ``serial_sensor.classify_threat_level()`` and the
+        dashboard zones: above the configured warning threshold is NORMAL,
+        100 cm and below is WARNING, 50 cm and below is ALARM, below 50 cm is
+        CRITICAL.
+        """
         if distance_cm is None:
             return "NONE"
-        if distance_cm <= 50.0:
-            return "CRITICAL"
-        if distance_cm <= 100.0:
-            return "ALARM"
-        if distance_cm <= self.warning_threshold_cm:
+        if distance_cm > self.warning_threshold_cm:
+            return "NORMAL"
+        if distance_cm >= 100.0:
             return "WARNING"
-        return "NORMAL"
+        if distance_cm >= 50.0:
+            return "ALARM"
+        return "CRITICAL"
 
     def process_reading(
         self,

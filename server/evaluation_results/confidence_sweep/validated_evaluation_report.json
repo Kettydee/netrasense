@@ -1,19 +1,21 @@
 {
   "report_title": "NetraSense YOLO11n Independent Reproducibility Audit & Evaluation Report",
   "evaluation_provenance": {
+    "evaluation_timestamp_iso": "2026-10-14T18:47:35.791808+00:00",
     "framework": "Ultralytics YOLO",
     "ultralytics_version": "8.4.155",
     "torch_version": "2.14.0",
     "python_version": "3.14.3 (main, Feb  3 2026, 15:32:20) [Clang 17.0.0 (clang-1700.6.3.2)]",
     "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "execution_device": "cpu",
     "weights_path": "/Users/harshbothra/Desktop/netrasense/server/yolo11n.pt",
     "weights_sha256": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
     "dataset_yaml": "coco128.yaml",
     "dataset_split": "val",
     "image_size": 640,
-    "conf_cutoff": 0.001,
+    "inference_conf_cutoff": 0.001,
     "nms_iou": 0.6,
-    "device": "cpu",
+    "matching_iou": 0.5,
     "raw_results_dict": {
       "metrics/precision(B)": 0.693523405655069,
       "metrics/recall(B)": 0.5908825805841028,
@@ -22,61 +24,61 @@
       "fitness": 0.5022480956203047
     },
     "macro_metrics": {
-      "precision": 0.6935,
-      "recall": 0.5909,
-      "macro_f1_arithmetic": 0.5791,
-      "harmonic_f1_of_macro_p_r": 0.6381,
-      "mAP50": 0.6795,
-      "mAP50_95": 0.5022
+      "precision": 0.693523405655069,
+      "recall": 0.5908825805841028,
+      "macro_f1_arithmetic": 0.5791117609523911,
+      "harmonic_f1_of_macro_p_r": 0.6381018214168223,
+      "mAP50": 0.6794589989925688,
+      "mAP50_95": 0.5022480956203047
     },
     "target_obstacle_classes": {
       "person": {
         "class_id": 0,
-        "precision": 0.8246,
-        "recall": 0.6849,
-        "f1_score": 0.7483,
-        "mAP50": 0.795,
-        "mAP50_95": 0.5343
+        "precision": 0.8246133654339753,
+        "recall": 0.6848923411767873,
+        "f1_score": 0.748286509874554,
+        "mAP50": 0.7950090933313781,
+        "mAP50_95": 0.5342869975440235
       },
       "bicycle": {
         "class_id": 1,
-        "precision": 0.388,
-        "recall": 0.1667,
-        "f1_score": 0.2332,
-        "mAP50": 0.4591,
-        "mAP50_95": 0.2685
+        "precision": 0.3880141408174497,
+        "recall": 0.16666666666666666,
+        "f1_score": 0.23317563036982047,
+        "mAP50": 0.45913012729844416,
+        "mAP50_95": 0.268463224893918
       },
       "car": {
         "class_id": 2,
-        "precision": 0.6825,
-        "recall": 0.1957,
-        "f1_score": 0.3041,
-        "mAP50": 0.2356,
-        "mAP50_95": 0.1465
+        "precision": 0.6824918325350732,
+        "recall": 0.1956521739130435,
+        "f1_score": 0.30412098638237023,
+        "mAP50": 0.2356434547750357,
+        "mAP50_95": 0.14651287892659712
       },
       "bus": {
         "class_id": 5,
-        "precision": 0.7742,
-        "recall": 0.7143,
-        "f1_score": 0.7431,
-        "mAP50": 0.7229,
-        "mAP50_95": 0.6486
+        "precision": 0.7742422352341676,
+        "recall": 0.7142857142857143,
+        "f1_score": 0.7430564783184392,
+        "mAP50": 0.7228504672897197,
+        "mAP50_95": 0.6486401869158879
       },
       "dog": {
         "class_id": 16,
-        "precision": 0.6377,
-        "recall": 0.7778,
-        "f1_score": 0.7008,
-        "mAP50": 0.9046,
-        "mAP50_95": 0.7094
+        "precision": 0.6376937392726458,
+        "recall": 0.7777777777777778,
+        "f1_score": 0.7008039560807519,
+        "mAP50": 0.9045673076923076,
+        "mAP50_95": 0.7093505494505494
       },
       "chair": {
         "class_id": 56,
-        "precision": 0.5286,
-        "recall": 0.5429,
-        "f1_score": 0.5356,
-        "mAP50": 0.5507,
-        "mAP50_95": 0.2989
+        "precision": 0.5286153452940433,
+        "recall": 0.5428571428571428,
+        "f1_score": 0.5356415945161918,
+        "mAP50": 0.5506563582865656,
+        "mAP50_95": 0.29893478512681265
       }
     }
   },
@@ -98,61 +100,61 @@
   "baseline_ultralytics_evaluation": {
     "description": "Standard Ultralytics validation integrating the full continuous PR curve (conf=0.001)",
     "macro_metrics": {
-      "precision": 0.6935,
-      "recall": 0.5909,
-      "macro_f1_arithmetic": 0.5791,
-      "harmonic_f1_of_macro_p_r": 0.6381,
-      "mAP50": 0.6795,
-      "mAP50_95": 0.5022
+      "precision": 0.693523405655069,
+      "recall": 0.5908825805841028,
+      "macro_f1_arithmetic": 0.5791117609523911,
+      "harmonic_f1_of_macro_p_r": 0.6381018214168223,
+      "mAP50": 0.6794589989925688,
+      "mAP50_95": 0.5022480956203047
     },
     "target_classes": {
       "person": {
         "class_id": 0,
-        "precision": 0.8246,
-        "recall": 0.6849,
-        "f1_score": 0.7483,
-        "mAP50": 0.795,
-        "mAP50_95": 0.5343
+        "precision": 0.8246133654339753,
+        "recall": 0.6848923411767873,
+        "f1_score": 0.748286509874554,
+        "mAP50": 0.7950090933313781,
+        "mAP50_95": 0.5342869975440235
       },
       "bicycle": {
         "class_id": 1,
-        "precision": 0.388,
-        "recall": 0.1667,
-        "f1_score": 0.2332,
-        "mAP50": 0.4591,
-        "mAP50_95": 0.2685
+        "precision": 0.3880141408174497,
+        "recall": 0.16666666666666666,
+        "f1_score": 0.23317563036982047,
+        "mAP50": 0.45913012729844416,
+        "mAP50_95": 0.268463224893918
       },
       "car": {
         "class_id": 2,
-        "precision": 0.6825,
-        "recall": 0.1957,
-        "f1_score": 0.3041,
-        "mAP50": 0.2356,
-        "mAP50_95": 0.1465
+        "precision": 0.6824918325350732,
+        "recall": 0.1956521739130435,
+        "f1_score": 0.30412098638237023,
+        "mAP50": 0.2356434547750357,
+        "mAP50_95": 0.14651287892659712
       },
       "bus": {
         "class_id": 5,
-        "precision": 0.7742,
-        "recall": 0.7143,
-        "f1_score": 0.7431,
-        "mAP50": 0.7229,
-        "mAP50_95": 0.6486
+        "precision": 0.7742422352341676,
+        "recall": 0.7142857142857143,
+        "f1_score": 0.7430564783184392,
+        "mAP50": 0.7228504672897197,
+        "mAP50_95": 0.6486401869158879
       },
       "dog": {
         "class_id": 16,
-        "precision": 0.6377,
-        "recall": 0.7778,
-        "f1_score": 0.7008,
-        "mAP50": 0.9046,
-        "mAP50_95": 0.7094
+        "precision": 0.6376937392726458,
+        "recall": 0.7777777777777778,
+        "f1_score": 0.7008039560807519,
+        "mAP50": 0.9045673076923076,
+        "mAP50_95": 0.7093505494505494
       },
       "chair": {
         "class_id": 56,
-        "precision": 0.5286,
-        "recall": 0.5429,
-        "f1_score": 0.5356,
-        "mAP50": 0.5507,
-        "mAP50_95": 0.2989
+        "precision": 0.5286153452940433,
+        "recall": 0.5428571428571428,
+        "f1_score": 0.5356415945161918,
+        "mAP50": 0.5506563582865656,
+        "mAP50_95": 0.29893478512681265
       }
     }
   },
@@ -164,16 +166,16 @@
         "total_tp": 596,
         "total_fp": 481,
         "total_fn": 333,
-        "precision": 0.5534,
-        "recall": 0.6416,
-        "f1_score": 0.5942
+        "precision": 0.5533890436397401,
+        "recall": 0.6415500538213132,
+        "f1_score": 0.5942173479561317
       },
       "macro_averaged_metrics": {
         "active_classes_count": 71,
-        "precision": 0.5551,
-        "recall": 0.6572,
-        "macro_f1": 0.5663,
-        "harmonic_f1_of_macro_p_r": 0.6019
+        "precision": 0.555124270739222,
+        "recall": 0.6571819938807871,
+        "macro_f1": 0.5663298283911138,
+        "harmonic_f1_of_macro_p_r": 0.6018572793738222
       },
       "target_obstacle_classes": {
         "person": {
@@ -182,9 +184,9 @@
           "true_positives": 200,
           "false_positives": 116,
           "false_negatives": 54,
-          "precision": 0.6329,
-          "recall": 0.7874,
-          "f1_score": 0.7018
+          "precision": 0.6329113924050633,
+          "recall": 0.7874015748031497,
+          "f1_score": 0.7017543859649124
         },
         "car": {
           "class_id": 2,
@@ -192,9 +194,9 @@
           "true_positives": 11,
           "false_positives": 10,
           "false_negatives": 35,
-          "precision": 0.5238,
-          "recall": 0.2391,
-          "f1_score": 0.3284
+          "precision": 0.5238095238095238,
+          "recall": 0.2391304347826087,
+          "f1_score": 0.32835820895522383
         },
         "bicycle": {
           "class_id": 1,
@@ -202,9 +204,9 @@
           "true_positives": 2,
           "false_positives": 4,
           "false_negatives": 4,
-          "precision": 0.3333,
-          "recall": 0.3333,
-          "f1_score": 0.3333
+          "precision": 0.3333333333333333,
+          "recall": 0.3333333333333333,
+          "f1_score": 0.3333333333333333
         },
         "dog": {
           "class_id": 16,
@@ -212,9 +214,9 @@
           "true_positives": 8,
           "false_positives": 6,
           "false_negatives": 1,
-          "precision": 0.5714,
-          "recall": 0.8889,
-          "f1_score": 0.6957
+          "precision": 0.5714285714285714,
+          "recall": 0.8888888888888888,
+          "f1_score": 0.6956521739130435
         },
         "chair": {
           "class_id": 56,
@@ -222,9 +224,9 @@
           "true_positives": 23,
           "false_positives": 40,
           "false_negatives": 12,
-          "precision": 0.3651,
-          "recall": 0.6571,
-          "f1_score": 0.4694
+          "precision": 0.36507936507936506,
+          "recall": 0.6571428571428571,
+          "f1_score": 0.46938775510204084
         },
         "bus": {
           "class_id": 5,
@@ -233,8 +235,8 @@
           "false_positives": 3,
           "false_negatives": 2,
           "precision": 0.625,
-          "recall": 0.7143,
-          "f1_score": 0.6667
+          "recall": 0.7142857142857143,
+          "f1_score": 0.6666666666666666
         }
       },
       "all_classes": {
@@ -243,45 +245,45 @@
           "fp": 116,
           "fn": 54,
           "gt": 254,
-          "precision": 0.6329,
-          "recall": 0.7874,
-          "f1_score": 0.7018
+          "precision": 0.6329113924050633,
+          "recall": 0.7874015748031497,
+          "f1_score": 0.7017543859649124
         },
         "bicycle": {
           "tp": 2,
           "fp": 4,
           "fn": 4,
           "gt": 6,
-          "precision": 0.3333,
-          "recall": 0.3333,
-          "f1_score": 0.3333
+          "precision": 0.3333333333333333,
+          "recall": 0.3333333333333333,
+          "f1_score": 0.3333333333333333
         },
         "car": {
           "tp": 11,
           "fp": 10,
           "fn": 35,
           "gt": 46,
-          "precision": 0.5238,
-          "recall": 0.2391,
-          "f1_score": 0.3284
+          "precision": 0.5238095238095238,
+          "recall": 0.2391304347826087,
+          "f1_score": 0.32835820895522383
         },
         "motorcycle": {
           "tp": 5,
           "fp": 1,
           "fn": 0,
           "gt": 5,
-          "precision": 0.8333,
+          "precision": 0.8333333333333334,
           "recall": 1.0,
-          "f1_score": 0.9091
+          "f1_score": 0.9090909090909091
         },
         "airplane": {
           "tp": 6,
           "fp": 1,
           "fn": 0,
           "gt": 6,
-          "precision": 0.8571,
+          "precision": 0.8571428571428571,
           "recall": 1.0,
-          "f1_score": 0.9231
+          "f1_score": 0.923076923076923
         },
         "bus": {
           "tp": 5,
@@ -289,8 +291,8 @@
           "fn": 2,
           "gt": 7,
           "precision": 0.625,
-          "recall": 0.7143,
-          "f1_score": 0.6667
+          "recall": 0.7142857142857143,
+          "f1_score": 0.6666666666666666
         },
         "train": {
           "tp": 3,
@@ -308,16 +310,16 @@
           "gt": 12,
           "precision": 0.5,
           "recall": 0.25,
-          "f1_score": 0.3333
+          "f1_score": 0.3333333333333333
         },
         "boat": {
           "tp": 4,
           "fp": 7,
           "fn": 2,
           "gt": 6,
-          "precision": 0.3636,
-          "recall": 0.6667,
-          "f1_score": 0.4706
+          "precision": 0.36363636363636365,
+          "recall": 0.6666666666666666,
+          "f1_score": 0.4705882352941177
         },
         "traffic light": {
           "tp": 2,
@@ -325,8 +327,8 @@
           "fn": 12,
           "gt": 14,
           "precision": 0.4,
-          "recall": 0.1429,
-          "f1_score": 0.2105
+          "recall": 0.14285714285714285,
+          "f1_score": 0.21052631578947364
         },
         "stop sign": {
           "tp": 2,
@@ -343,24 +345,24 @@
           "fn": 3,
           "gt": 9,
           "precision": 0.75,
-          "recall": 0.6667,
-          "f1_score": 0.7059
+          "recall": 0.6666666666666666,
+          "f1_score": 0.7058823529411765
         },
         "bird": {
           "tp": 16,
           "fp": 5,
           "fn": 0,
           "gt": 16,
-          "precision": 0.7619,
+          "precision": 0.7619047619047619,
           "recall": 1.0,
-          "f1_score": 0.8649
+          "f1_score": 0.8648648648648648
         },
         "cat": {
           "tp": 4,
           "fp": 2,
           "fn": 0,
           "gt": 4,
-          "precision": 0.6667,
+          "precision": 0.6666666666666666,
           "recall": 1.0,
           "f1_score": 0.8
         },
@@ -369,9 +371,9 @@
           "fp": 6,
           "fn": 1,
           "gt": 9,
-          "precision": 0.5714,
-          "recall": 0.8889,
-          "f1_score": 0.6957
+          "precision": 0.5714285714285714,
+          "recall": 0.8888888888888888,
+          "f1_score": 0.6956521739130435
         },
         "horse": {
           "tp": 2,
@@ -387,9 +389,9 @@
           "fp": 1,
           "fn": 1,
           "gt": 17,
-          "precision": 0.9412,
-          "recall": 0.9412,
-          "f1_score": 0.9412
+          "precision": 0.9411764705882353,
+          "recall": 0.9411764705882353,
+          "f1_score": 0.9411764705882353
         },
         "bear": {
           "tp": 1,
@@ -414,9 +416,9 @@
           "fp": 3,
           "fn": 1,
           "gt": 9,
-          "precision": 0.7273,
-          "recall": 0.8889,
-          "f1_score": 0.8
+          "precision": 0.7272727272727273,
+          "recall": 0.8888888888888888,
+          "f1_score": 0.7999999999999999
         },
         "backpack": {
           "tp": 2,
@@ -424,25 +426,25 @@
           "fn": 4,
           "gt": 6,
           "precision": 0.4,
-          "recall": 0.3333,
-          "f1_score": 0.3636
+          "recall": 0.3333333333333333,
+          "f1_score": 0.3636363636363636
         },
         "umbrella": {
           "tp": 13,
           "fp": 8,
           "fn": 5,
           "gt": 18,
-          "precision": 0.619,
-          "recall": 0.7222,
-          "f1_score": 0.6667
+          "precision": 0.6190476190476191,
+          "recall": 0.7222222222222222,
+          "f1_score": 0.6666666666666666
         },
         "handbag": {
           "tp": 2,
           "fp": 4,
           "fn": 17,
           "gt": 19,
-          "precision": 0.3333,
-          "recall": 0.1053,
+          "precision": 0.3333333333333333,
+          "recall": 0.10526315789473684,
           "f1_score": 0.16
         },
         "tie": {
@@ -451,7 +453,7 @@
           "fn": 4,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.4286,
+          "recall": 0.42857142857142855,
           "f1_score": 0.6
         },
         "suitcase": {
@@ -461,16 +463,16 @@
           "gt": 4,
           "precision": 0.5,
           "recall": 1.0,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666666
         },
         "frisbee": {
           "tp": 4,
           "fp": 2,
           "fn": 1,
           "gt": 5,
-          "precision": 0.6667,
+          "precision": 0.6666666666666666,
           "recall": 0.8,
-          "f1_score": 0.7273
+          "f1_score": 0.7272727272727272
         },
         "skis": {
           "tp": 1,
@@ -486,44 +488,44 @@
           "fp": 1,
           "fn": 2,
           "gt": 7,
-          "precision": 0.8333,
-          "recall": 0.7143,
-          "f1_score": 0.7692
+          "precision": 0.8333333333333334,
+          "recall": 0.7142857142857143,
+          "f1_score": 0.7692307692307692
         },
         "sports ball": {
           "tp": 4,
           "fp": 5,
           "fn": 2,
           "gt": 6,
-          "precision": 0.4444,
-          "recall": 0.6667,
-          "f1_score": 0.5333
+          "precision": 0.4444444444444444,
+          "recall": 0.6666666666666666,
+          "f1_score": 0.5333333333333333
         },
         "kite": {
           "tp": 6,
           "fp": 3,
           "fn": 4,
           "gt": 10,
-          "precision": 0.6667,
+          "precision": 0.6666666666666666,
           "recall": 0.6,
-          "f1_score": 0.6316
+          "f1_score": 0.631578947368421
         },
         "baseball bat": {
           "tp": 1,
           "fp": 2,
           "fn": 3,
           "gt": 4,
-          "precision": 0.3333,
+          "precision": 0.3333333333333333,
           "recall": 0.25,
-          "f1_score": 0.2857
+          "f1_score": 0.28571428571428575
         },
         "baseball glove": {
           "tp": 3,
           "fp": 6,
           "fn": 4,
           "gt": 7,
-          "precision": 0.3333,
-          "recall": 0.4286,
+          "precision": 0.3333333333333333,
+          "recall": 0.42857142857142855,
           "f1_score": 0.375
         },
         "skateboard": {
@@ -533,43 +535,43 @@
           "gt": 5,
           "precision": 0.5,
           "recall": 0.6,
-          "f1_score": 0.5455
+          "f1_score": 0.5454545454545454
         },
         "tennis racket": {
           "tp": 5,
           "fp": 7,
           "fn": 2,
           "gt": 7,
-          "precision": 0.4167,
-          "recall": 0.7143,
-          "f1_score": 0.5263
+          "precision": 0.4166666666666667,
+          "recall": 0.7142857142857143,
+          "f1_score": 0.5263157894736842
         },
         "bottle": {
           "tp": 11,
           "fp": 13,
           "fn": 7,
           "gt": 18,
-          "precision": 0.4583,
-          "recall": 0.6111,
-          "f1_score": 0.5238
+          "precision": 0.4583333333333333,
+          "recall": 0.6111111111111112,
+          "f1_score": 0.5238095238095238
         },
         "wine glass": {
           "tp": 10,
           "fp": 13,
           "fn": 6,
           "gt": 16,
-          "precision": 0.4348,
+          "precision": 0.43478260869565216,
           "recall": 0.625,
-          "f1_score": 0.5128
+          "f1_score": 0.5128205128205128
         },
         "cup": {
           "tp": 13,
           "fp": 10,
           "fn": 23,
           "gt": 36,
-          "precision": 0.5652,
-          "recall": 0.3611,
-          "f1_score": 0.4407
+          "precision": 0.5652173913043478,
+          "recall": 0.3611111111111111,
+          "f1_score": 0.44067796610169496
         },
         "fork": {
           "tp": 2,
@@ -577,7 +579,7 @@
           "fn": 4,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.3333,
+          "recall": 0.3333333333333333,
           "f1_score": 0.5
         },
         "knife": {
@@ -595,17 +597,17 @@
           "fn": 12,
           "gt": 22,
           "precision": 0.625,
-          "recall": 0.4545,
-          "f1_score": 0.5263
+          "recall": 0.45454545454545453,
+          "f1_score": 0.5263157894736842
         },
         "bowl": {
           "tp": 21,
           "fp": 20,
           "fn": 7,
           "gt": 28,
-          "precision": 0.5122,
+          "precision": 0.5121951219512195,
           "recall": 0.75,
-          "f1_score": 0.6087
+          "f1_score": 0.6086956521739131
         },
         "banana": {
           "tp": 1,
@@ -623,7 +625,7 @@
           "gt": 2,
           "precision": 0.5,
           "recall": 1.0,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666666
         },
         "orange": {
           "tp": 0,
@@ -639,9 +641,9 @@
           "fp": 9,
           "fn": 9,
           "gt": 11,
-          "precision": 0.1818,
-          "recall": 0.1818,
-          "f1_score": 0.1818
+          "precision": 0.18181818181818182,
+          "recall": 0.18181818181818182,
+          "f1_score": 0.18181818181818182
         },
         "carrot": {
           "tp": 17,
@@ -649,8 +651,8 @@
           "fn": 7,
           "gt": 24,
           "precision": 0.5,
-          "recall": 0.7083,
-          "f1_score": 0.5862
+          "recall": 0.7083333333333334,
+          "f1_score": 0.5862068965517241
         },
         "hot dog": {
           "tp": 2,
@@ -659,25 +661,25 @@
           "gt": 2,
           "precision": 0.5,
           "recall": 1.0,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666666
         },
         "pizza": {
           "tp": 5,
           "fp": 4,
           "fn": 0,
           "gt": 5,
-          "precision": 0.5556,
+          "precision": 0.5555555555555556,
           "recall": 1.0,
-          "f1_score": 0.7143
+          "f1_score": 0.7142857142857143
         },
         "donut": {
           "tp": 14,
           "fp": 8,
           "fn": 0,
           "gt": 14,
-          "precision": 0.6364,
+          "precision": 0.6363636363636364,
           "recall": 1.0,
-          "f1_score": 0.7778
+          "f1_score": 0.7777777777777778
         },
         "cake": {
           "tp": 3,
@@ -693,9 +695,9 @@
           "fp": 40,
           "fn": 12,
           "gt": 35,
-          "precision": 0.3651,
-          "recall": 0.6571,
-          "f1_score": 0.4694
+          "precision": 0.36507936507936506,
+          "recall": 0.6571428571428571,
+          "f1_score": 0.46938775510204084
         },
         "couch": {
           "tp": 5,
@@ -703,7 +705,7 @@
           "fn": 1,
           "gt": 6,
           "precision": 0.5,
-          "recall": 0.8333,
+          "recall": 0.8333333333333334,
           "f1_score": 0.625
         },
         "potted plant": {
@@ -712,26 +714,26 @@
           "fn": 5,
           "gt": 14,
           "precision": 0.6,
-          "recall": 0.6429,
-          "f1_score": 0.6207
+          "recall": 0.6428571428571429,
+          "f1_score": 0.6206896551724138
         },
         "bed": {
           "tp": 2,
           "fp": 1,
           "fn": 1,
           "gt": 3,
-          "precision": 0.6667,
-          "recall": 0.6667,
-          "f1_score": 0.6667
+          "precision": 0.6666666666666666,
+          "recall": 0.6666666666666666,
+          "f1_score": 0.6666666666666666
         },
         "dining table": {
           "tp": 9,
           "fp": 12,
           "fn": 4,
           "gt": 13,
-          "precision": 0.4286,
-          "recall": 0.6923,
-          "f1_score": 0.5294
+          "precision": 0.42857142857142855,
+          "recall": 0.6923076923076923,
+          "f1_score": 0.5294117647058824
         },
         "toilet": {
           "tp": 1,
@@ -740,7 +742,7 @@
           "gt": 2,
           "precision": 1.0,
           "recall": 0.5,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666666
         },
         "tv": {
           "tp": 2,
@@ -749,7 +751,7 @@
           "gt": 2,
           "precision": 0.5,
           "recall": 1.0,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666666
         },
         "laptop": {
           "tp": 1,
@@ -757,7 +759,7 @@
           "fn": 2,
           "gt": 3,
           "precision": 1.0,
-          "recall": 0.3333,
+          "recall": 0.3333333333333333,
           "f1_score": 0.5
         },
         "mouse": {
@@ -774,9 +776,9 @@
           "fp": 3,
           "fn": 4,
           "gt": 8,
-          "precision": 0.5714,
+          "precision": 0.5714285714285714,
           "recall": 0.5,
-          "f1_score": 0.5333
+          "f1_score": 0.5333333333333333
         },
         "cell phone": {
           "tp": 1,
@@ -785,23 +787,23 @@
           "gt": 8,
           "precision": 0.2,
           "recall": 0.125,
-          "f1_score": 0.1538
+          "f1_score": 0.15384615384615385
         },
         "microwave": {
           "tp": 3,
           "fp": 8,
           "fn": 0,
           "gt": 3,
-          "precision": 0.2727,
+          "precision": 0.2727272727272727,
           "recall": 1.0,
-          "f1_score": 0.4286
+          "f1_score": 0.42857142857142855
         },
         "oven": {
           "tp": 2,
           "fp": 13,
           "fn": 3,
           "gt": 5,
-          "precision": 0.1333,
+          "precision": 0.13333333333333333,
           "recall": 0.4,
           "f1_score": 0.2
         },
@@ -810,9 +812,9 @@
           "fp": 6,
           "fn": 5,
           "gt": 6,
-          "precision": 0.1429,
-          "recall": 0.1667,
-          "f1_score": 0.1538
+          "precision": 0.14285714285714285,
+          "recall": 0.16666666666666666,
+          "f1_score": 0.15384615384615383
         },
         "refrigerator": {
           "tp": 5,
@@ -821,7 +823,7 @@
           "gt": 5,
           "precision": 0.625,
           "recall": 1.0,
-          "f1_score": 0.7692
+          "f1_score": 0.7692307692307693
         },
         "book": {
           "tp": 11,
@@ -829,26 +831,26 @@
           "fn": 18,
           "gt": 29,
           "precision": 0.44,
-          "recall": 0.3793,
-          "f1_score": 0.4074
+          "recall": 0.3793103448275862,
+          "f1_score": 0.4074074074074074
         },
         "clock": {
           "tp": 8,
           "fp": 3,
           "fn": 1,
           "gt": 9,
-          "precision": 0.7273,
-          "recall": 0.8889,
-          "f1_score": 0.8
+          "precision": 0.7272727272727273,
+          "recall": 0.8888888888888888,
+          "f1_score": 0.7999999999999999
         },
         "vase": {
           "tp": 2,
           "fp": 11,
           "fn": 0,
           "gt": 2,
-          "precision": 0.1538,
+          "precision": 0.15384615384615385,
           "recall": 1.0,
-          "f1_score": 0.2667
+          "f1_score": 0.2666666666666667
         },
         "scissors": {
           "tp": 0,
@@ -864,9 +866,9 @@
           "fp": 10,
           "fn": 7,
           "gt": 21,
-          "precision": 0.5833,
-          "recall": 0.6667,
-          "f1_score": 0.6222
+          "precision": 0.5833333333333334,
+          "recall": 0.6666666666666666,
+          "f1_score": 0.6222222222222222
         },
         "toothbrush": {
           "tp": 4,
@@ -875,7 +877,7 @@
           "gt": 5,
           "precision": 1.0,
           "recall": 0.8,
-          "f1_score": 0.8889
+          "f1_score": 0.888888888888889
         }
       }
     },
@@ -887,15 +889,15 @@
         "total_fp": 144,
         "total_fn": 448,
         "precision": 0.7696,
-        "recall": 0.5178,
-        "f1_score": 0.619
+        "recall": 0.5177610333692142,
+        "f1_score": 0.619047619047619
       },
       "macro_averaged_metrics": {
         "active_classes_count": 71,
-        "precision": 0.712,
-        "recall": 0.57,
-        "macro_f1": 0.5937,
-        "harmonic_f1_of_macro_p_r": 0.6332
+        "precision": 0.7120470991717105,
+        "recall": 0.5699955893487163,
+        "macro_f1": 0.5936763079011576,
+        "harmonic_f1_of_macro_p_r": 0.6331516252470814
       },
       "target_obstacle_classes": {
         "person": {
@@ -904,9 +906,9 @@
           "true_positives": 166,
           "false_positives": 36,
           "false_negatives": 88,
-          "precision": 0.8218,
-          "recall": 0.6535,
-          "f1_score": 0.7281
+          "precision": 0.8217821782178217,
+          "recall": 0.6535433070866141,
+          "f1_score": 0.7280701754385963
         },
         "car": {
           "class_id": 2,
@@ -915,8 +917,8 @@
           "false_positives": 2,
           "false_negatives": 38,
           "precision": 0.8,
-          "recall": 0.1739,
-          "f1_score": 0.2857
+          "recall": 0.17391304347826086,
+          "f1_score": 0.2857142857142857
         },
         "bicycle": {
           "class_id": 1,
@@ -925,7 +927,7 @@
           "false_positives": 1,
           "false_negatives": 5,
           "precision": 0.5,
-          "recall": 0.1667,
+          "recall": 0.16666666666666666,
           "f1_score": 0.25
         },
         "dog": {
@@ -934,9 +936,9 @@
           "true_positives": 7,
           "false_positives": 4,
           "false_negatives": 2,
-          "precision": 0.6364,
-          "recall": 0.7778,
-          "f1_score": 0.7
+          "precision": 0.6363636363636364,
+          "recall": 0.7777777777777778,
+          "f1_score": 0.7000000000000001
         },
         "chair": {
           "class_id": 56,
@@ -944,9 +946,9 @@
           "true_positives": 19,
           "false_positives": 16,
           "false_negatives": 16,
-          "precision": 0.5429,
-          "recall": 0.5429,
-          "f1_score": 0.5429
+          "precision": 0.5428571428571428,
+          "recall": 0.5428571428571428,
+          "f1_score": 0.5428571428571428
         },
         "bus": {
           "class_id": 5,
@@ -954,9 +956,9 @@
           "true_positives": 5,
           "false_positives": 1,
           "false_negatives": 2,
-          "precision": 0.8333,
-          "recall": 0.7143,
-          "f1_score": 0.7692
+          "precision": 0.8333333333333334,
+          "recall": 0.7142857142857143,
+          "f1_score": 0.7692307692307692
         }
       },
       "all_classes": {
@@ -965,9 +967,9 @@
           "fp": 36,
           "fn": 88,
           "gt": 254,
-          "precision": 0.8218,
-          "recall": 0.6535,
-          "f1_score": 0.7281
+          "precision": 0.8217821782178217,
+          "recall": 0.6535433070866141,
+          "f1_score": 0.7280701754385963
         },
         "bicycle": {
           "tp": 1,
@@ -975,7 +977,7 @@
           "fn": 5,
           "gt": 6,
           "precision": 0.5,
-          "recall": 0.1667,
+          "recall": 0.16666666666666666,
           "f1_score": 0.25
         },
         "car": {
@@ -984,17 +986,17 @@
           "fn": 38,
           "gt": 46,
           "precision": 0.8,
-          "recall": 0.1739,
-          "f1_score": 0.2857
+          "recall": 0.17391304347826086,
+          "f1_score": 0.2857142857142857
         },
         "motorcycle": {
           "tp": 5,
           "fp": 1,
           "fn": 0,
           "gt": 5,
-          "precision": 0.8333,
+          "precision": 0.8333333333333334,
           "recall": 1.0,
-          "f1_score": 0.9091
+          "f1_score": 0.9090909090909091
         },
         "airplane": {
           "tp": 5,
@@ -1002,17 +1004,17 @@
           "fn": 1,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.8333,
-          "f1_score": 0.9091
+          "recall": 0.8333333333333334,
+          "f1_score": 0.9090909090909091
         },
         "bus": {
           "tp": 5,
           "fp": 1,
           "fn": 2,
           "gt": 7,
-          "precision": 0.8333,
-          "recall": 0.7143,
-          "f1_score": 0.7692
+          "precision": 0.8333333333333334,
+          "recall": 0.7142857142857143,
+          "f1_score": 0.7692307692307692
         },
         "train": {
           "tp": 3,
@@ -1029,26 +1031,26 @@
           "fn": 10,
           "gt": 12,
           "precision": 0.4,
-          "recall": 0.1667,
-          "f1_score": 0.2353
+          "recall": 0.16666666666666666,
+          "f1_score": 0.23529411764705882
         },
         "boat": {
           "tp": 2,
           "fp": 1,
           "fn": 4,
           "gt": 6,
-          "precision": 0.6667,
-          "recall": 0.3333,
-          "f1_score": 0.4444
+          "precision": 0.6666666666666666,
+          "recall": 0.3333333333333333,
+          "f1_score": 0.4444444444444444
         },
         "traffic light": {
           "tp": 2,
           "fp": 1,
           "fn": 12,
           "gt": 14,
-          "precision": 0.6667,
-          "recall": 0.1429,
-          "f1_score": 0.2353
+          "precision": 0.6666666666666666,
+          "recall": 0.14285714285714285,
+          "f1_score": 0.23529411764705882
         },
         "stop sign": {
           "tp": 2,
@@ -1065,7 +1067,7 @@
           "fn": 6,
           "gt": 9,
           "precision": 1.0,
-          "recall": 0.3333,
+          "recall": 0.3333333333333333,
           "f1_score": 0.5
         },
         "bird": {
@@ -1073,9 +1075,9 @@
           "fp": 1,
           "fn": 0,
           "gt": 16,
-          "precision": 0.9412,
+          "precision": 0.9411764705882353,
           "recall": 1.0,
-          "f1_score": 0.9697
+          "f1_score": 0.9696969696969697
         },
         "cat": {
           "tp": 4,
@@ -1091,9 +1093,9 @@
           "fp": 4,
           "fn": 2,
           "gt": 9,
-          "precision": 0.6364,
-          "recall": 0.7778,
-          "f1_score": 0.7
+          "precision": 0.6363636363636364,
+          "recall": 0.7777777777777778,
+          "f1_score": 0.7000000000000001
         },
         "horse": {
           "tp": 2,
@@ -1110,8 +1112,8 @@
           "fn": 1,
           "gt": 17,
           "precision": 1.0,
-          "recall": 0.9412,
-          "f1_score": 0.9697
+          "recall": 0.9411764705882353,
+          "f1_score": 0.9696969696969697
         },
         "bear": {
           "tp": 1,
@@ -1137,8 +1139,8 @@
           "fn": 1,
           "gt": 9,
           "precision": 1.0,
-          "recall": 0.8889,
-          "f1_score": 0.9412
+          "recall": 0.8888888888888888,
+          "f1_score": 0.9411764705882353
         },
         "backpack": {
           "tp": 2,
@@ -1146,7 +1148,7 @@
           "fn": 4,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.3333,
+          "recall": 0.3333333333333333,
           "f1_score": 0.5
         },
         "umbrella": {
@@ -1154,9 +1156,9 @@
           "fp": 2,
           "fn": 11,
           "gt": 18,
-          "precision": 0.7778,
-          "recall": 0.3889,
-          "f1_score": 0.5185
+          "precision": 0.7777777777777778,
+          "recall": 0.3888888888888889,
+          "f1_score": 0.5185185185185185
         },
         "handbag": {
           "tp": 0,
@@ -1173,7 +1175,7 @@
           "fn": 4,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.4286,
+          "recall": 0.42857142857142855,
           "f1_score": 0.6
         },
         "suitcase": {
@@ -1181,7 +1183,7 @@
           "fp": 2,
           "fn": 0,
           "gt": 4,
-          "precision": 0.6667,
+          "precision": 0.6666666666666666,
           "recall": 1.0,
           "f1_score": 0.8
         },
@@ -1190,9 +1192,9 @@
           "fp": 2,
           "fn": 1,
           "gt": 5,
-          "precision": 0.6667,
+          "precision": 0.6666666666666666,
           "recall": 0.8,
-          "f1_score": 0.7273
+          "f1_score": 0.7272727272727272
         },
         "skis": {
           "tp": 1,
@@ -1209,24 +1211,24 @@
           "fn": 3,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.5714,
-          "f1_score": 0.7273
+          "recall": 0.5714285714285714,
+          "f1_score": 0.7272727272727273
         },
         "sports ball": {
           "tp": 2,
           "fp": 1,
           "fn": 4,
           "gt": 6,
-          "precision": 0.6667,
-          "recall": 0.3333,
-          "f1_score": 0.4444
+          "precision": 0.6666666666666666,
+          "recall": 0.3333333333333333,
+          "f1_score": 0.4444444444444444
         },
         "kite": {
           "tp": 4,
           "fp": 2,
           "fn": 6,
           "gt": 10,
-          "precision": 0.6667,
+          "precision": 0.6666666666666666,
           "recall": 0.4,
           "f1_score": 0.5
         },
@@ -1245,7 +1247,7 @@
           "fn": 4,
           "gt": 7,
           "precision": 0.6,
-          "recall": 0.4286,
+          "recall": 0.42857142857142855,
           "f1_score": 0.5
         },
         "skateboard": {
@@ -1255,7 +1257,7 @@
           "gt": 5,
           "precision": 1.0,
           "recall": 0.4,
-          "f1_score": 0.5714
+          "f1_score": 0.5714285714285715
         },
         "tennis racket": {
           "tp": 3,
@@ -1263,7 +1265,7 @@
           "fn": 4,
           "gt": 7,
           "precision": 0.6,
-          "recall": 0.4286,
+          "recall": 0.42857142857142855,
           "f1_score": 0.5
         },
         "bottle": {
@@ -1272,26 +1274,26 @@
           "fn": 13,
           "gt": 18,
           "precision": 0.625,
-          "recall": 0.2778,
-          "f1_score": 0.3846
+          "recall": 0.2777777777777778,
+          "f1_score": 0.3846153846153846
         },
         "wine glass": {
           "tp": 7,
           "fp": 4,
           "fn": 9,
           "gt": 16,
-          "precision": 0.6364,
+          "precision": 0.6363636363636364,
           "recall": 0.4375,
-          "f1_score": 0.5185
+          "f1_score": 0.5185185185185185
         },
         "cup": {
           "tp": 10,
           "fp": 2,
           "fn": 26,
           "gt": 36,
-          "precision": 0.8333,
-          "recall": 0.2778,
-          "f1_score": 0.4167
+          "precision": 0.8333333333333334,
+          "recall": 0.2777777777777778,
+          "f1_score": 0.4166666666666667
         },
         "fork": {
           "tp": 1,
@@ -1299,8 +1301,8 @@
           "fn": 5,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.1667,
-          "f1_score": 0.2857
+          "recall": 0.16666666666666666,
+          "f1_score": 0.2857142857142857
         },
         "knife": {
           "tp": 7,
@@ -1309,7 +1311,7 @@
           "gt": 16,
           "precision": 1.0,
           "recall": 0.4375,
-          "f1_score": 0.6087
+          "f1_score": 0.6086956521739131
         },
         "spoon": {
           "tp": 6,
@@ -1317,17 +1319,17 @@
           "fn": 16,
           "gt": 22,
           "precision": 1.0,
-          "recall": 0.2727,
-          "f1_score": 0.4286
+          "recall": 0.2727272727272727,
+          "f1_score": 0.42857142857142855
         },
         "bowl": {
           "tp": 19,
           "fp": 7,
           "fn": 9,
           "gt": 28,
-          "precision": 0.7308,
-          "recall": 0.6786,
-          "f1_score": 0.7037
+          "precision": 0.7307692307692307,
+          "recall": 0.6785714285714286,
+          "f1_score": 0.7037037037037038
         },
         "banana": {
           "tp": 1,
@@ -1343,7 +1345,7 @@
           "fp": 1,
           "fn": 0,
           "gt": 2,
-          "precision": 0.6667,
+          "precision": 0.6666666666666666,
           "recall": 1.0,
           "f1_score": 0.8
         },
@@ -1362,8 +1364,8 @@
           "fn": 9,
           "gt": 11,
           "precision": 0.5,
-          "recall": 0.1818,
-          "f1_score": 0.2667
+          "recall": 0.18181818181818182,
+          "f1_score": 0.26666666666666666
         },
         "carrot": {
           "tp": 12,
@@ -1379,7 +1381,7 @@
           "fp": 1,
           "fn": 0,
           "gt": 2,
-          "precision": 0.6667,
+          "precision": 0.6666666666666666,
           "recall": 1.0,
           "f1_score": 0.8
         },
@@ -1388,16 +1390,16 @@
           "fp": 2,
           "fn": 0,
           "gt": 5,
-          "precision": 0.7143,
+          "precision": 0.7142857142857143,
           "recall": 1.0,
-          "f1_score": 0.8333
+          "f1_score": 0.8333333333333333
         },
         "donut": {
           "tp": 14,
           "fp": 7,
           "fn": 0,
           "gt": 14,
-          "precision": 0.6667,
+          "precision": 0.6666666666666666,
           "recall": 1.0,
           "f1_score": 0.8
         },
@@ -1408,16 +1410,16 @@
           "gt": 4,
           "precision": 0.6,
           "recall": 0.75,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666665
         },
         "chair": {
           "tp": 19,
           "fp": 16,
           "fn": 16,
           "gt": 35,
-          "precision": 0.5429,
-          "recall": 0.5429,
-          "f1_score": 0.5429
+          "precision": 0.5428571428571428,
+          "recall": 0.5428571428571428,
+          "f1_score": 0.5428571428571428
         },
         "couch": {
           "tp": 5,
@@ -1425,8 +1427,8 @@
           "fn": 1,
           "gt": 6,
           "precision": 0.625,
-          "recall": 0.8333,
-          "f1_score": 0.7143
+          "recall": 0.8333333333333334,
+          "f1_score": 0.7142857142857143
         },
         "potted plant": {
           "tp": 7,
@@ -1435,25 +1437,25 @@
           "gt": 14,
           "precision": 1.0,
           "recall": 0.5,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666666
         },
         "bed": {
           "tp": 2,
           "fp": 1,
           "fn": 1,
           "gt": 3,
-          "precision": 0.6667,
-          "recall": 0.6667,
-          "f1_score": 0.6667
+          "precision": 0.6666666666666666,
+          "recall": 0.6666666666666666,
+          "f1_score": 0.6666666666666666
         },
         "dining table": {
           "tp": 9,
           "fp": 5,
           "fn": 4,
           "gt": 13,
-          "precision": 0.6429,
-          "recall": 0.6923,
-          "f1_score": 0.6667
+          "precision": 0.6428571428571429,
+          "recall": 0.6923076923076923,
+          "f1_score": 0.6666666666666666
         },
         "toilet": {
           "tp": 1,
@@ -1462,7 +1464,7 @@
           "gt": 2,
           "precision": 1.0,
           "recall": 0.5,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666666
         },
         "tv": {
           "tp": 2,
@@ -1498,7 +1500,7 @@
           "gt": 8,
           "precision": 1.0,
           "recall": 0.5,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666666
         },
         "cell phone": {
           "tp": 0,
@@ -1516,25 +1518,25 @@
           "gt": 3,
           "precision": 0.5,
           "recall": 1.0,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666666
         },
         "oven": {
           "tp": 2,
           "fp": 4,
           "fn": 3,
           "gt": 5,
-          "precision": 0.3333,
+          "precision": 0.3333333333333333,
           "recall": 0.4,
-          "f1_score": 0.3636
+          "f1_score": 0.3636363636363636
         },
         "sink": {
           "tp": 1,
           "fp": 2,
           "fn": 5,
           "gt": 6,
-          "precision": 0.3333,
-          "recall": 0.1667,
-          "f1_score": 0.2222
+          "precision": 0.3333333333333333,
+          "recall": 0.16666666666666666,
+          "f1_score": 0.2222222222222222
         },
         "refrigerator": {
           "tp": 5,
@@ -1550,9 +1552,9 @@
           "fp": 2,
           "fn": 25,
           "gt": 29,
-          "precision": 0.6667,
-          "recall": 0.1379,
-          "f1_score": 0.2286
+          "precision": 0.6666666666666666,
+          "recall": 0.13793103448275862,
+          "f1_score": 0.2285714285714286
         },
         "clock": {
           "tp": 7,
@@ -1560,15 +1562,15 @@
           "fn": 2,
           "gt": 9,
           "precision": 1.0,
-          "recall": 0.7778,
-          "f1_score": 0.875
+          "recall": 0.7777777777777778,
+          "f1_score": 0.8750000000000001
         },
         "vase": {
           "tp": 2,
           "fp": 4,
           "fn": 0,
           "gt": 2,
-          "precision": 0.3333,
+          "precision": 0.3333333333333333,
           "recall": 1.0,
           "f1_score": 0.5
         },
@@ -1586,9 +1588,9 @@
           "fp": 2,
           "fn": 14,
           "gt": 21,
-          "precision": 0.7778,
-          "recall": 0.3333,
-          "f1_score": 0.4667
+          "precision": 0.7777777777777778,
+          "recall": 0.3333333333333333,
+          "f1_score": 0.4666666666666666
         },
         "toothbrush": {
           "tp": 4,
@@ -1597,7 +1599,7 @@
           "gt": 5,
           "precision": 1.0,
           "recall": 0.8,
-          "f1_score": 0.8889
+          "f1_score": 0.888888888888889
         }
       }
     },
@@ -1608,16 +1610,16 @@
         "total_tp": 396,
         "total_fp": 37,
         "total_fn": 533,
-        "precision": 0.9145,
-        "recall": 0.4263,
-        "f1_score": 0.5815
+        "precision": 0.9145496535796767,
+        "recall": 0.426264800861141,
+        "f1_score": 0.5814977973568282
       },
       "macro_averaged_metrics": {
         "active_classes_count": 71,
-        "precision": 0.807,
-        "recall": 0.4821,
-        "macro_f1": 0.5587,
-        "harmonic_f1_of_macro_p_r": 0.6036
+        "precision": 0.8070377230182366,
+        "recall": 0.48206773165808836,
+        "macro_f1": 0.5587347156636667,
+        "harmonic_f1_of_macro_p_r": 0.6035919607455137
       },
       "target_obstacle_classes": {
         "person": {
@@ -1626,9 +1628,9 @@
           "true_positives": 135,
           "false_positives": 6,
           "false_negatives": 119,
-          "precision": 0.9574,
-          "recall": 0.5315,
-          "f1_score": 0.6835
+          "precision": 0.9574468085106383,
+          "recall": 0.531496062992126,
+          "f1_score": 0.6835443037974684
         },
         "car": {
           "class_id": 2,
@@ -1637,8 +1639,8 @@
           "false_positives": 1,
           "false_negatives": 39,
           "precision": 0.875,
-          "recall": 0.1522,
-          "f1_score": 0.2593
+          "recall": 0.15217391304347827,
+          "f1_score": 0.2592592592592593
         },
         "bicycle": {
           "class_id": 1,
@@ -1647,7 +1649,7 @@
           "false_positives": 1,
           "false_negatives": 5,
           "precision": 0.5,
-          "recall": 0.1667,
+          "recall": 0.16666666666666666,
           "f1_score": 0.25
         },
         "dog": {
@@ -1657,8 +1659,8 @@
           "false_positives": 2,
           "false_negatives": 3,
           "precision": 0.75,
-          "recall": 0.6667,
-          "f1_score": 0.7059
+          "recall": 0.6666666666666666,
+          "f1_score": 0.7058823529411765
         },
         "chair": {
           "class_id": 56,
@@ -1667,8 +1669,8 @@
           "false_positives": 3,
           "false_negatives": 22,
           "precision": 0.8125,
-          "recall": 0.3714,
-          "f1_score": 0.5098
+          "recall": 0.37142857142857144,
+          "f1_score": 0.5098039215686275
         },
         "bus": {
           "class_id": 5,
@@ -1677,8 +1679,8 @@
           "false_positives": 0,
           "false_negatives": 3,
           "precision": 1.0,
-          "recall": 0.5714,
-          "f1_score": 0.7273
+          "recall": 0.5714285714285714,
+          "f1_score": 0.7272727272727273
         }
       },
       "all_classes": {
@@ -1687,9 +1689,9 @@
           "fp": 6,
           "fn": 119,
           "gt": 254,
-          "precision": 0.9574,
-          "recall": 0.5315,
-          "f1_score": 0.6835
+          "precision": 0.9574468085106383,
+          "recall": 0.531496062992126,
+          "f1_score": 0.6835443037974684
         },
         "bicycle": {
           "tp": 1,
@@ -1697,7 +1699,7 @@
           "fn": 5,
           "gt": 6,
           "precision": 0.5,
-          "recall": 0.1667,
+          "recall": 0.16666666666666666,
           "f1_score": 0.25
         },
         "car": {
@@ -1706,8 +1708,8 @@
           "fn": 39,
           "gt": 46,
           "precision": 0.875,
-          "recall": 0.1522,
-          "f1_score": 0.2593
+          "recall": 0.15217391304347827,
+          "f1_score": 0.2592592592592593
         },
         "motorcycle": {
           "tp": 4,
@@ -1716,7 +1718,7 @@
           "gt": 5,
           "precision": 1.0,
           "recall": 0.8,
-          "f1_score": 0.8889
+          "f1_score": 0.888888888888889
         },
         "airplane": {
           "tp": 5,
@@ -1724,8 +1726,8 @@
           "fn": 1,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.8333,
-          "f1_score": 0.9091
+          "recall": 0.8333333333333334,
+          "f1_score": 0.9090909090909091
         },
         "bus": {
           "tp": 4,
@@ -1733,8 +1735,8 @@
           "fn": 3,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.5714,
-          "f1_score": 0.7273
+          "recall": 0.5714285714285714,
+          "f1_score": 0.7272727272727273
         },
         "train": {
           "tp": 3,
@@ -1750,9 +1752,9 @@
           "fp": 1,
           "fn": 10,
           "gt": 12,
-          "precision": 0.6667,
-          "recall": 0.1667,
-          "f1_score": 0.2667
+          "precision": 0.6666666666666666,
+          "recall": 0.16666666666666666,
+          "f1_score": 0.26666666666666666
         },
         "boat": {
           "tp": 2,
@@ -1760,7 +1762,7 @@
           "fn": 4,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.3333,
+          "recall": 0.3333333333333333,
           "f1_score": 0.5
         },
         "traffic light": {
@@ -1768,9 +1770,9 @@
           "fp": 1,
           "fn": 12,
           "gt": 14,
-          "precision": 0.6667,
-          "recall": 0.1429,
-          "f1_score": 0.2353
+          "precision": 0.6666666666666666,
+          "recall": 0.14285714285714285,
+          "f1_score": 0.23529411764705882
         },
         "stop sign": {
           "tp": 2,
@@ -1787,8 +1789,8 @@
           "fn": 8,
           "gt": 9,
           "precision": 1.0,
-          "recall": 0.1111,
-          "f1_score": 0.2
+          "recall": 0.1111111111111111,
+          "f1_score": 0.19999999999999998
         },
         "bird": {
           "tp": 13,
@@ -1797,7 +1799,7 @@
           "gt": 16,
           "precision": 1.0,
           "recall": 0.8125,
-          "f1_score": 0.8966
+          "f1_score": 0.896551724137931
         },
         "cat": {
           "tp": 4,
@@ -1814,8 +1816,8 @@
           "fn": 3,
           "gt": 9,
           "precision": 0.75,
-          "recall": 0.6667,
-          "f1_score": 0.7059
+          "recall": 0.6666666666666666,
+          "f1_score": 0.7058823529411765
         },
         "horse": {
           "tp": 2,
@@ -1832,8 +1834,8 @@
           "fn": 1,
           "gt": 17,
           "precision": 1.0,
-          "recall": 0.9412,
-          "f1_score": 0.9697
+          "recall": 0.9411764705882353,
+          "f1_score": 0.9696969696969697
         },
         "bear": {
           "tp": 1,
@@ -1859,8 +1861,8 @@
           "fn": 1,
           "gt": 9,
           "precision": 1.0,
-          "recall": 0.8889,
-          "f1_score": 0.9412
+          "recall": 0.8888888888888888,
+          "f1_score": 0.9411764705882353
         },
         "backpack": {
           "tp": 1,
@@ -1868,8 +1870,8 @@
           "fn": 5,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.1667,
-          "f1_score": 0.2857
+          "recall": 0.16666666666666666,
+          "f1_score": 0.2857142857142857
         },
         "umbrella": {
           "tp": 5,
@@ -1877,8 +1879,8 @@
           "fn": 13,
           "gt": 18,
           "precision": 1.0,
-          "recall": 0.2778,
-          "f1_score": 0.4348
+          "recall": 0.2777777777777778,
+          "f1_score": 0.4347826086956522
         },
         "handbag": {
           "tp": 0,
@@ -1895,7 +1897,7 @@
           "fn": 4,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.4286,
+          "recall": 0.42857142857142855,
           "f1_score": 0.6
         },
         "suitcase": {
@@ -1905,7 +1907,7 @@
           "gt": 4,
           "precision": 1.0,
           "recall": 0.75,
-          "f1_score": 0.8571
+          "f1_score": 0.8571428571428571
         },
         "frisbee": {
           "tp": 4,
@@ -1914,7 +1916,7 @@
           "gt": 5,
           "precision": 0.8,
           "recall": 0.8,
-          "f1_score": 0.8
+          "f1_score": 0.8000000000000002
         },
         "skis": {
           "tp": 0,
@@ -1931,8 +1933,8 @@
           "fn": 5,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.2857,
-          "f1_score": 0.4444
+          "recall": 0.2857142857142857,
+          "f1_score": 0.4444444444444445
         },
         "sports ball": {
           "tp": 2,
@@ -1940,7 +1942,7 @@
           "fn": 4,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.3333,
+          "recall": 0.3333333333333333,
           "f1_score": 0.5
         },
         "kite": {
@@ -1950,7 +1952,7 @@
           "gt": 10,
           "precision": 0.75,
           "recall": 0.3,
-          "f1_score": 0.4286
+          "f1_score": 0.4285714285714285
         },
         "baseball bat": {
           "tp": 0,
@@ -1967,7 +1969,7 @@
           "fn": 4,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.4286,
+          "recall": 0.42857142857142855,
           "f1_score": 0.6
         },
         "skateboard": {
@@ -1977,7 +1979,7 @@
           "gt": 5,
           "precision": 1.0,
           "recall": 0.4,
-          "f1_score": 0.5714
+          "f1_score": 0.5714285714285715
         },
         "tennis racket": {
           "tp": 3,
@@ -1985,7 +1987,7 @@
           "fn": 4,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.4286,
+          "recall": 0.42857142857142855,
           "f1_score": 0.6
         },
         "bottle": {
@@ -1993,9 +1995,9 @@
           "fp": 2,
           "fn": 14,
           "gt": 18,
-          "precision": 0.6667,
-          "recall": 0.2222,
-          "f1_score": 0.3333
+          "precision": 0.6666666666666666,
+          "recall": 0.2222222222222222,
+          "f1_score": 0.3333333333333333
         },
         "wine glass": {
           "tp": 6,
@@ -2004,7 +2006,7 @@
           "gt": 16,
           "precision": 1.0,
           "recall": 0.375,
-          "f1_score": 0.5455
+          "f1_score": 0.5454545454545454
         },
         "cup": {
           "tp": 9,
@@ -2021,8 +2023,8 @@
           "fn": 5,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.1667,
-          "f1_score": 0.2857
+          "recall": 0.16666666666666666,
+          "f1_score": 0.2857142857142857
         },
         "knife": {
           "tp": 7,
@@ -2031,7 +2033,7 @@
           "gt": 16,
           "precision": 1.0,
           "recall": 0.4375,
-          "f1_score": 0.6087
+          "f1_score": 0.6086956521739131
         },
         "spoon": {
           "tp": 3,
@@ -2039,17 +2041,17 @@
           "fn": 19,
           "gt": 22,
           "precision": 1.0,
-          "recall": 0.1364,
-          "f1_score": 0.24
+          "recall": 0.13636363636363635,
+          "f1_score": 0.24000000000000002
         },
         "bowl": {
           "tp": 16,
           "fp": 3,
           "fn": 12,
           "gt": 28,
-          "precision": 0.8421,
-          "recall": 0.5714,
-          "f1_score": 0.6809
+          "precision": 0.8421052631578947,
+          "recall": 0.5714285714285714,
+          "f1_score": 0.6808510638297872
         },
         "banana": {
           "tp": 1,
@@ -2084,24 +2086,24 @@
           "fn": 9,
           "gt": 11,
           "precision": 1.0,
-          "recall": 0.1818,
-          "f1_score": 0.3077
+          "recall": 0.18181818181818182,
+          "f1_score": 0.3076923076923077
         },
         "carrot": {
           "tp": 9,
           "fp": 2,
           "fn": 15,
           "gt": 24,
-          "precision": 0.8182,
+          "precision": 0.8181818181818182,
           "recall": 0.375,
-          "f1_score": 0.5143
+          "f1_score": 0.5142857142857142
         },
         "hot dog": {
           "tp": 2,
           "fp": 1,
           "fn": 0,
           "gt": 2,
-          "precision": 0.6667,
+          "precision": 0.6666666666666666,
           "recall": 1.0,
           "f1_score": 0.8
         },
@@ -2119,9 +2121,9 @@
           "fp": 4,
           "fn": 0,
           "gt": 14,
-          "precision": 0.7778,
+          "precision": 0.7777777777777778,
           "recall": 1.0,
-          "f1_score": 0.875
+          "f1_score": 0.8750000000000001
         },
         "cake": {
           "tp": 3,
@@ -2138,17 +2140,17 @@
           "fn": 22,
           "gt": 35,
           "precision": 0.8125,
-          "recall": 0.3714,
-          "f1_score": 0.5098
+          "recall": 0.37142857142857144,
+          "f1_score": 0.5098039215686275
         },
         "couch": {
           "tp": 2,
           "fp": 1,
           "fn": 4,
           "gt": 6,
-          "precision": 0.6667,
-          "recall": 0.3333,
-          "f1_score": 0.4444
+          "precision": 0.6666666666666666,
+          "recall": 0.3333333333333333,
+          "f1_score": 0.4444444444444444
         },
         "potted plant": {
           "tp": 6,
@@ -2156,7 +2158,7 @@
           "fn": 8,
           "gt": 14,
           "precision": 1.0,
-          "recall": 0.4286,
+          "recall": 0.42857142857142855,
           "f1_score": 0.6
         },
         "bed": {
@@ -2165,7 +2167,7 @@
           "fn": 2,
           "gt": 3,
           "precision": 1.0,
-          "recall": 0.3333,
+          "recall": 0.3333333333333333,
           "f1_score": 0.5
         },
         "dining table": {
@@ -2173,9 +2175,9 @@
           "fp": 1,
           "fn": 8,
           "gt": 13,
-          "precision": 0.8333,
-          "recall": 0.3846,
-          "f1_score": 0.5263
+          "precision": 0.8333333333333334,
+          "recall": 0.38461538461538464,
+          "f1_score": 0.5263157894736842
         },
         "toilet": {
           "tp": 1,
@@ -2184,7 +2186,7 @@
           "gt": 2,
           "precision": 1.0,
           "recall": 0.5,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666666
         },
         "tv": {
           "tp": 2,
@@ -2220,7 +2222,7 @@
           "gt": 8,
           "precision": 1.0,
           "recall": 0.375,
-          "f1_score": 0.5455
+          "f1_score": 0.5454545454545454
         },
         "cell phone": {
           "tp": 0,
@@ -2247,7 +2249,7 @@
           "gt": 5,
           "precision": 0.5,
           "recall": 0.4,
-          "f1_score": 0.4444
+          "f1_score": 0.4444444444444445
         },
         "sink": {
           "tp": 1,
@@ -2255,7 +2257,7 @@
           "fn": 5,
           "gt": 6,
           "precision": 0.5,
-          "recall": 0.1667,
+          "recall": 0.16666666666666666,
           "f1_score": 0.25
         },
         "refrigerator": {
@@ -2265,7 +2267,7 @@
           "gt": 5,
           "precision": 1.0,
           "recall": 0.8,
-          "f1_score": 0.8889
+          "f1_score": 0.888888888888889
         },
         "book": {
           "tp": 1,
@@ -2273,8 +2275,8 @@
           "fn": 28,
           "gt": 29,
           "precision": 1.0,
-          "recall": 0.0345,
-          "f1_score": 0.0667
+          "recall": 0.034482758620689655,
+          "f1_score": 0.06666666666666667
         },
         "clock": {
           "tp": 7,
@@ -2282,8 +2284,8 @@
           "fn": 2,
           "gt": 9,
           "precision": 1.0,
-          "recall": 0.7778,
-          "f1_score": 0.875
+          "recall": 0.7777777777777778,
+          "f1_score": 0.8750000000000001
         },
         "vase": {
           "tp": 2,
@@ -2309,8 +2311,8 @@
           "fn": 16,
           "gt": 21,
           "precision": 1.0,
-          "recall": 0.2381,
-          "f1_score": 0.3846
+          "recall": 0.23809523809523808,
+          "f1_score": 0.3846153846153846
         },
         "toothbrush": {
           "tp": 2,
@@ -2319,7 +2321,7 @@
           "gt": 5,
           "precision": 1.0,
           "recall": 0.4,
-          "f1_score": 0.5714
+          "f1_score": 0.5714285714285715
         }
       }
     },
@@ -2330,16 +2332,16 @@
         "total_tp": 296,
         "total_fp": 13,
         "total_fn": 633,
-        "precision": 0.9579,
-        "recall": 0.3186,
-        "f1_score": 0.4782
+        "precision": 0.9579288025889967,
+        "recall": 0.3186221743810549,
+        "f1_score": 0.47819063004846524
       },
       "macro_averaged_metrics": {
         "active_classes_count": 71,
-        "precision": 0.765,
-        "recall": 0.3687,
-        "macro_f1": 0.4474,
-        "harmonic_f1_of_macro_p_r": 0.4976
+        "precision": 0.7650264619947396,
+        "recall": 0.36870268311057186,
+        "macro_f1": 0.44736146592390075,
+        "harmonic_f1_of_macro_p_r": 0.49759205786642685
       },
       "target_obstacle_classes": {
         "person": {
@@ -2348,9 +2350,9 @@
           "true_positives": 108,
           "false_positives": 1,
           "false_negatives": 146,
-          "precision": 0.9908,
-          "recall": 0.4252,
-          "f1_score": 0.595
+          "precision": 0.9908256880733946,
+          "recall": 0.4251968503937008,
+          "f1_score": 0.5950413223140496
         },
         "car": {
           "class_id": 2,
@@ -2358,9 +2360,9 @@
           "true_positives": 5,
           "false_positives": 1,
           "false_negatives": 41,
-          "precision": 0.8333,
-          "recall": 0.1087,
-          "f1_score": 0.1923
+          "precision": 0.8333333333333334,
+          "recall": 0.10869565217391304,
+          "f1_score": 0.1923076923076923
         },
         "bicycle": {
           "class_id": 1,
@@ -2378,8 +2380,8 @@
           "true_positives": 6,
           "false_positives": 1,
           "false_negatives": 3,
-          "precision": 0.8571,
-          "recall": 0.6667,
+          "precision": 0.8571428571428571,
+          "recall": 0.6666666666666666,
           "f1_score": 0.75
         },
         "chair": {
@@ -2389,8 +2391,8 @@
           "false_positives": 0,
           "false_negatives": 32,
           "precision": 1.0,
-          "recall": 0.0857,
-          "f1_score": 0.1579
+          "recall": 0.08571428571428572,
+          "f1_score": 0.15789473684210528
         },
         "bus": {
           "class_id": 5,
@@ -2399,8 +2401,8 @@
           "false_positives": 0,
           "false_negatives": 3,
           "precision": 1.0,
-          "recall": 0.5714,
-          "f1_score": 0.7273
+          "recall": 0.5714285714285714,
+          "f1_score": 0.7272727272727273
         }
       },
       "all_classes": {
@@ -2409,9 +2411,9 @@
           "fp": 1,
           "fn": 146,
           "gt": 254,
-          "precision": 0.9908,
-          "recall": 0.4252,
-          "f1_score": 0.595
+          "precision": 0.9908256880733946,
+          "recall": 0.4251968503937008,
+          "f1_score": 0.5950413223140496
         },
         "bicycle": {
           "tp": 0,
@@ -2427,9 +2429,9 @@
           "fp": 1,
           "fn": 41,
           "gt": 46,
-          "precision": 0.8333,
-          "recall": 0.1087,
-          "f1_score": 0.1923
+          "precision": 0.8333333333333334,
+          "recall": 0.10869565217391304,
+          "f1_score": 0.1923076923076923
         },
         "motorcycle": {
           "tp": 3,
@@ -2438,7 +2440,7 @@
           "gt": 5,
           "precision": 1.0,
           "recall": 0.6,
-          "f1_score": 0.75
+          "f1_score": 0.7499999999999999
         },
         "airplane": {
           "tp": 5,
@@ -2446,8 +2448,8 @@
           "fn": 1,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.8333,
-          "f1_score": 0.9091
+          "recall": 0.8333333333333334,
+          "f1_score": 0.9090909090909091
         },
         "bus": {
           "tp": 4,
@@ -2455,8 +2457,8 @@
           "fn": 3,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.5714,
-          "f1_score": 0.7273
+          "recall": 0.5714285714285714,
+          "f1_score": 0.7272727272727273
         },
         "train": {
           "tp": 2,
@@ -2464,7 +2466,7 @@
           "fn": 1,
           "gt": 3,
           "precision": 1.0,
-          "recall": 0.6667,
+          "recall": 0.6666666666666666,
           "f1_score": 0.8
         },
         "truck": {
@@ -2473,8 +2475,8 @@
           "fn": 11,
           "gt": 12,
           "precision": 1.0,
-          "recall": 0.0833,
-          "f1_score": 0.1538
+          "recall": 0.08333333333333333,
+          "f1_score": 0.15384615384615385
         },
         "boat": {
           "tp": 1,
@@ -2482,8 +2484,8 @@
           "fn": 5,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.1667,
-          "f1_score": 0.2857
+          "recall": 0.16666666666666666,
+          "f1_score": 0.2857142857142857
         },
         "traffic light": {
           "tp": 1,
@@ -2491,7 +2493,7 @@
           "fn": 13,
           "gt": 14,
           "precision": 0.5,
-          "recall": 0.0714,
+          "recall": 0.07142857142857142,
           "f1_score": 0.125
         },
         "stop sign": {
@@ -2509,8 +2511,8 @@
           "fn": 8,
           "gt": 9,
           "precision": 1.0,
-          "recall": 0.1111,
-          "f1_score": 0.2
+          "recall": 0.1111111111111111,
+          "f1_score": 0.19999999999999998
         },
         "bird": {
           "tp": 7,
@@ -2519,7 +2521,7 @@
           "gt": 16,
           "precision": 1.0,
           "recall": 0.4375,
-          "f1_score": 0.6087
+          "f1_score": 0.6086956521739131
         },
         "cat": {
           "tp": 4,
@@ -2535,8 +2537,8 @@
           "fp": 1,
           "fn": 3,
           "gt": 9,
-          "precision": 0.8571,
-          "recall": 0.6667,
+          "precision": 0.8571428571428571,
+          "recall": 0.6666666666666666,
           "f1_score": 0.75
         },
         "horse": {
@@ -2554,8 +2556,8 @@
           "fn": 4,
           "gt": 17,
           "precision": 1.0,
-          "recall": 0.7647,
-          "f1_score": 0.8667
+          "recall": 0.7647058823529411,
+          "f1_score": 0.8666666666666666
         },
         "bear": {
           "tp": 1,
@@ -2581,8 +2583,8 @@
           "fn": 2,
           "gt": 9,
           "precision": 1.0,
-          "recall": 0.7778,
-          "f1_score": 0.875
+          "recall": 0.7777777777777778,
+          "f1_score": 0.8750000000000001
         },
         "backpack": {
           "tp": 0,
@@ -2599,8 +2601,8 @@
           "fn": 16,
           "gt": 18,
           "precision": 1.0,
-          "recall": 0.1111,
-          "f1_score": 0.2
+          "recall": 0.1111111111111111,
+          "f1_score": 0.19999999999999998
         },
         "handbag": {
           "tp": 0,
@@ -2617,7 +2619,7 @@
           "fn": 4,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.4286,
+          "recall": 0.42857142857142855,
           "f1_score": 0.6
         },
         "suitcase": {
@@ -2627,7 +2629,7 @@
           "gt": 4,
           "precision": 1.0,
           "recall": 0.5,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666666
         },
         "frisbee": {
           "tp": 4,
@@ -2636,7 +2638,7 @@
           "gt": 5,
           "precision": 0.8,
           "recall": 0.8,
-          "f1_score": 0.8
+          "f1_score": 0.8000000000000002
         },
         "skis": {
           "tp": 0,
@@ -2653,7 +2655,7 @@
           "fn": 6,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.1429,
+          "recall": 0.14285714285714285,
           "f1_score": 0.25
         },
         "sports ball": {
@@ -2662,8 +2664,8 @@
           "fn": 5,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.1667,
-          "f1_score": 0.2857
+          "recall": 0.16666666666666666,
+          "f1_score": 0.2857142857142857
         },
         "kite": {
           "tp": 2,
@@ -2672,7 +2674,7 @@
           "gt": 10,
           "precision": 1.0,
           "recall": 0.2,
-          "f1_score": 0.3333
+          "f1_score": 0.33333333333333337
         },
         "baseball bat": {
           "tp": 0,
@@ -2689,7 +2691,7 @@
           "fn": 6,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.1429,
+          "recall": 0.14285714285714285,
           "f1_score": 0.25
         },
         "skateboard": {
@@ -2699,7 +2701,7 @@
           "gt": 5,
           "precision": 1.0,
           "recall": 0.4,
-          "f1_score": 0.5714
+          "f1_score": 0.5714285714285715
         },
         "tennis racket": {
           "tp": 1,
@@ -2707,7 +2709,7 @@
           "fn": 6,
           "gt": 7,
           "precision": 1.0,
-          "recall": 0.1429,
+          "recall": 0.14285714285714285,
           "f1_score": 0.25
         },
         "bottle": {
@@ -2716,8 +2718,8 @@
           "fn": 14,
           "gt": 18,
           "precision": 0.8,
-          "recall": 0.2222,
-          "f1_score": 0.3478
+          "recall": 0.2222222222222222,
+          "f1_score": 0.3478260869565218
         },
         "wine glass": {
           "tp": 5,
@@ -2726,7 +2728,7 @@
           "gt": 16,
           "precision": 1.0,
           "recall": 0.3125,
-          "f1_score": 0.4762
+          "f1_score": 0.47619047619047616
         },
         "cup": {
           "tp": 7,
@@ -2734,8 +2736,8 @@
           "fn": 29,
           "gt": 36,
           "precision": 1.0,
-          "recall": 0.1944,
-          "f1_score": 0.3256
+          "recall": 0.19444444444444445,
+          "f1_score": 0.32558139534883723
         },
         "fork": {
           "tp": 1,
@@ -2743,8 +2745,8 @@
           "fn": 5,
           "gt": 6,
           "precision": 1.0,
-          "recall": 0.1667,
-          "f1_score": 0.2857
+          "recall": 0.16666666666666666,
+          "f1_score": 0.2857142857142857
         },
         "knife": {
           "tp": 5,
@@ -2753,7 +2755,7 @@
           "gt": 16,
           "precision": 1.0,
           "recall": 0.3125,
-          "f1_score": 0.4762
+          "f1_score": 0.47619047619047616
         },
         "spoon": {
           "tp": 1,
@@ -2761,17 +2763,17 @@
           "fn": 21,
           "gt": 22,
           "precision": 1.0,
-          "recall": 0.0455,
-          "f1_score": 0.087
+          "recall": 0.045454545454545456,
+          "f1_score": 0.08695652173913045
         },
         "bowl": {
           "tp": 12,
           "fp": 1,
           "fn": 16,
           "gt": 28,
-          "precision": 0.9231,
-          "recall": 0.4286,
-          "f1_score": 0.5854
+          "precision": 0.9230769230769231,
+          "recall": 0.42857142857142855,
+          "f1_score": 0.5853658536585366
         },
         "banana": {
           "tp": 0,
@@ -2806,8 +2808,8 @@
           "fn": 9,
           "gt": 11,
           "precision": 1.0,
-          "recall": 0.1818,
-          "f1_score": 0.3077
+          "recall": 0.18181818181818182,
+          "f1_score": 0.3076923076923077
         },
         "carrot": {
           "tp": 4,
@@ -2815,8 +2817,8 @@
           "fn": 20,
           "gt": 24,
           "precision": 0.8,
-          "recall": 0.1667,
-          "f1_score": 0.2759
+          "recall": 0.16666666666666666,
+          "f1_score": 0.27586206896551724
         },
         "hot dog": {
           "tp": 2,
@@ -2834,7 +2836,7 @@
           "gt": 5,
           "precision": 1.0,
           "recall": 0.8,
-          "f1_score": 0.8889
+          "f1_score": 0.888888888888889
         },
         "donut": {
           "tp": 13,
@@ -2842,8 +2844,8 @@
           "fn": 1,
           "gt": 14,
           "precision": 0.8125,
-          "recall": 0.9286,
-          "f1_score": 0.8667
+          "recall": 0.9285714285714286,
+          "f1_score": 0.8666666666666666
         },
         "cake": {
           "tp": 3,
@@ -2852,7 +2854,7 @@
           "gt": 4,
           "precision": 1.0,
           "recall": 0.75,
-          "f1_score": 0.8571
+          "f1_score": 0.8571428571428571
         },
         "chair": {
           "tp": 3,
@@ -2860,8 +2862,8 @@
           "fn": 32,
           "gt": 35,
           "precision": 1.0,
-          "recall": 0.0857,
-          "f1_score": 0.1579
+          "recall": 0.08571428571428572,
+          "f1_score": 0.15789473684210528
         },
         "couch": {
           "tp": 0,
@@ -2878,8 +2880,8 @@
           "fn": 9,
           "gt": 14,
           "precision": 1.0,
-          "recall": 0.3571,
-          "f1_score": 0.5263
+          "recall": 0.35714285714285715,
+          "f1_score": 0.5263157894736842
         },
         "bed": {
           "tp": 0,
@@ -2896,8 +2898,8 @@
           "fn": 11,
           "gt": 13,
           "precision": 1.0,
-          "recall": 0.1538,
-          "f1_score": 0.2667
+          "recall": 0.15384615384615385,
+          "f1_score": 0.2666666666666667
         },
         "toilet": {
           "tp": 1,
@@ -2906,7 +2908,7 @@
           "gt": 2,
           "precision": 1.0,
           "recall": 0.5,
-          "f1_score": 0.6667
+          "f1_score": 0.6666666666666666
         },
         "tv": {
           "tp": 2,
@@ -2942,7 +2944,7 @@
           "gt": 8,
           "precision": 1.0,
           "recall": 0.375,
-          "f1_score": 0.5455
+          "f1_score": 0.5454545454545454
         },
         "cell phone": {
           "tp": 0,
@@ -2959,7 +2961,7 @@
           "fn": 1,
           "gt": 3,
           "precision": 1.0,
-          "recall": 0.6667,
+          "recall": 0.6666666666666666,
           "f1_score": 0.8
         },
         "oven": {
@@ -2969,7 +2971,7 @@
           "gt": 5,
           "precision": 0.5,
           "recall": 0.2,
-          "f1_score": 0.2857
+          "f1_score": 0.28571428571428575
         },
         "sink": {
           "tp": 1,
@@ -2977,7 +2979,7 @@
           "fn": 5,
           "gt": 6,
           "precision": 0.5,
-          "recall": 0.1667,
+          "recall": 0.16666666666666666,
           "f1_score": 0.25
         },
         "refrigerator": {
@@ -2987,7 +2989,7 @@
           "gt": 5,
           "precision": 1.0,
           "recall": 0.6,
-          "f1_score": 0.75
+          "f1_score": 0.7499999999999999
         },
         "book": {
           "tp": 1,
@@ -2995,8 +2997,8 @@
           "fn": 28,
           "gt": 29,
           "precision": 1.0,
-          "recall": 0.0345,
-          "f1_score": 0.0667
+          "recall": 0.034482758620689655,
+          "f1_score": 0.06666666666666667
         },
         "clock": {
           "tp": 6,
@@ -3004,7 +3006,7 @@
           "fn": 3,
           "gt": 9,
           "precision": 1.0,
-          "recall": 0.6667,
+          "recall": 0.6666666666666666,
           "f1_score": 0.8
         },
         "vase": {
@@ -3031,7 +3033,7 @@
           "fn": 18,
           "gt": 21,
           "precision": 1.0,
-          "recall": 0.1429,
+          "recall": 0.14285714285714285,
           "f1_score": 0.25
         },
         "toothbrush": {
@@ -3041,7 +3043,7 @@
           "gt": 5,
           "precision": 1.0,
           "recall": 0.4,
-          "f1_score": 0.5714
+          "f1_score": 0.5714285714285715
         }
       }
     }

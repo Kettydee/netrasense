@@ -52,33 +52,84 @@ def utc_timestamp() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
-def parse_distance_cm(raw_line: bytes | str) -> Optional[float]:
-    """Extract a finite distance in centimetres from a single Arduino line."""
+# Status strings that assert the measurement is good. Anything else on a
+# payload that carries a ``status`` field marks the measurement as failed.
+_VALID_STATUS_VALUES = frozenset({"ok", "valid", "success", "good", "active", "true"})
+
+
+def _flagged_valid(payload: dict) -> bool:
+    """Honor an explicit ``valid``/``status`` marker from the firmware.
+
+    Payloads without any marker are legacy (validity unknown) and pass through
+    so old firmware keeps working.
+    """
+    if "valid" in payload or "is_valid" in payload:
+        valid = payload.get("valid", payload.get("is_valid"))
+        if isinstance(valid, str):
+            return valid.strip().lower() in _VALID_STATUS_VALUES
+        return bool(valid)
+    if "status" in payload:
+        status = payload.get("status")
+        if isinstance(status, str):
+            return status.strip().lower() in _VALID_STATUS_VALUES
+        return status is None
+    return True
+
+
+def _parse_reading(raw_line: bytes | str) -> tuple[Optional[float], bool]:
+    """Parse one Arduino line into ``(distance_cm, flagged_valid)``.
+
+    ``distance_cm`` is ``None`` when the line carries no usable number.
+    ``flagged_valid`` is True only when the firmware explicitly marked the
+    measurement as good (``valid: true`` or an OK ``status``).  Legacy payloads
+    and bare numbers carry no marker and return False so the caller can apply
+    the stricter legacy range check.  Explicit ``valid: false`` / failure
+    ``status`` payloads return ``(None, False)`` so a failed measurement can
+    never become a reading.
+    """
     if isinstance(raw_line, bytes):
         text = raw_line.decode("utf-8", errors="replace").strip()
     else:
         text = str(raw_line).strip()
     if not text:
-        return None
+        return None, False
 
+    flagged_valid = False
     try:
         value = json.loads(text)
-        if isinstance(value, dict):
-            value = value.get("distance_cm", value.get("distance"))
     except json.JSONDecodeError:
         match = _DISTANCE_PATTERN.fullmatch(text)
         if not match:
-            return None
+            return None, False
         value = match.group(1)
+    else:
+        if isinstance(value, dict):
+            if not _flagged_valid(value):
+                return None, False
+            flagged_valid = "valid" in value or "is_valid" in value or (
+                "status" in value and value.get("status") is not None
+            )
+            value = value.get("distance_cm", value.get("distance"))
 
     # bool is a number subclass but never a meaningful measurement.
     if isinstance(value, bool) or not isinstance(value, (int, float, str)):
-        return None
+        return None, flagged_valid
     try:
         distance = float(value)
     except (TypeError, ValueError):
-        return None
-    return distance if math.isfinite(distance) else None
+        return None, flagged_valid
+    if not math.isfinite(distance):
+        return None, flagged_valid
+    return distance, flagged_valid
+
+
+def parse_distance_cm(raw_line: bytes | str) -> Optional[float]:
+    """Extract a finite distance in centimetres from a single Arduino line.
+
+    Returns ``None`` for malformed input and for measurements the firmware
+    explicitly marked as failed (``valid: false`` / failure ``status``).
+    """
+    return _parse_reading(raw_line)[0]
 
 
 def normalize_sensor_data(
@@ -87,10 +138,23 @@ def normalize_sensor_data(
     min_distance_cm: float = 2.0,
     max_distance_cm: float = 400.0,
 ) -> Optional[dict[str, int | float | str]]:
-    """Return the shared sensor-data record, or ``None`` for invalid input."""
+    """Return the shared sensor-data record, or ``None`` for invalid input.
+
+    Rejected input never produces a record, so an invalid measurement cannot
+    refresh the last-valid-reading timestamp.  Legacy payloads without an
+    explicit validity marker are rejected at exactly ``max_distance_cm``:
+    older firmware reports a failed ultrasonic measurement (no echo) as the
+    sentinel value ``400.0`` (the configured maximum), which must never be
+    accepted as a real "path is clear" distance.
+    """
     started_at = time.perf_counter()
-    distance = parse_distance_cm(raw_line)
-    if distance is None or not min_distance_cm <= distance <= max_distance_cm:
+    distance, flagged_valid = _parse_reading(raw_line)
+    if distance is None:
+        return None
+    if flagged_valid:
+        if not min_distance_cm <= distance <= max_distance_cm:
+            return None
+    elif not min_distance_cm <= distance < max_distance_cm:
         return None
     # Preserve whole-centimetre Arduino measurements as integers.
     normalized_distance: int | float = int(distance) if distance.is_integer() else round(distance, 2)
@@ -123,6 +187,7 @@ class ArduinoSerialReader:
         min_distance_cm: float = 2.0,
         max_distance_cm: float = 400.0,
         reconnect_delay: float = 2.0,
+        reset_delay: float = 1.5,
     ) -> None:
         self.on_reading = on_reading
         self.port = port
@@ -131,7 +196,10 @@ class ArduinoSerialReader:
         self.min_distance_cm = min_distance_cm
         self.max_distance_cm = max_distance_cm
         self.reconnect_delay = reconnect_delay
+        # Arduino boards commonly reset when USB serial opens; wait before reading.
+        self.reset_delay = reset_delay
         self.connected_port: Optional[str] = None
+        self.connected_since: Optional[float] = None
         self.last_error: Optional[str] = None
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
@@ -165,11 +233,18 @@ class ArduinoSerialReader:
                 return port_info.device
         return ports[0].device if len(ports) == 1 else None
 
+    def _mark_disconnected(self) -> None:
+        """Clear all connection state so status never claims a dead link."""
+        self.connected_port = None
+        self.connected_since = None
+        with self._connection_lock:
+            self._connection = None
+
     def _run(self) -> None:
         while not self._stop_event.is_set():
             port = self._resolve_port()
             if not port:
-                self.connected_port = None
+                self._mark_disconnected()
                 self._wait_to_retry("No Arduino serial port found")
                 continue
             try:
@@ -177,10 +252,12 @@ class ArduinoSerialReader:
                     with self._connection_lock:
                         self._connection = connection
                     self.connected_port = port
+                    self.connected_since = time.monotonic()
                     self.last_error = None
                     LOGGER.info("Connected to Arduino on %s at %s baud", port, self.baudrate)
                     # Arduino boards commonly reset when USB serial opens.
-                    time.sleep(1.5)
+                    if self.reset_delay > 0:
+                        time.sleep(self.reset_delay)
                     connection.reset_input_buffer()
                     while not self._stop_event.is_set():
                         raw_line = connection.readline()
@@ -192,12 +269,26 @@ class ArduinoSerialReader:
                         if record is None:
                             LOGGER.warning("Discarded invalid ultrasonic reading: %r", raw_line[:100])
                             continue
-                        self.on_reading(record)
+                        try:
+                            self.on_reading(record)
+                        except Exception:
+                            # A consumer bug must not kill the reader thread
+                            # (that would silently freeze telemetry forever).
+                            LOGGER.exception(
+                                "Reading callback raised; serial reader continues",
+                            )
             except (serial.SerialException, OSError) as exc:
-                self.connected_port = None
-                with self._connection_lock:
-                    self._connection = None
+                self._mark_disconnected()
                 self._wait_to_retry(f"Serial connection lost ({exc})")
+            except Exception as exc:
+                # Unexpected failures (callback bugs, malformed input, OS
+                # errors) must be logged, surfaced, and retried — never allowed
+                # to terminate the reader thread silently.
+                LOGGER.exception("Unexpected error in serial reader loop")
+                self._mark_disconnected()
+                self._wait_to_retry(f"Unexpected serial reader failure ({exc!r})")
+            finally:
+                self._mark_disconnected()
 
     def _wait_to_retry(self, message: str) -> None:
         self.last_error = message

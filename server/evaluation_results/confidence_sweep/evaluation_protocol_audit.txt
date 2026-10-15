@@ -4,6 +4,7 @@ NETRASENSE YOLO11n INDEPENDENT REPRODUCIBILITY AUDIT REPORT
 
 1. PROVENANCE & ENVIRONMENT
 ----------------------------------------------------------------------------------------------------
+Evaluation Timestamp : 2026-10-14T18:47:35.791808+00:00
 Model Weights Path   : /Users/harshbothra/Desktop/netrasense/server/yolo11n.pt
 Model Weights SHA-256: 0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1
 Dataset YAML / Split : coco128.yaml / val (/opt/homebrew/datasets/coco128/images/train2017)
@@ -14,6 +15,8 @@ Ultralytics Version  : 8.4.155
 PyTorch Version      : 2.14.0
 Python Version       : 3.14.3
 Host Platform        : macOS-27.0.1-arm64-arm-64bit-Mach-O
+Execution Device     : cpu
+Inference Settings   : imgsz=640, conf=0.001, nms_iou=0.6, matching_iou=0.5
 
 2. BASELINE OFFICIAL ULTRALYTICS VALIDATION (Standard Full PR-Curve Integration, conf=0.001)
 ----------------------------------------------------------------------------------------------------

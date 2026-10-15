@@ -199,19 +199,27 @@ export class WebSerialReader {
   private parseLine(line: string) {
     try {
       let rawDistance: number | null = null;
+      const OK_STATUSES = ["ok", "valid", "success", "good", "active", "true"];
 
-      // Handle explicit clear pathway / timeout keywords from ultrasonic sensors
-      if (/out of range|no obstacle|clear|infinity/i.test(line)) {
-        rawDistance = 400;
-      }
-
-      // 1. JSON payload: {"distance_cm": 142.3} or {"distance": 142} or {"dist": 142} or {"cm": 142}
-      if (rawDistance === null && line.includes("{") && line.includes("}")) {
+      // 1. JSON payload: {"distance_cm": 142.3, "valid": true} (new firmware),
+      //    or legacy shapes {"distance": 142} / {"dist": 142} / {"cm": 142}.
+      if (line.includes("{") && line.includes("}")) {
         const match = line.match(/\{[^}]+\}/);
         if (match) {
           try {
             const parsed = JSON.parse(match[0]);
+            // Explicit validity markers from the firmware take precedence:
+            // a failed measurement must never become a distance.
+            const valid = parsed.valid ?? parsed.is_valid;
+            const status =
+              typeof parsed.status === "string" ? parsed.status.trim().toLowerCase() : null;
+            const flaggedValid =
+              valid !== undefined && valid !== null
+                ? valid === true || valid === 1 || valid === "true"
+                : status === null || OK_STATUSES.includes(status);
+            if (!flaggedValid) return;
             const val = parsed.distance_cm ?? parsed.distance ?? parsed.dist ?? parsed.cm ?? parsed.d;
+            if (val === null || val === undefined) return;
             if (typeof val === "number" && isFinite(val)) {
               rawDistance = val;
             }
@@ -221,7 +229,13 @@ export class WebSerialReader {
         }
       }
 
-      // 2. Labeled text: "Distance: 142.3 cm", "Distance = 142", "dist: 142", "Sonar: 142"
+      // 2. Explicit no-echo / out-of-range keywords mean the sensor FAILED to
+      //    measure — not that the path is 400 cm clear. Drop the line.
+      if (rawDistance === null && /out of range|no obstacle|clear|infinity/i.test(line)) {
+        return;
+      }
+
+      // 3. Labeled text: "Distance: 142.3 cm", "Distance = 142", "dist: 142", "Sonar: 142"
       if (rawDistance === null) {
         const labeledMatch = line.match(/(?:distance|dist|sonar|range|obstacle)[\s:=]+([-+]?\d+(?:\.\d+)?)/i);
         if (labeledMatch && labeledMatch[1]) {
@@ -230,7 +244,7 @@ export class WebSerialReader {
         }
       }
 
-      // 3. Plain number or "142 cm"
+      // 4. Plain number or "142 cm"
       if (rawDistance === null) {
         const simpleMatch = line.match(/^\s*([-+]?\d+(?:\.\d+)?)\s*(?:cm)?\s*$/i);
         if (simpleMatch && simpleMatch[1]) {
@@ -239,7 +253,7 @@ export class WebSerialReader {
         }
       }
 
-      // 4. Standalone valid distance fallback
+      // 5. Standalone valid distance fallback
       if (rawDistance === null) {
         const anyNumMatch = line.match(/[-+]?\d+(?:\.\d+)?/);
         if (anyNumMatch) {
@@ -252,10 +266,9 @@ export class WebSerialReader {
 
       if (rawDistance === null || !isFinite(rawDistance)) return;
 
-      // In ultrasonic physics, 0 or out-of-range (>380 cm) pulseIn return represents clear pathway ahead
-      if (rawDistance <= 0 || rawDistance >= 380) {
-        rawDistance = 400;
-      }
+      // Impossible measurements (<= 0) and the legacy 400 cm no-echo sentinel
+      // are dropped: an invalid reading must never be reported as a safe path.
+      if (rawDistance <= 0 || rawDistance >= 400) return;
 
       // Limit to sensor envelope (2 cm to 400 cm) and adopt real-time distance immediately with zero lag
       const bounded = Math.max(2, Math.min(400, rawDistance));

@@ -42,6 +42,7 @@ import {
 import {
   fetchUnifiedStatus,
   hardwareThreatToUiLevel,
+  SENSOR_HEARTBEAT_TIMEOUT_S,
   type HardwareStatus,
   type EnsembleBreakdown,
   type ObstacleWarningState,
@@ -292,7 +293,7 @@ function EnsembleSignalCard({ ensemble }: { ensemble: EnsembleBreakdown }) {
         </h3>
         {hasData && (
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-bold text-muted-foreground">CONFIDENCE</span>
+            <span className="text-[10px] font-bold text-muted-foreground">SIGNAL AGREEMENT</span>
             <span className={`font-mono text-sm font-black ${confidenceColor}`}>
               {confidencePct}%
             </span>
@@ -399,6 +400,13 @@ function DashboardPage() {
   const [webSerialData, setWebSerialData] = useState<WebSerialReading | null>(null);
   const [isWebSerialConnected, setIsWebSerialConnected] = useState(false);
   const [browserCameraActive, setBrowserCameraActive] = useState(false);
+
+  // Latest hardware/USB snapshot for memoized callbacks (see handleVisionTelemetry).
+  const sensorSnapshotRef = useRef<{
+    webSerial: WebSerialReading | null;
+    usbFresh: boolean;
+    hw: HardwareStatus | undefined;
+  }>({ webSerial: null, usbFresh: false, hw: undefined });
 
   useEffect(() => {
     webSerialManager.onReading((data) => {
@@ -533,7 +541,13 @@ function DashboardPage() {
       if (timestamp - lastLogged > 3500) {
         lastLoggedVisionRef.current.set(event.object, timestamp);
 
-        const currentSensorDist = webSerialData?.distance_cm ?? hw?.ultrasonic.distance_cm ?? null;
+        // Read the latest sensor snapshot through a ref: this callback is
+        // memoized (and its consumers hold it in effect dependency lists), so
+        // captured webSerialData/hw values would otherwise go stale and log
+        // outdated distances.  Stale USB readings are excluded.
+        const snapshot = sensorSnapshotRef.current;
+        const usbDistance = snapshot.usbFresh ? (snapshot.webSerial?.distance_cm ?? null) : null;
+        const currentSensorDist = usbDistance ?? snapshot.hw?.ultrasonic?.distance_cm ?? null;
         const currentThreat = currentSensorDist !== null ? classifyDistance(currentSensorDist) : "Normal";
         const isObstacle = currentThreat !== "Normal";
         let newDodged = localDailyDodged;
@@ -636,48 +650,77 @@ function DashboardPage() {
   const latest: Telemetry | undefined = telemetryQuery.data?.[0];
 
   // ── Derive live state from authoritative hardware status + Web Serial USB fallback ──────────
-  const isArduinoLive = isWebSerialConnected || (hw?.arduino.connected ?? false);
+  // USB readings carry their own arrival timestamp: trust them only inside the
+  // same heartbeat window the Python backend uses, and compute age from the
+  // actual timestamp (never a hardcoded value).
+  const webSerialAgeSeconds: number | null =
+    webSerialData?.timestamp != null
+      ? Math.max(0, (Date.now() - new Date(webSerialData.timestamp).getTime()) / 1000)
+      : null;
+  const isWebSerialFresh =
+    isWebSerialConnected &&
+    webSerialData !== null &&
+    webSerialAgeSeconds !== null &&
+    webSerialAgeSeconds < SENSOR_HEARTBEAT_TIMEOUT_S;
+
+  // Keep the snapshot ref current so memoized callbacks never read stale data.
+  useEffect(() => {
+    sensorSnapshotRef.current = {
+      webSerial: webSerialData,
+      usbFresh: isWebSerialFresh,
+      hw,
+    };
+  });
+
+  const isArduinoLive = isWebSerialConnected || (hw?.arduino?.connected ?? false);
   const isUltrasonicLive = isWebSerialConnected
-    ? webSerialData !== null
-    : (hw?.ultrasonic.active ?? false);
+    ? isWebSerialFresh
+    : (hw?.ultrasonic?.active ?? false);
   const arduinoConnected = isArduinoLive;
   const ultrasonicActive = isUltrasonicLive;
-  const ultrasonicDistance = isWebSerialConnected ? (webSerialData?.distance_cm ?? null) : hw?.ultrasonic.distance_cm;
-  const ultrasonicThreatHw = isWebSerialConnected ? (webSerialData?.threat_level ?? null) : hw?.ultrasonic.threat_level;
-  const cameraConnected = hw?.camera.connected ?? false;
-  const aiLoaded = hw?.ai.loaded ?? false;
-  const aiProcessing = hw?.ai.processing ?? false;
-  const cameraStatus = browserCameraActive ? "ACTIVE" : (hw?.camera.status ?? "DISCONNECTED");
-  const aiStatus = hw?.ai.status ?? "NOT READY";
-  const arduinoStatus = isWebSerialConnected ? "CONNECTED (USB)" : (hw?.arduino.status ?? "DISCONNECTED");
-  const systemStatus = isWebSerialConnected ? "ONLINE" : (hw?.system.status ?? "NO HARDWARE");
+  const ultrasonicDistance = isWebSerialConnected
+    ? isWebSerialFresh
+      ? (webSerialData?.distance_cm ?? null)
+      : null
+    : hw?.ultrasonic?.distance_cm;
+  const ultrasonicThreatHw = isWebSerialConnected
+    ? (webSerialData?.threat_level ?? null)
+    : hw?.ultrasonic?.threat_level;
+  const cameraConnected = hw?.camera?.connected ?? false;
+  const aiLoaded = hw?.ai?.loaded ?? false;
+  const aiProcessing = hw?.ai?.processing ?? false;
+  const cameraStatus = browserCameraActive ? "ACTIVE" : (hw?.camera?.status ?? "DISCONNECTED");
+  const aiStatus = hw?.ai?.status ?? "NOT READY";
+  const arduinoStatus = isWebSerialConnected
+    ? "CONNECTED (USB)"
+    : (hw?.arduino?.status ?? "DISCONNECTED");
+  const systemStatus = isWebSerialConnected ? "ONLINE" : (hw?.system?.status ?? "NO HARDWARE");
 
   // Ensemble signal breakdown (from unified /api/status)
   const ensemble: EnsembleBreakdown | undefined = statusQuery.data?.ensemble ?? undefined;
 
   // Determine if we have ANY valid hardware ultrasonic sensor data right now
   // USB mode must use only readings from the USB stream; do not let stale
-  // backend telemetry stand in for a missing USB measurement.
+  // backend telemetry stand in for a missing USB measurement.  The ensemble
+  // breakdown carries no timestamp, so it is never used as a distance source:
+  // a stale ensemble value must not stand in for live data.
   const rawHwDistance = isWebSerialConnected
-    ? (webSerialData?.distance_cm ?? null)
-    : (hw?.ultrasonic.active && hw.ultrasonic.distance_cm !== null)
+    ? isWebSerialFresh
+      ? (webSerialData?.distance_cm ?? null)
+      : null
+    : hw?.ultrasonic?.active && hw.ultrasonic.distance_cm !== null
       ? hw.ultrasonic.distance_cm
-      : statusQuery.data?.sensor_data?.distance_cm !== undefined && statusQuery.data?.sensor_data?.distance_cm !== null
+      : statusQuery.data?.sensor_data?.distance_cm !== undefined &&
+          statusQuery.data?.sensor_data?.distance_cm !== null
         ? Number(statusQuery.data.sensor_data.distance_cm)
-        : statusQuery.data?.ensemble?.ultrasonic?.distance_cm !== undefined && statusQuery.data?.ensemble?.ultrasonic?.distance_cm !== null
-          ? Number(statusQuery.data.ensemble.ultrasonic.distance_cm)
-          : null;
+        : null;
 
   const rawHwThreat = isWebSerialConnected
     ? (webSerialData?.threat_level ?? null)
-    : hw?.ultrasonic.threat_level ??
-      statusQuery.data?.sensor_data?.threat_level ??
-      statusQuery.data?.ensemble?.ultrasonic?.threat_level ??
-      null;
+    : (hw?.ultrasonic?.threat_level ?? statusQuery.data?.sensor_data?.threat_level ?? null);
 
   const hasBackendSensorData =
-    (hw?.ultrasonic.active || !!statusQuery.data?.sensor_data || !!statusQuery.data?.ensemble?.ultrasonic) &&
-    rawHwDistance !== null;
+    (hw?.ultrasonic?.active || !!statusQuery.data?.sensor_data) && rawHwDistance !== null;
   const hasSensorData = isWebSerialConnected
     ? webSerialData !== null && rawHwDistance !== null
     : hasBackendSensorData;
@@ -703,16 +746,20 @@ function DashboardPage() {
   // 3. SENSOR ERROR: Invalid measurement (timeout, corrupted, impossible value)
   // 4. SENSOR UNAVAILABLE: No fresh reading within configured timeout
   const backendObsState: ObstacleWarningState | undefined =
-    hw?.ultrasonic.obstacle_state ?? hw?.obstacle_warning?.state;
+    hw?.ultrasonic?.obstacle_state ?? hw?.obstacle_warning?.state;
 
   const obstacleState: ObstacleWarningState = isWebSerialConnected
-    ? (webSerialData !== null
-        ? (liveDistance !== null && liveDistance <= 300 ? "OBSTACLE_WARNING" : "CLEAR")
-        : "SENSOR_UNAVAILABLE")
+    ? isWebSerialFresh && liveDistance !== null
+      ? liveDistance <= 300
+        ? "OBSTACLE_WARNING"
+        : "CLEAR"
+      : "SENSOR_UNAVAILABLE"
     : (backendObsState ??
-       (hasSensorData && liveDistance !== null
-          ? (liveDistance <= 300 ? "OBSTACLE_WARNING" : "CLEAR")
-          : "SENSOR_UNAVAILABLE"));
+      (hasSensorData && liveDistance !== null
+        ? liveDistance <= 300
+          ? "OBSTACLE_WARNING"
+          : "CLEAR"
+        : "SENSOR_UNAVAILABLE"));
 
   const isObstacleWarning = obstacleState === "OBSTACLE_WARNING";
   const isObstacleClear = obstacleState === "CLEAR";
@@ -720,11 +767,11 @@ function DashboardPage() {
   const isSensorUnavailable = obstacleState === "SENSOR_UNAVAILABLE";
 
   const sensorAgeSeconds: number | null = isWebSerialConnected
-    ? 0.1
-    : (hw?.ultrasonic.age_seconds ??
-       (hw?.ultrasonic.timestamp
-         ? Math.max(0, (Date.now() - new Date(hw.ultrasonic.timestamp).getTime()) / 1000)
-         : null));
+    ? webSerialAgeSeconds
+    : (hw?.ultrasonic?.age_seconds ??
+      (hw?.ultrasonic?.timestamp
+        ? Math.max(0, (Date.now() - new Date(hw.ultrasonic.timestamp).getTime()) / 1000)
+        : null));
 
   const sensorFreshnessText: string = isSensorUnavailable
     ? (sensorAgeSeconds !== null ? `Stale (${sensorAgeSeconds.toFixed(1)}s ago)` : "Unavailable")
@@ -1192,7 +1239,7 @@ function DashboardPage() {
                   {browserCameraActive
                     ? "ACTIVE (BROWSER)"
                     : cameraStatus === "ACTIVE"
-                      ? `ACTIVE (${hw?.camera.fps?.toFixed(0) ?? 0} FPS)`
+                      ? `ACTIVE (${hw?.camera?.fps?.toFixed(0) ?? 0} FPS)`
                       : cameraStatus}
                 </span>
               </li>
@@ -1208,9 +1255,7 @@ function DashboardPage() {
                         : "text-zinc-400"
                   }`}
                 >
-                  {hw?.ai.model
-                    ? `${hw.ai.model} · ${aiStatus}`
-                    : aiStatus}
+                  {hw?.ai?.model ? `${hw.ai.model} · ${aiStatus}` : aiStatus}
                 </span>
               </li>
               {/* Last Telemetry Sync */}
@@ -1218,9 +1263,11 @@ function DashboardPage() {
                 <span className="text-muted-foreground font-medium">Last Telemetry Sync</span>
                 <span className="font-mono text-xs text-muted-foreground">
                   {isWebSerialConnected
-                    ? "Live (USB 0.1s)"
+                    ? webSerialAgeSeconds !== null && isWebSerialFresh
+                      ? `${webSerialAgeSeconds.toFixed(1)}s ago`
+                      : "No data"
                     : hasSensorData
-                      ? `${((Date.now() / 1000 - (hw?.ultrasonic.timestamp ? new Date(hw.ultrasonic.timestamp).getTime() / 1000 : 0)) || 0).toFixed(1)}s ago`
+                      ? `${(Date.now() / 1000 - (hw?.ultrasonic?.timestamp ? new Date(hw.ultrasonic.timestamp).getTime() / 1000 : 0) || 0).toFixed(1)}s ago`
                       : "No data"}
                 </span>
               </li>
