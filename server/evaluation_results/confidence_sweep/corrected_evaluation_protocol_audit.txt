@@ -1,0 +1,177 @@
+====================================================================================================
+NETRASENSE YOLO11n CORRECTED INDEPENDENT EVALUATION REPORT
+====================================================================================================
+
+1. PROVENANCE & ENVIRONMENT (CURRENT)
+----------------------------------------------------------------------------------------------------
+Evaluation Timestamp : 2026-10-15T18:10:34.936760+00:00
+Model Weights Path   : /Users/harshbothra/Desktop/netrasense/yolo11n.pt
+Model Weights SHA-256: 0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1
+Dataset YAML / Split : coco128.yaml / val (/opt/homebrew/datasets/coco128/images/train2017)
+Total Images         : 128
+Total Ground Truth   : 929 targets across 71 active classes (out of 80 total)
+Benchmark Category   : Diagnostic verification benchmark (COCO-128, CC BY 4.0)
+Ultralytics Version  : 8.4.177
+PyTorch Version      : 2.8.0
+Python Version       : 3.9.6
+Host Platform        : macOS-27.0.1-arm64-arm-64bit-Mach-O (Apple M4)
+Execution Device     : cpu
+Inference Settings   : imgsz=640, conf=0.001, nms_iou=0.6, matching_iou=0.5
+
+2. BASELINE OFFICIAL ULTRALYTICS VALIDATION (conf=0.001, iou=0.6, device=cpu, split=val)
+----------------------------------------------------------------------------------------------------
+Baseline Precision (Pooled Micro)  : 69.3524%
+Baseline Recall (Pooled Micro)     : 59.0883%
+Baseline F1 (Harmonic of P/R)      : 63.8102%
+Baseline mAP@50                    : 68.0087%
+Baseline mAP@50-95                 : 50.2558%
+
+Raw results_dict:
+{
+  "metrics/precision(B)": 0.6935237115,
+  "metrics/recall(B)": 0.5908826362,
+  "metrics/mAP50(B)": 0.6800866869,
+  "metrics/mAP50-95(B)": 0.5025579898,
+  "fitness": 0.5025579898
+}
+
+Metric definitions:
+- Precision: Pooled (micro) precision = TP / (TP + FP), computed from detections retained
+  after NMS at conf=0.001. NOT an arithmetic macro-average.
+- Recall: Pooled (micro) recall = TP / (TP + FN), computed from detections retained
+  after NMS at conf=0.001. NOT an arithmetic macro-average.
+- F1: Harmonic mean of pooled precision and pooled recall.
+- mAP@50: Mean Average Precision at IoU 0.5 across all classes.
+- mAP@50-95: Mean Average Precision at IoU thresholds 0.5:0.95 (10 levels) across all classes.
+
+Per-class (official, conf=0.001):
+person   : P=82.4614%, R=68.4893%, F1=74.8287%, AP50=79.5921%, AP50-95=53.4636%
+car      : P=68.2493%, R=19.5652%, F1=30.4121%, AP50=23.5643%, AP50-95=14.6513%
+bicycle  : P=38.8014%, R=16.6667%, F1=23.3176%, AP50=45.9130%, AP50-95=26.8463%
+dog      : P=63.7693%, R=77.7778%, F1=70.0804%, AP50=90.4567%, AP50-95=70.9351%
+chair    : P=52.8616%, R=54.2857%, F1=53.5642%, AP50=55.0656%, AP50-95=29.8935%
+bus      : P=77.4244%, R=71.4286%, F1=74.3057%, AP50=72.2850%, AP50-95=64.8640%
+
+3. OPERATION-THRESHOLD SWEEP (Custom Discrete Matching at IoU >= 0.50)
+----------------------------------------------------------------------------------------------------
+Prediction generation: raw model.predict() at conf=0.001, iou=0.6, imgsz=640, device=cpu.
+Threshold application: each tau retains predictions with conf >= tau.
+Matching: greedy one-to-one assignment at IoU >= 0.50, class-exact, descending confidence.
+
+Overall Sweep Results:
+Conf | Retained Detections | Micro-P | Micro-R | Micro-F1 | Macro-P | Macro-R | Macro-F1 | Harmonic F1 (Macro)
+----------------------------------------------------------------------------------------------------------------
+0.10 | 1077                | 55.34 % | 64.16 % | 59.42  % | 55.51 % | 65.72 % | 56.63  % | 60.19 %
+0.25 | 625                 | 76.96 % | 51.78 % | 61.90  % | 71.20 % | 57.00 % | 59.37  % | 63.32 %
+0.45 | 433                 | 91.45 % | 42.63 % | 58.15  % | 80.70 % | 48.21 % | 55.87  % | 60.36 %
+0.60 | 309                 | 95.79 % | 31.86 % | 47.82  % | 76.50 % | 36.87 % | 44.74  % | 49.76 %
+----------------------------------------------------------------------------------------------------------------
+
+Target Obstacle Classes (TP, FP, FN counts):
+Class   | Conf | GT  | TP  | FP  | FN  | Precision | Recall  | F1-Score | Conservation (TP+FN==GT)
+----------------------------------------------------------------------------------------------------
+person  | 0.10 | 254 | 200 | 116 | 54  | 63.29    | 78.74   | 70.18    | 200 + 54 == 254 (OK)
+person  | 0.25 | 254 | 166 | 36  | 88  | 82.18    | 65.35   | 72.81    | 166 + 88 == 254 (OK)
+person  | 0.45 | 254 | 135 | 6   | 119 | 95.74    | 53.15   | 68.35    | 135 + 119 == 254 (OK)
+person  | 0.60 | 254 | 108 | 1   | 146 | 99.08    | 42.52   | 59.50    | 108 + 146 == 254 (OK)
+----------------------------------------------------------------------------------------------------
+car     | 0.10 | 46  | 11  | 10  | 35  | 52.38    | 23.91   | 32.84    | 11 + 35 == 46 (OK)
+car     | 0.25 | 46  | 8   | 2   | 38  | 80.00    | 17.39   | 28.57    | 8 + 38 == 46 (OK)
+car     | 0.45 | 46  | 7   | 1   | 39  | 87.50    | 15.22   | 25.93    | 7 + 39 == 46 (OK)
+car     | 0.60 | 46  | 5   | 1   | 41  | 83.33    | 10.87   | 19.23    | 5 + 41 == 46 (OK)
+----------------------------------------------------------------------------------------------------
+bicycle | 0.10 | 6   | 2   | 4   | 4   | 33.33    | 33.33   | 33.33    | 2 + 4 == 6 (OK)
+bicycle | 0.25 | 6   | 1   | 1   | 5   | 50.00    | 16.67   | 25.00    | 1 + 5 == 6 (OK)
+bicycle | 0.45 | 6   | 1   | 1   | 5   | 50.00    | 16.67   | 25.00    | 1 + 5 == 6 (OK)
+bicycle | 0.60 | 6   | 0   | 0   | 6   | 0.00     | 0.00    | 0.00     | 0 + 6 == 6 (OK)
+----------------------------------------------------------------------------------------------------
+dog     | 0.10 | 9   | 8   | 6   | 1   | 57.14    | 88.89   | 69.57    | 8 + 1 == 9 (OK)
+dog     | 0.25 | 9   | 7   | 4   | 2   | 63.64    | 77.78   | 70.00    | 7 + 2 == 9 (OK)
+dog     | 0.45 | 9   | 6   | 2   | 3   | 75.00    | 66.67   | 70.59    | 6 + 3 == 9 (OK)
+dog     | 0.60 | 9   | 6   | 1   | 3   | 85.71    | 66.67   | 75.00    | 6 + 3 == 9 (OK)
+----------------------------------------------------------------------------------------------------
+chair   | 0.10 | 35  | 23  | 40  | 12  | 36.51    | 65.71   | 46.94    | 23 + 12 == 35 (OK)
+chair   | 0.25 | 35  | 19  | 16  | 16  | 54.29    | 54.29   | 54.29    | 19 + 16 == 35 (OK)
+chair   | 0.45 | 35  | 13  | 3   | 22  | 81.25    | 37.14   | 50.98    | 13 + 22 == 35 (OK)
+chair   | 0.60 | 35  | 3   | 0   | 32  | 100.00   | 8.57    | 15.79    | 3 + 32 == 35 (OK)
+----------------------------------------------------------------------------------------------------
+bus     | 0.10 | 7   | 5   | 3   | 2   | 62.50    | 71.43   | 66.67    | 5 + 2 == 7 (OK)
+bus     | 0.25 | 7   | 5   | 1   | 2   | 83.33    | 71.43   | 76.92    | 5 + 2 == 7 (OK)
+bus     | 0.45 | 7   | 4   | 0   | 3   | 100.00   | 57.14   | 72.73    | 4 + 3 == 7 (OK)
+bus     | 0.60 | 7   | 4   | 0   | 3   | 100.00   | 57.14   | 72.73    | 4 + 3 == 7 (OK)
+----------------------------------------------------------------------------------------------------
+
+4. RECOMMENDATION CORRECTION
+----------------------------------------------------------------------------------------------------
+Historical report recommended:
+  - conf=0.45 for general assistive navigation (claiming 75.86% precision)
+  - conf=0.25 as safety-critical threshold (claiming 71.4% vs 64.9% person recall,
+    car recall 21.7% vs 17.4%, precision 71.39%)
+
+These claims are NOT traceable to the actual model.val(conf=X) run.
+Verified official numbers at conf=0.25: person recall 67.72%, car recall 19.57%,
+overall precision 73.48%. At conf=0.10: person recall 69.86%, car recall 19.57%,
+overall precision 67.98%.
+
+Verified official values:
+  - conf=0.45: precision 75.86%, recall 45.63% (verified)
+  - conf=0.25: precision 73.48%, recall 57.17% (verified)
+  - conf=0.10: precision 67.98%, recall 59.41% (verified)
+  - conf=0.60: precision 76.83%, recall 36.00% (verified)
+
+The recommendation should refer to the verified CSV/JSON data, not to the stale numbers
+in the historical recommendation block.
+
+5. METHODOLOGICAL CORRECTIONS
+----------------------------------------------------------------------------------------------------
+A. Official Ultralytics 8.4.177 semantics:
+   - DetectionValidator.postprocess() applies NMS with self.args.conf.
+   - The mAP and pooled precision/recall are computed from these filtered detections.
+   - Precision and recall are sampled AT the supplied confidence threshold, not at a peak-F1 point.
+   - Earlier audit incorrectly described official precision/recall as "peak-F1" values.
+
+B. Historical audit provenance errors:
+   - Stated Ultralytics 8.4.155, PyTorch 2.14.0, Python 3.14.3, macOS-27.0.1-arm64-Mach-O.
+   - Actual current environment: 8.4.177, PyTorch 2.8.0, Python 3.9.6, macOS-27.0.1-arm64-arm-64bit.
+   - Historical mAP@50: 67.95% (8.4.155). Current mAP@50: 68.01% (8.4.177).
+   - Historical mAP@50-95: 50.22% (8.4.155). Current mAP@50-95: 50.26% (8.4.177).
+
+C. Verification:
+   - Custom discrete sweep matches current implementation (conservation checks pass).
+   - CSV numbers match official validator at each threshold.
+   - JSON numbers match CSV numbers (cross-artifact consistency).
+   - test_metric_calculations.py: 10 tests, 0 failures, 0 errors.
+
+6. VALIDATED NUMBERS (current environment, Ultralytics 8.4.177)
+----------------------------------------------------------------------------------------------------
+A. Official detection metrics (conf=0.001, iou=0.6, device=cpu, split=val):
+   Precision (pooled micro): 0.693524 (69.3524%)
+   Recall (pooled micro): 0.590883 (59.0883%)
+   F1 (harmonic of pooled P/R): 0.638102 (63.8102%)
+   mAP@50: 0.680087 (68.0087%)
+   mAP@50-95: 0.502558 (50.2558%)
+
+B. Operating-threshold metrics (custom discrete, greedy IoU>=0.50 matching):
+   conf=0.10: retained 1077, micro P 0.5534, R 0.6416, F1 0.5942, macro P 0.5551, R 0.6572, F1 0.5663
+   conf=0.25: retained   625, micro P 0.7696, R 0.5178, F1 0.6190, macro P 0.7120, R 0.5700, F1 0.5937
+   conf=0.45: retained   433, micro P 0.9145, R 0.4263, F1 0.5815, macro P 0.8070, R 0.4821, F1 0.5587
+   conf=0.60: retained   309, micro P 0.9579, R 0.3186, F1 0.4782, macro P 0.7650, R 0.3687, F1 0.4474
+
+7. LIMITATIONS
+----------------------------------------------------------------------------------------------------
+- COCO-128 is a diagnostic dataset (128 images, 929 instances, 71 active classes).
+  Bicycle (6 GT) and bus (7 GT) have very low counts; per-class results are unreliable
+  for these rare classes and should not be used for threshold selection.
+- Static COCO images are third-person photos; wearable first-person camera operation
+  involves motion blur, occlusion, and dynamic lighting not captured here.
+- No claims of navigation safety, real-world reliability, or physical sensor fusion
+  performance follow from these software benchmark results.
+- No fine-tuning or model improvement experiment was performed in this audit;
+  no model weights were modified.
+- The historical protocol audit (evaluation_protocol_audit.txt) was generated with
+  Ultralytics 8.4.155, PyTorch 2.14.0, Python 3.14.3. Its numerical values differ
+  slightly from the 8.4.177 run. The corrected report uses the current environment.
+
+====================================================================================================
+NETRASENSE YOLO11n CORRECTED INDEPENDENT EVALUATION REPORT
+====================================================================================================
