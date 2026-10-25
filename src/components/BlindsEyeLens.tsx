@@ -64,6 +64,8 @@ export function BlindsEyeLens({
   const [smallStatus, setSmallStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const smallReadyRef = useRef(false);
   const smallLastRunRef = useRef(0);
+  const smallBusyRef = useRef(false);
+  const extraBusyRef = useRef(false);
   const smallResultsRef = useRef<Array<{ bbox: [number, number, number, number]; class: string; score: number }>>([]);
   const extraDetectorLastRunRef = useRef(0);
   const extraDetectionsRef = useRef<Array<{ bbox: [number, number, number, number]; class: string; score: number }>>([]);
@@ -326,6 +328,7 @@ export function BlindsEyeLens({
   // Continuous Browser Detection Loop
   useEffect(() => {
     let animationFrameId: number;
+    let cancelled = false;
 
     const detectFrame = async () => {
       if (
@@ -341,48 +344,48 @@ export function BlindsEyeLens({
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
-        const originalPredictions = await browserModel.detect(video, 30, 0.35);
+        let originalPredictions: Awaited<ReturnType<BrowserObjectDetectionModel["detect"]>> = [];
+        try {
+          originalPredictions = await browserModel.detect(video, 30, 0.35);
+        } catch (error) {
+          console.error("Primary object detection failed:", error);
+          if (!cancelled) setBrowserDetectedItem("Detection error — retry camera");
+        }
+        if (cancelled) return;
         let predictions = originalPredictions.map((p) => ({ bbox: p.bbox, class: p.class, score: p.score }));
+        // Run secondary models independently, never blocking primary detections.
+        // Their most recent completed predictions are merged into the next frame.
         if ((browserDetectionMode === "combined" || browserDetectionMode === "small") && extraDetectorReadyRef.current) {
           const now = Date.now();
-          if (now - extraDetectorLastRunRef.current > 1200) {
+          if (!extraBusyRef.current && now - extraDetectorLastRunRef.current > 1800) {
+            extraBusyRef.current = true;
             extraDetectorLastRunRef.current = now;
-            try {
-              const capture = document.createElement("canvas");
-              capture.width = video.videoWidth;
-              capture.height = video.videoHeight;
-              capture.getContext("2d")?.drawImage(video, 0, 0);
-              extraDetectionsRef.current = await detectExtra(capture);
-            } catch (error) {
-              console.warn("Optional detector frame failed, using original:", error);
-              extraDetectionsRef.current = [];
-            }
+            const capture = document.createElement("canvas");
+            capture.width = video.videoWidth;
+            capture.height = video.videoHeight;
+            capture.getContext("2d")?.drawImage(video, 0, 0);
+            void detectExtra(capture).then(result => {
+              if (!cancelled) extraDetectionsRef.current = result;
+            }).catch(error => console.warn("Secondary detector error:", error))
+              .finally(() => { extraBusyRef.current = false; });
           }
           predictions = combineDetections(predictions, extraDetectionsRef.current);
         }
         if (browserDetectionMode === "small" && smallReadyRef.current) {
           const now = Date.now();
-          if (now - smallLastRunRef.current > 1800) {
+          if (!smallBusyRef.current && now - smallLastRunRef.current > 2400) {
+            smallBusyRef.current = true;
             smallLastRunRef.current = now;
-            try {
-              const capture = document.createElement("canvas");
-              capture.width = video.videoWidth;
-              capture.height = video.videoHeight;
-              capture.getContext("2d")?.drawImage(video, 0, 0);
-              smallResultsRef.current = await detectSmallObjects(capture);
-            } catch (error) {
-              console.warn("Small-object detection failed on frame:", error);
-              smallResultsRef.current = [];
-            }
+            const capture = document.createElement("canvas");
+            capture.width = video.videoWidth;
+            capture.height = video.videoHeight;
+            capture.getContext("2d")?.drawImage(video, 0, 0);
+            void detectSmallObjects(capture).then(result => {
+              if (!cancelled) smallResultsRef.current = result;
+            }).catch(error => console.warn("Small-object detector error:", error))
+              .finally(() => { smallBusyRef.current = false; });
           }
-          // Preserve detections from both general-purpose models, and add
-          // text-guided small-object candidates without fabricating confidence.
-          // Never remove a person detection solely because another model
-          // detected a nearby object.
-          const targeted = smallResultsRef.current.filter(p => p.score >= 0.48);
-          if (targeted.length > 0) {
-            predictions = combineDetections(predictions, targeted);
-          }
+          predictions = combineDetections(predictions, smallResultsRef.current.filter(p => p.score >= 0.48));
         }
 
         if (ctx) {
@@ -492,7 +495,7 @@ export function BlindsEyeLens({
         }
       }
 
-      if (isBrowserCameraActive && engineMode === "browser") {
+      if (!cancelled && isBrowserCameraActive && engineMode === "browser") {
         animationFrameId = requestAnimationFrame(detectFrame);
       }
     };
@@ -501,7 +504,7 @@ export function BlindsEyeLens({
       detectFrame();
     }
 
-    return () => cancelAnimationFrame(animationFrameId);
+    return () => { cancelled = true; cancelAnimationFrame(animationFrameId); };
   }, [isBrowserCameraActive, browserModel, engineMode, browserDetectionMode, speakBrowser, onVisionTelemetry]);
 
   const threatColor = (level?: string) => {
