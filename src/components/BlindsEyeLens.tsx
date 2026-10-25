@@ -239,7 +239,7 @@ export function BlindsEyeLens({
 
   // Second detector is opt-in and lazy-loaded. Errors never stop COCO-SSD.
   useEffect(() => {
-    if (browserDetectionMode !== "combined") return;
+    if (browserDetectionMode !== "combined" && browserDetectionMode !== "small") return;
     let active = true;
     setExtraDetectorStatus("loading");
     loadExtraDetector().then(() => {
@@ -343,7 +343,7 @@ export function BlindsEyeLens({
 
         const originalPredictions = await browserModel.detect(video, 30, 0.35);
         let predictions = originalPredictions.map((p) => ({ bbox: p.bbox, class: p.class, score: p.score }));
-        if (browserDetectionMode === "combined" && extraDetectorReadyRef.current) {
+        if ((browserDetectionMode === "combined" || browserDetectionMode === "small") && extraDetectorReadyRef.current) {
           const now = Date.now();
           if (now - extraDetectorLastRunRef.current > 1200) {
             extraDetectorLastRunRef.current = now;
@@ -375,14 +375,13 @@ export function BlindsEyeLens({
               smallResultsRef.current = [];
             }
           }
-          // Use targeted model results only when it has recognized an object.
-          // Suppress generic person labels for close-up hand-only scenes, but
-          // retain original predictions when the targeted model finds nothing.
-          if (smallResultsRef.current.length > 0) {
-            const targeted = smallResultsRef.current.filter(p => p.score >= 0.22);
-            if (targeted.length > 0) {
-              predictions = combineDetections(predictions.filter(p => p.class !== "person"), targeted.map(p => ({ ...p, score: Math.max(p.score, 0.49) })));
-            }
+          // Preserve detections from both general-purpose models, and add
+          // text-guided small-object candidates without fabricating confidence.
+          // Never remove a person detection solely because another model
+          // detected a nearby object.
+          const targeted = smallResultsRef.current.filter(p => p.score >= 0.48);
+          if (targeted.length > 0) {
+            predictions = combineDetections(predictions, targeted);
           }
         }
 
