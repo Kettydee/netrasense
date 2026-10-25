@@ -19,6 +19,7 @@ import { VoiceSelector } from "@/components/VoiceSelector";
 import { CameraDeviceSelector } from "@/components/CameraDeviceSelector";
 import { speak } from "@/lib/netrasense";
 import { SmartAssistiveSuite } from "@/components/SmartAssistiveSuite";
+import { combineDetections, detectExtra, loadExtraDetector } from "@/lib/browserDualDetector";
 
 interface YoloDetection {
   label: string;
@@ -55,7 +56,12 @@ export function BlindsEyeLens({
   onVisionTelemetry,
   onCameraStatusChange,
 }: BlindsEyeLensProps = {}) {
-  const [engineMode, setEngineMode] = useState<"yolo" | "browser">("yolo");
+  const [engineMode, setEngineMode] = useState<"yolo" | "browser">("browser");
+  const [browserDetectionMode, setBrowserDetectionMode] = useState<"original" | "combined">("original");
+  const [extraDetectorStatus, setExtraDetectorStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const extraDetectorReadyRef = useRef(false);
+  const extraDetectorLastRunRef = useRef(0);
+  const extraDetectionsRef = useRef<Array<{ bbox: [number, number, number, number]; class: string; score: number }>>([]);
   const [serverUrl, setServerUrl] = useState<string>("http://localhost:5000");
   const [isServerLive, setIsServerLive] = useState<boolean>(false);
   const [serverStatus, setServerStatus] = useState<YoloStatus | null>(null);
@@ -226,6 +232,20 @@ export function BlindsEyeLens({
     }
   }, [engineMode, browserModel]);
 
+  // Second detector is opt-in and lazy-loaded. Errors never stop COCO-SSD.
+  useEffect(() => {
+    if (browserDetectionMode !== "combined") return;
+    let active = true;
+    setExtraDetectorStatus("loading");
+    loadExtraDetector().then(() => {
+      if (active) { extraDetectorReadyRef.current = true; setExtraDetectorStatus("ready"); }
+    }).catch((error) => {
+      console.error("Optional detector unavailable:", error);
+      if (active) { extraDetectorReadyRef.current = false; setExtraDetectorStatus("error"); setBrowserDetectionMode("original"); }
+    });
+    return () => { active = false; };
+  }, [browserDetectionMode]);
+
   // Browser TTS Speak function - uses chosen NetraSense AI Voice
   const speakBrowser = useCallback(
     (text: string) => {
@@ -303,7 +323,25 @@ export function BlindsEyeLens({
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
-        const predictions = await browserModel.detect(video);
+        const originalPredictions = await browserModel.detect(video);
+        let predictions = originalPredictions.map((p) => ({ bbox: p.bbox, class: p.class, score: p.score }));
+        if (browserDetectionMode === "combined" && extraDetectorReadyRef.current) {
+          const now = Date.now();
+          if (now - extraDetectorLastRunRef.current > 1200) {
+            extraDetectorLastRunRef.current = now;
+            try {
+              const capture = document.createElement("canvas");
+              capture.width = video.videoWidth;
+              capture.height = video.videoHeight;
+              capture.getContext("2d")?.drawImage(video, 0, 0);
+              extraDetectionsRef.current = await detectExtra(capture);
+            } catch (error) {
+              console.warn("Optional detector frame failed, using original:", error);
+              extraDetectionsRef.current = [];
+            }
+          }
+          predictions = combineDetections(predictions, extraDetectionsRef.current);
+        }
 
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -423,7 +461,7 @@ export function BlindsEyeLens({
     }
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isBrowserCameraActive, browserModel, engineMode, speakBrowser, onVisionTelemetry]);
+  }, [isBrowserCameraActive, browserModel, engineMode, browserDetectionMode, speakBrowser, onVisionTelemetry]);
 
   const threatColor = (level?: string) => {
     switch (level) {
@@ -466,7 +504,7 @@ export function BlindsEyeLens({
                 ? `YOLO11 · ${serverStatus?.mode ?? "all"} mode · ${serverStatus?.fps ?? 0} FPS`
                 : engineMode === "browser"
                   ? browserModel
-                    ? "COCO-SSD loaded"
+                    ? browserDetectionMode === "combined" ? `COCO-SSD + YOLOS (${extraDetectorStatus})` : "COCO-SSD loaded"
                     : "Loading browser AI..."
                   : "Server not connected"}
             </p>
@@ -514,6 +552,16 @@ export function BlindsEyeLens({
           </Button>
         </div>
       </div>
+
+      {engineMode === "browser" && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          <span className="font-semibold text-muted-foreground">Browser detection:</span>
+          <Button size="sm" variant={browserDetectionMode === "original" ? "default" : "outline"} onClick={() => { setBrowserDetectionMode("original"); extraDetectionsRef.current = []; }}>Original COCO-SSD</Button>
+          <Button size="sm" variant={browserDetectionMode === "combined" ? "default" : "outline"} onClick={() => setBrowserDetectionMode("combined")}>Combined (experimental)</Button>
+          {browserDetectionMode === "combined" && <span role="status" className="text-muted-foreground">Secondary YOLOS model: {extraDetectorStatus}</span>}
+          <span className="text-muted-foreground">Experimental YOLOS is not Ultralytics YOLO; compare accuracy before relying on it.</span>
+        </div>
+      )}
 
       {/* Main Viewport Container */}
       <div className="relative mt-4 aspect-video w-full overflow-hidden rounded-xl border border-border bg-black flex items-center justify-center">
