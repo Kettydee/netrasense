@@ -720,7 +720,7 @@ export function BlindsEyeLens({
                   />
                   <Button
                     size="sm"
-                    disabled={isStartingCamera || isLoadingBrowserModel || !selectedCameraId}
+                    disabled={isStartingCamera || isLoadingBrowserModel}
                     onClick={() => startBrowserCamera()}
                     className="mt-1 bg-white text-black hover:bg-white/90 font-bold shadow-md"
                   >
