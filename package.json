@@ -66,8 +66,7 @@
     "tw-animate-css": "^1.3.4",
     "vaul": "^1.1.2",
     "vite-tsconfig-paths": "^6.0.2",
-    "zod": "^3.24.2",
-    "@huggingface/transformers": "^3.8.1"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
@@ -89,3 +88,4 @@
     "vite": "^8.2.0"
   }
 }
+

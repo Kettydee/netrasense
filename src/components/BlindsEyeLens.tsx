@@ -19,8 +19,6 @@ import { VoiceSelector } from "@/components/VoiceSelector";
 import { CameraDeviceSelector } from "@/components/CameraDeviceSelector";
 import { speak } from "@/lib/netrasense";
 import { SmartAssistiveSuite } from "@/components/SmartAssistiveSuite";
-import { combineDetections, detectExtra, loadExtraDetector } from "@/lib/browserDualDetector";
-import { detectSmallObjects, loadSmallObjectDetector } from "@/lib/smallObjectDetector";
 
 interface YoloDetection {
   label: string;
@@ -58,17 +56,6 @@ export function BlindsEyeLens({
   onCameraStatusChange,
 }: BlindsEyeLensProps = {}) {
   const [engineMode, setEngineMode] = useState<"yolo" | "browser">("browser");
-  const [browserDetectionMode, setBrowserDetectionMode] = useState<"original" | "combined" | "small">("small");
-  const [extraDetectorStatus, setExtraDetectorStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
-  const extraDetectorReadyRef = useRef(false);
-  const [smallStatus, setSmallStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
-  const smallReadyRef = useRef(false);
-  const smallLastRunRef = useRef(0);
-  const smallBusyRef = useRef(false);
-  const extraBusyRef = useRef(false);
-  const smallResultsRef = useRef<Array<{ bbox: [number, number, number, number]; class: string; score: number }>>([]);
-  const extraDetectorLastRunRef = useRef(0);
-  const extraDetectionsRef = useRef<Array<{ bbox: [number, number, number, number]; class: string; score: number }>>([]);
   const [serverUrl, setServerUrl] = useState<string>("http://localhost:5000");
   const [isServerLive, setIsServerLive] = useState<boolean>(false);
   const [serverStatus, setServerStatus] = useState<YoloStatus | null>(null);
@@ -239,33 +226,6 @@ export function BlindsEyeLens({
     }
   }, [engineMode, browserModel]);
 
-  // Second detector is opt-in and lazy-loaded. Errors never stop COCO-SSD.
-  useEffect(() => {
-    if (browserDetectionMode !== "combined" && browserDetectionMode !== "small") return;
-    let active = true;
-    setExtraDetectorStatus("loading");
-    loadExtraDetector().then(() => {
-      if (active) { extraDetectorReadyRef.current = true; setExtraDetectorStatus("ready"); }
-    }).catch((error) => {
-      console.error("Optional detector unavailable:", error);
-      if (active) { extraDetectorReadyRef.current = false; setExtraDetectorStatus("error"); setBrowserDetectionMode("original"); }
-    });
-    return () => { active = false; };
-  }, [browserDetectionMode]);
-
-  useEffect(() => {
-    if (browserDetectionMode !== "small") return;
-    let active = true;
-    setSmallStatus("loading");
-    loadSmallObjectDetector().then(() => {
-      if (active) { smallReadyRef.current = true; setSmallStatus("ready"); }
-    }).catch((error) => {
-      console.error("Small-object model failed:", error);
-      if (active) { smallReadyRef.current = false; setSmallStatus("error"); setBrowserDetectionMode("original"); }
-    });
-    return () => { active = false; };
-  }, [browserDetectionMode]);
-
   // Browser TTS Speak function - uses chosen NetraSense AI Voice
   const speakBrowser = useCallback(
     (text: string) => {
@@ -353,41 +313,6 @@ export function BlindsEyeLens({
         }
         if (cancelled) return;
         let predictions = originalPredictions.map((p) => ({ bbox: p.bbox, class: p.class, score: p.score }));
-        // Run secondary models independently, never blocking primary detections.
-        // Their most recent completed predictions are merged into the next frame.
-        if ((browserDetectionMode === "combined" || browserDetectionMode === "small") && extraDetectorReadyRef.current) {
-          const now = Date.now();
-          if (!extraBusyRef.current && now - extraDetectorLastRunRef.current > 1800) {
-            extraBusyRef.current = true;
-            extraDetectorLastRunRef.current = now;
-            const capture = document.createElement("canvas");
-            capture.width = video.videoWidth;
-            capture.height = video.videoHeight;
-            capture.getContext("2d")?.drawImage(video, 0, 0);
-            void detectExtra(capture).then(result => {
-              if (!cancelled) extraDetectionsRef.current = result;
-            }).catch(error => console.warn("Secondary detector error:", error))
-              .finally(() => { extraBusyRef.current = false; });
-          }
-          predictions = combineDetections(predictions, extraDetectionsRef.current);
-        }
-        if (browserDetectionMode === "small" && smallReadyRef.current) {
-          const now = Date.now();
-          if (!smallBusyRef.current && now - smallLastRunRef.current > 2400) {
-            smallBusyRef.current = true;
-            smallLastRunRef.current = now;
-            const capture = document.createElement("canvas");
-            capture.width = video.videoWidth;
-            capture.height = video.videoHeight;
-            capture.getContext("2d")?.drawImage(video, 0, 0);
-            void detectSmallObjects(capture).then(result => {
-              if (!cancelled) smallResultsRef.current = result;
-            }).catch(error => console.warn("Small-object detector error:", error))
-              .finally(() => { smallBusyRef.current = false; });
-          }
-          predictions = combineDetections(predictions, smallResultsRef.current.filter(p => p.score >= 0.48));
-        }
-
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -505,7 +430,7 @@ export function BlindsEyeLens({
     }
 
     return () => { cancelled = true; cancelAnimationFrame(animationFrameId); };
-  }, [isBrowserCameraActive, browserModel, engineMode, browserDetectionMode, speakBrowser, onVisionTelemetry]);
+  }, [isBrowserCameraActive, browserModel, engineMode, speakBrowser, onVisionTelemetry]);
 
   const threatColor = (level?: string) => {
     switch (level) {
@@ -877,3 +802,4 @@ export function BlindsEyeLens({
     </div>
   );
 }
+
