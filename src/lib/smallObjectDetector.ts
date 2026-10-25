@@ -21,7 +21,7 @@ export async function detectSmallObjects(canvas: HTMLCanvasElement): Promise<Ext
   const model = await loadSmallObjectDetector();
   const found = await model(canvas.toDataURL("image/jpeg", 0.9), LABELS, { threshold: 0.18 });
   return found.filter(p => p.score >= 0.18).map(p => ({
-    bbox: [p.box.xmin, p.box.ymin, p.box.xmax - p.box.xmin, p.box.ymax - p.box.ymin],
+    bbox: [p.box.xmin, p.box.ymin, p.box.xmax - p.box.xmin, p.box.ymax - p.box.ymin] as [number, number, number, number],
     class: p.label,
     score: p.score,
   })).filter(p => p.bbox[2] > 0 && p.bbox[3] > 0);
