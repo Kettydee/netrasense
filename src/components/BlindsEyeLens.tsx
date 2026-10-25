@@ -66,10 +66,6 @@ export function BlindsEyeLens({
   const smallLastRunRef = useRef(0);
   const smallBusyRef = useRef(false);
   const extraBusyRef = useRef(false);
-  const primaryBusyRef = useRef(false);
-  const secondaryBusyRef = useRef(false);
-  const cameraSessionRef = useRef(0);
-  const secondaryGenerationRef = useRef(0);
   const smallResultsRef = useRef<Array<{ bbox: [number, number, number, number]; class: string; score: number }>>([]);
   const extraDetectorLastRunRef = useRef(0);
   const extraDetectionsRef = useRef<Array<{ bbox: [number, number, number, number]; class: string; score: number }>>([]);
@@ -235,7 +231,6 @@ export function BlindsEyeLens({
           setBrowserModel(loadedModel as unknown as BrowserObjectDetectionModel);
         } catch (err) {
           console.error("Failed to load browser detection model:", err);
-          setBrowserDetectedItem("Browser model unavailable — reload to retry");
         } finally {
           setIsLoadingBrowserModel(false);
         }
@@ -290,15 +285,9 @@ export function BlindsEyeLens({
       }
 
       const deviceIdToUse = overrideDeviceId || selectedCameraId;
-      const videoConstraints: MediaTrackConstraints = {
-        width: { ideal: 640 },
-        height: { ideal: 480 },
-        frameRate: { ideal: 24, max: 30 },
-        ...(deviceIdToUse
-          ? { deviceId: { exact: deviceIdToUse } }
-          : { facingMode: { ideal: "environment" as const } }),
-      };
-      const constraints: MediaStreamConstraints = { video: videoConstraints, audio: false };
+      const constraints: MediaStreamConstraints = deviceIdToUse
+        ? { video: { deviceId: { exact: deviceIdToUse } }, audio: false }
+        : { video: { facingMode: "environment" }, audio: false };
 
       let stream: MediaStream;
       try {
@@ -309,12 +298,7 @@ export function BlindsEyeLens({
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        secondaryGenerationRef.current += 1;
-        smallResultsRef.current = [];
-        extraDetectionsRef.current = [];
-        smallLastRunRef.current = 0;
-        extraDetectorLastRunRef.current = 0;
+        videoRef.current.play();
         setIsBrowserCameraActive(true);
       }
     } catch (err) {
@@ -330,17 +314,12 @@ export function BlindsEyeLens({
   };
 
   const stopBrowserCamera = () => {
-    cameraSessionRef.current += 1;
-    secondaryGenerationRef.current += 1;
-    smallResultsRef.current = [];
-    extraDetectionsRef.current = [];
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach((track) => track.stop());
       videoRef.current.srcObject = null;
       setIsBrowserCameraActive(false);
       setBrowserDetectedItem("Lens Inactive");
-      setBrowserDetections([]);
       announcedObjectsRef.current.clear();
       lastSeenObjectsRef.current.clear();
     }
@@ -348,87 +327,63 @@ export function BlindsEyeLens({
 
   // Continuous Browser Detection Loop
   useEffect(() => {
-    let timerId: number | undefined;
+    let animationFrameId: number;
     let cancelled = false;
-    const sessionId = cameraSessionRef.current;
-    const maxInferenceWidth = 640;
-    const primaryIntervalMs = 140;
 
     const detectFrame = async () => {
-      const frameStartedAt = performance.now();
       if (
         browserModel &&
         videoRef.current &&
-        videoRef.current.readyState >= 2 &&
+        videoRef.current.readyState === 4 &&
         canvasRef.current
       ) {
         const video = videoRef.current;
         const canvas = canvasRef.current;
         const ctx = canvas.getContext("2d");
-        const sourceWidth = video.videoWidth;
-        const sourceHeight = video.videoHeight;
-        canvas.width = sourceWidth;
-        canvas.height = sourceHeight;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
         let originalPredictions: Awaited<ReturnType<BrowserObjectDetectionModel["detect"]>> = [];
-        let primaryFailed = false;
-        const detectorCanvas = document.createElement("canvas");
-        const detectorScale = Math.min(1, maxInferenceWidth / sourceWidth);
-        detectorCanvas.width = Math.max(1, Math.round(sourceWidth * detectorScale));
-        detectorCanvas.height = Math.max(1, Math.round(sourceHeight * detectorScale));
-        const detectorContext = detectorCanvas.getContext("2d", { alpha: false });
-        if (detectorContext && !primaryBusyRef.current) {
-          primaryBusyRef.current = true;
-          try {
-            detectorContext.drawImage(video, 0, 0, detectorCanvas.width, detectorCanvas.height);
-            originalPredictions = await browserModel.detect(detectorCanvas, 30, 0.35);
-          } catch (error) {
-            console.error("Primary object detection failed:", error);
-            primaryFailed = true;
-            if (!cancelled) {
-              setBrowserDetectedItem("Detection error — retry camera");
-              setBrowserDetections([]);
-            }
-          } finally {
-            primaryBusyRef.current = false;
-          }
+        try {
+          originalPredictions = await browserModel.detect(video, 30, 0.35);
+        } catch (error) {
+          console.error("Primary object detection failed:", error);
+          if (!cancelled) setBrowserDetectedItem("Detection error — retry camera");
         }
-        if (cancelled || sessionId !== cameraSessionRef.current) return;
-        const coordinateScale = 1 / detectorScale;
-        let predictions = originalPredictions.map((p) => ({
-          bbox: p.bbox.map((value) => value * coordinateScale) as [number, number, number, number],
-          class: p.class,
-          score: p.score,
-        }));
+        if (cancelled) return;
+        let predictions = originalPredictions.map((p) => ({ bbox: p.bbox, class: p.class, score: p.score }));
         // Run secondary models independently, never blocking primary detections.
         // Their most recent completed predictions are merged into the next frame.
         if ((browserDetectionMode === "combined" || browserDetectionMode === "small") && extraDetectorReadyRef.current) {
           const now = Date.now();
-          if (!extraBusyRef.current && !secondaryBusyRef.current && now - extraDetectorLastRunRef.current > 3500) {
+          if (!extraBusyRef.current && now - extraDetectorLastRunRef.current > 1800) {
             extraBusyRef.current = true;
-            secondaryBusyRef.current = true;
             extraDetectorLastRunRef.current = now;
-            const generation = secondaryGenerationRef.current;
-            const capture = detectorCanvas;
+            const capture = document.createElement("canvas");
+            capture.width = video.videoWidth;
+            capture.height = video.videoHeight;
+            capture.getContext("2d")?.drawImage(video, 0, 0);
             void detectExtra(capture).then(result => {
-              if (!cancelled && generation === secondaryGenerationRef.current) extraDetectionsRef.current = result.map(p => ({ ...p, bbox: p.bbox.map(value => value * coordinateScale) as [number, number, number, number] }));
+              if (!cancelled) extraDetectionsRef.current = result;
             }).catch(error => console.warn("Secondary detector error:", error))
-              .finally(() => { extraBusyRef.current = false; secondaryBusyRef.current = false; });
+              .finally(() => { extraBusyRef.current = false; });
           }
           predictions = combineDetections(predictions, extraDetectionsRef.current);
         }
         if (browserDetectionMode === "small" && smallReadyRef.current) {
           const now = Date.now();
-          if (!smallBusyRef.current && !secondaryBusyRef.current && now - smallLastRunRef.current > 4200) {
+          if (!smallBusyRef.current && now - smallLastRunRef.current > 2400) {
             smallBusyRef.current = true;
-            secondaryBusyRef.current = true;
             smallLastRunRef.current = now;
-            const generation = secondaryGenerationRef.current;
-            const capture = detectorCanvas;
+            const capture = document.createElement("canvas");
+            capture.width = video.videoWidth;
+            capture.height = video.videoHeight;
+            capture.getContext("2d")?.drawImage(video, 0, 0);
             void detectSmallObjects(capture).then(result => {
-              if (!cancelled && generation === secondaryGenerationRef.current) smallResultsRef.current = result.map(p => ({ ...p, bbox: p.bbox.map(value => value * coordinateScale) as [number, number, number, number] }));
+              if (!cancelled) smallResultsRef.current = result;
             }).catch(error => console.warn("Small-object detector error:", error))
-              .finally(() => { smallBusyRef.current = false; secondaryBusyRef.current = false; });
+              .finally(() => { smallBusyRef.current = false; });
           }
           predictions = combineDetections(predictions, smallResultsRef.current.filter(p => p.score >= 0.48));
         }
@@ -533,22 +488,15 @@ export function BlindsEyeLens({
                   };
               }),
             );
-        } else if (!primaryFailed) {
-          setBrowserDetectedItem("No objects detected");
-          setBrowserDetections([]);
+          } else {
+            setBrowserDetectedItem("No objects detected");
+            setBrowserDetections([]);
           }
         }
       }
 
-      if (
-        !cancelled &&
-        sessionId === cameraSessionRef.current &&
-        isBrowserCameraActive &&
-        engineMode === "browser" &&
-        browserModel
-      ) {
-        const elapsed = performance.now() - frameStartedAt;
-        timerId = window.setTimeout(detectFrame, Math.max(0, primaryIntervalMs - elapsed));
+      if (!cancelled && isBrowserCameraActive && engineMode === "browser") {
+        animationFrameId = requestAnimationFrame(detectFrame);
       }
     };
 
@@ -556,13 +504,7 @@ export function BlindsEyeLens({
       detectFrame();
     }
 
-    return () => {
-      cancelled = true;
-      secondaryGenerationRef.current += 1;
-      if (timerId !== undefined) window.clearTimeout(timerId);
-      smallResultsRef.current = [];
-      extraDetectionsRef.current = [];
-    };
+    return () => { cancelled = true; cancelAnimationFrame(animationFrameId); };
   }, [isBrowserCameraActive, browserModel, engineMode, browserDetectionMode, speakBrowser, onVisionTelemetry]);
 
   const threatColor = (level?: string) => {
