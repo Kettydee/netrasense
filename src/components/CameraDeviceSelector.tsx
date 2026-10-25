@@ -5,14 +5,12 @@ import {
   RefreshCw,
   HelpCircle,
   CheckCircle2,
-  ExternalLink,
 } from "lucide-react";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import {
   Dialog,
@@ -48,7 +46,7 @@ export function CameraDeviceSelector({
     setIsRefreshing(true);
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoInputs = devices.filter((d) => d.kind === "videoinput");
+      const videoInputs = devices.filter((d) => d.kind === "videoinput" && d.deviceId);
       setCameras(videoInputs);
 
     } catch (err) {
@@ -59,24 +57,33 @@ export function CameraDeviceSelector({
   }, []);
 
   const requestCameraAccess = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setPermissionError("Camera access is not supported by this browser.");
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      setPermissionError("Camera access needs a supported browser on HTTPS or localhost.");
       return;
     }
 
     setPermissionError("");
     setIsRefreshing(true);
+    let temporaryStream: MediaStream | undefined;
     try {
       // Request permission only to reveal camera names. Stop the temporary stream
       // immediately; the user still chooses which camera to open.
-      const temporaryStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      temporaryStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       temporaryStream.getTracks().forEach((track) => track.stop());
       const devices = await navigator.mediaDevices.enumerateDevices();
-      setCameras(devices.filter((device) => device.kind === "videoinput"));
+      setCameras(devices.filter((device) => device.kind === "videoinput" && device.deviceId));
     } catch (error) {
       console.warn("Could not request camera access:", error);
-      setPermissionError("Allow camera access in your browser, then try again.");
+      const name = error instanceof DOMException ? error.name : "";
+      setPermissionError(
+        name === "NotAllowedError" || name === "SecurityError"
+          ? "Camera permission was blocked. Allow it for this site, then retry."
+          : name === "NotFoundError"
+            ? "No camera was found. Connect a camera and refresh the list."
+            : "Could not read camera devices. Check browser permissions and retry.",
+      );
     } finally {
+      temporaryStream?.getTracks().forEach((track) => track.stop());
       setIsRefreshing(false);
     }
   };
@@ -93,7 +100,18 @@ export function CameraDeviceSelector({
     if (selectedCameraId && selectedCameraId !== selectedId) {
       setSelectedId(selectedCameraId);
     }
-  }, [selectedCameraId]);
+  }, [selectedCameraId, selectedId]);
+
+  // If there is exactly one camera available, preselect it without opening it.
+  // With multiple cameras, require an explicit choice so DroidCam is never
+  // silently selected over the laptop camera.
+  useEffect(() => {
+    const onlyCamera = cameras.length === 1 ? cameras[0] : undefined;
+    if (!selectedId && onlyCamera?.deviceId) {
+      setSelectedId(onlyCamera.deviceId);
+      onSelectCamera(onlyCamera.deviceId);
+    }
+  }, [cameras, selectedId, onSelectCamera]);
 
   const handleChange = (deviceId: string) => {
     setSelectedId(deviceId);
@@ -101,6 +119,7 @@ export function CameraDeviceSelector({
   };
 
   const hasDroidCam = cameras.some((c) => /droidcam/i.test(c.label));
+  const cameraNamesAreHidden = cameras.length === 0 || !cameras.some((camera) => camera.label.trim());
 
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
@@ -175,7 +194,7 @@ export function CameraDeviceSelector({
         </Button>
       </div>
 
-      {cameras.length === 0 && !isStreaming && (
+      {cameraNamesAreHidden && !isStreaming && (
         <div className="flex flex-col items-center gap-1.5">
           <Button
             type="button"
@@ -185,8 +204,11 @@ export function CameraDeviceSelector({
             disabled={isRefreshing}
             className="h-8 rounded-xl text-xs font-semibold"
           >
-            {isRefreshing ? "Checking Cameras…" : "Allow Camera Access"}
+            {isRefreshing ? "Checking Cameras…" : cameras.length === 0 ? "Allow Camera Access" : "Show Camera Names"}
           </Button>
+          <span className="max-w-[230px] text-center text-[10px] text-muted-foreground">
+            Permission is used to list camera names. You choose which camera to open.
+          </span>
           {permissionError && <span className="text-xs text-destructive">{permissionError}</span>}
         </div>
       )}

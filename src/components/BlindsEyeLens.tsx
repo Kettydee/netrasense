@@ -60,6 +60,10 @@ export function BlindsEyeLens({
   const [isServerLive, setIsServerLive] = useState<boolean>(false);
   const [serverStatus, setServerStatus] = useState<YoloStatus | null>(null);
   const [serverCheckKey, setServerCheckKey] = useState<number>(0);
+  const [cameraError, setCameraError] = useState<string>("");
+  const [isStartingCamera, setIsStartingCamera] = useState<boolean>(false);
+  const [browserModelError, setBrowserModelError] = useState<string>("");
+  const [modelRetryKey, setModelRetryKey] = useState<number>(0);
 
   interface BrowserObjectDetectionModel {
     detect: (
@@ -72,9 +76,19 @@ export function BlindsEyeLens({
   // In-browser Camera state
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const inferenceCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgStreamRef = useRef<HTMLImageElement | null>(null);
   const [browserModel, setBrowserModel] = useState<BrowserObjectDetectionModel | null>(null);
   const [isBrowserCameraActive, setIsBrowserCameraActive] = useState<boolean>(false);
+  const [isLoadingBrowserModel, setIsLoadingBrowserModel] = useState<boolean>(false);
+  const browserModelPromiseRef = useRef<Promise<BrowserObjectDetectionModel> | null>(null);
+  const cameraSessionRef = useRef(0);
+  const [cameraSession, setCameraSession] = useState(0);
+  const browserInferenceBusyRef = useRef(false);
+  const browserDetectionSignatureRef = useRef("");
+  const lastTelemetryRef = useRef<{ object: string; at: number } | null>(null);
+  const onVisionTelemetryRef = useRef(onVisionTelemetry);
+  onVisionTelemetryRef.current = onVisionTelemetry;
 
   useEffect(() => {
     // Report either camera source shown by this component: browser camera or YOLO server stream.
@@ -86,10 +100,17 @@ export function BlindsEyeLens({
     Array<{ label: string; direction: string; distance_cm?: number }>
   >([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
-  const [isLoadingBrowserModel, setIsLoadingBrowserModel] = useState<boolean>(true);
   const [lastSpoken, setLastSpoken] = useState<string>("");
   const announcedObjectsRef = useRef<Map<string, number>>(new Map());
   const lastSeenObjectsRef = useRef<Map<string, number>>(new Map());
+
+  const reportVisionTelemetry = useCallback((object: string) => {
+    const now = Date.now();
+    const last = lastTelemetryRef.current;
+    if (last?.object === object && now - last.at < 3500) return;
+    lastTelemetryRef.current = { object, at: now };
+    onVisionTelemetryRef.current?.({ object });
+  }, []);
 
   // Capture current camera frame as Base64 for multimodal AI scene analysis
   const captureFrameBase64 = useCallback((): string | null => {
@@ -151,8 +172,12 @@ export function BlindsEyeLens({
   useEffect(() => {
     let timer: number | undefined;
     let isSubscribed = true;
+    let isChecking = false;
+    let controller: AbortController | null = null;
 
     async function checkServer() {
+      if (isChecking) return;
+      isChecking = true;
       const candidates = [
         serverUrl,
         "http://localhost:5000",
@@ -162,69 +187,106 @@ export function BlindsEyeLens({
           : "",
       ].filter(Boolean);
 
-      for (const url of candidates) {
-        try {
-          const res = await fetch(`${url}/api/latest`, { cache: "no-store", mode: "cors" });
-          if (res.ok) {
-            const data: YoloStatus = await res.json();
-            if (isSubscribed) {
-              if (url !== serverUrl) setServerUrl(url);
-              setServerStatus(data);
-              setIsServerLive(true);
+      controller = new AbortController();
+      const timeout = window.setTimeout(() => controller?.abort(), 1800);
+      try {
+        for (const url of candidates) {
+          try {
+            const res = await fetch(`${url}/api/latest`, {
+              cache: "no-store",
+              mode: "cors",
+              signal: controller.signal,
+            });
+            if (res.ok) {
+              const data: YoloStatus = await res.json();
+              if (isSubscribed) {
+                if (url !== serverUrl) setServerUrl(url);
+                setServerStatus(data);
+                setIsServerLive(true);
 
-              if (
-                data.closest_obstacle &&
-                data.closest_obstacle.object &&
-                data.closest_obstacle.object !== "Clear"
-              ) {
-                onVisionTelemetry?.({
-                  object: data.closest_obstacle.object,
-                });
+                if (data.closest_obstacle?.object && data.closest_obstacle.object !== "Clear") {
+                  reportVisionTelemetry(data.closest_obstacle.object);
+                }
               }
+              return;
             }
-            return;
+          } catch {
+            if (controller.signal.aborted) break;
+            // try next candidate
           }
-        } catch {
-          // try next candidate
         }
-      }
 
-      if (isSubscribed) {
-        setIsServerLive(false);
+        if (isSubscribed) {
+          setIsServerLive(false);
+          setServerStatus(null);
+        }
+      } finally {
+        window.clearTimeout(timeout);
+        controller = null;
+        isChecking = false;
       }
     }
 
     if (engineMode === "yolo") {
       checkServer();
-      timer = window.setInterval(checkServer, 1000) as unknown as number;
+      timer = window.setInterval(checkServer, 2500) as unknown as number;
     }
 
     return () => {
       isSubscribed = false;
+      controller?.abort();
       if (timer !== undefined) window.clearInterval(timer);
     };
-  }, [engineMode, serverUrl, serverCheckKey]);
+  }, [engineMode, serverUrl, serverCheckKey, reportVisionTelemetry]);
 
-  // Load In-browser model lazily if browser mode selected
+  // Load COCO-SSD only after a camera has been opened; this keeps page load light.
   useEffect(() => {
-    if (engineMode === "browser" && !browserModel) {
-      async function initModel() {
-        try {
-          setIsLoadingBrowserModel(true);
-          const tf = await import("@tensorflow/tfjs");
-          await tf.ready();
-          const cocoSsd = await import("@tensorflow-models/coco-ssd");
-          const loadedModel = await cocoSsd.load();
-          setBrowserModel(loadedModel as unknown as BrowserObjectDetectionModel);
-        } catch (err) {
-          console.error("Failed to load browser detection model:", err);
-        } finally {
-          setIsLoadingBrowserModel(false);
-        }
-      }
-      initModel();
+    if (engineMode !== "browser" || !isBrowserCameraActive || browserModel) return;
+
+    let active = true;
+    setIsLoadingBrowserModel(true);
+    setBrowserModelError("");
+    setBrowserDetectedItem("Loading browser AI…");
+
+    if (!browserModelPromiseRef.current) {
+      browserModelPromiseRef.current = (async () => {
+        const tf = await import("@tensorflow/tfjs");
+        await tf.ready();
+        const cocoSsd = await import("@tensorflow-models/coco-ssd");
+        const loadedModel = await cocoSsd.load({ base: "lite_mobilenet_v2" });
+        return loadedModel as unknown as BrowserObjectDetectionModel;
+      })().catch((error) => {
+        browserModelPromiseRef.current = null;
+        throw error;
+      });
     }
-  }, [engineMode, browserModel]);
+
+    browserModelPromiseRef.current
+      .then((model) => {
+        if (active) setBrowserModel(model);
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to load browser detection model:", error);
+        if (active) {
+          setBrowserModelError("Browser detection could not load. Check your connection and retry.");
+          setBrowserDetectedItem("AI unavailable");
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoadingBrowserModel(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [engineMode, isBrowserCameraActive, browserModel, modelRetryKey]);
+
+  // Stop any active camera as soon as the component leaves the page.
+  useEffect(() => () => {
+    cameraSessionRef.current += 1;
+    const stream = videoRef.current?.srcObject as MediaStream | null;
+    stream?.getTracks().forEach((track) => track.stop());
+  }, []);
 
   // Browser TTS Speak function - uses chosen NetraSense AI Voice
   const speakBrowser = useCallback(
@@ -237,191 +299,249 @@ export function BlindsEyeLens({
   );
 
   // Browser Camera Start/Stop with Device Selection
-  const startBrowserCamera = async (overrideDeviceId?: string) => {
+  const startBrowserCamera = async (deviceId = selectedCameraId): Promise<boolean> => {
+    if (!deviceId) {
+      setCameraError("Choose a camera before opening it.");
+      return false;
+    }
+
+    setCameraError("");
+    setIsStartingCamera(true);
+    let nextStream: MediaStream | null = null;
     try {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const oldStream = videoRef.current.srcObject as MediaStream;
-        oldStream.getTracks().forEach((track) => track.stop());
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Camera access requires HTTPS or localhost in a supported browser.");
       }
 
-      const deviceIdToUse = overrideDeviceId || selectedCameraId;
-      const constraints: MediaStreamConstraints = deviceIdToUse
-        ? { video: { deviceId: { exact: deviceIdToUse } }, audio: false }
-        : { video: { facingMode: "environment" }, audio: false };
+      nextStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          deviceId: { exact: deviceId },
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 24, max: 30 },
+        },
+        audio: false,
+      });
 
-      let stream: MediaStream;
+      const video = videoRef.current;
+      if (!video) throw new Error("Camera preview is not ready. Try opening the camera again.");
+
+      const previousStream = video.srcObject as MediaStream | null;
+      video.srcObject = nextStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-      } catch {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        await video.play();
+      } catch (error) {
+        video.srcObject = previousStream;
+        throw error;
       }
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-        setIsBrowserCameraActive(true);
-      }
-    } catch (err) {
-      console.error("Error accessing camera:", err);
+      previousStream?.getTracks().forEach((track) => track.stop());
+      cameraSessionRef.current += 1;
+      setCameraSession(cameraSessionRef.current);
+      const openedSession = cameraSessionRef.current;
+      nextStream.getVideoTracks().forEach((track) => {
+        track.addEventListener("ended", () => {
+          if (cameraSessionRef.current !== openedSession) return;
+          stopBrowserCamera();
+          setCameraError("The selected camera disconnected. Choose a camera and open it again.");
+        }, { once: true });
+      });
+      browserDetectionSignatureRef.current = "__new_camera__";
+      announcedObjectsRef.current.clear();
+      lastSeenObjectsRef.current.clear();
+      setBrowserDetections([]);
+      setBrowserDetectedItem("Camera ready — loading AI…");
+      setIsBrowserCameraActive(true);
+      return true;
+    } catch (error) {
+      nextStream?.getTracks().forEach((track) => track.stop());
+      console.error("Error accessing selected camera:", error);
+      const name = error instanceof DOMException ? error.name : "";
+      setCameraError(
+        name === "NotAllowedError" || name === "SecurityError"
+          ? "Camera permission was denied. Allow camera access for this site, then retry."
+          : name === "NotFoundError" || name === "OverconstrainedError"
+            ? "That camera is no longer available. Refresh the list and choose another camera."
+            : name === "NotReadableError"
+              ? "That camera is busy in another app. Close the other app and retry."
+              : error instanceof Error
+                ? error.message
+                : "Could not open the selected camera. Refresh the list and retry.",
+      );
+      return false;
+    } finally {
+      setIsStartingCamera(false);
     }
   };
 
   const handleCameraSelect = async (deviceId: string) => {
+    const previousDeviceId = selectedCameraId;
     setSelectedCameraId(deviceId);
     if (isBrowserCameraActive) {
-      await startBrowserCamera(deviceId);
+      const changed = await startBrowserCamera(deviceId);
+      if (!changed) setSelectedCameraId(previousDeviceId);
     }
   };
 
-  const stopBrowserCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
-      videoRef.current.srcObject = null;
-      setIsBrowserCameraActive(false);
-      setBrowserDetectedItem("Lens Inactive");
-      announcedObjectsRef.current.clear();
-      lastSeenObjectsRef.current.clear();
-    }
-  };
+  const stopBrowserCamera = useCallback(() => {
+    cameraSessionRef.current += 1;
+    setCameraSession(cameraSessionRef.current);
+    const stream = videoRef.current?.srcObject as MediaStream | null;
+    stream?.getTracks().forEach((track) => track.stop());
+    if (videoRef.current) videoRef.current.srcObject = null;
+    const canvas = canvasRef.current;
+    canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+    browserDetectionSignatureRef.current = "__stopped__";
+    announcedObjectsRef.current.clear();
+    lastSeenObjectsRef.current.clear();
+    setBrowserDetections([]);
+    setIsBrowserCameraActive(false);
+    setBrowserDetectedItem("Lens Inactive");
+  }, []);
 
-  // Continuous Browser Detection Loop
   useEffect(() => {
-    let animationFrameId: number;
+    if (engineMode === "yolo" && isBrowserCameraActive) stopBrowserCamera();
+  }, [engineMode, isBrowserCameraActive, stopBrowserCamera]);
+
+  // Detect at a bounded rate on a 640x480-or-smaller frame. The live video
+  // stays full size while inference and React updates remain lightweight.
+  useEffect(() => {
     let cancelled = false;
+    let timerId: number | undefined;
+    const sessionId = cameraSession;
+    const detectionIntervalMs = 220;
+    const displayThreshold = 0.42;
+    const alertThreshold = 0.5;
 
     const detectFrame = async () => {
       if (
         browserModel &&
         videoRef.current &&
-        videoRef.current.readyState === 4 &&
+        videoRef.current.readyState >= 2 &&
         canvasRef.current
       ) {
         const video = videoRef.current;
         const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
+        const overlayContext = canvas.getContext("2d");
+        const sourceWidth = video.videoWidth;
+        const sourceHeight = video.videoHeight;
+        if (sourceWidth > 0 && sourceHeight > 0 && !browserInferenceBusyRef.current) {
+          browserInferenceBusyRef.current = true;
+          try {
+            if (canvas.width !== sourceWidth) canvas.width = sourceWidth;
+            if (canvas.height !== sourceHeight) canvas.height = sourceHeight;
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+            const scale = Math.min(1, 640 / sourceWidth, 480 / sourceHeight);
+            const inferenceWidth = Math.max(1, Math.round(sourceWidth * scale));
+            const inferenceHeight = Math.max(1, Math.round(sourceHeight * scale));
+            const inferenceCanvas = inferenceCanvasRef.current ?? document.createElement("canvas");
+            inferenceCanvasRef.current = inferenceCanvas;
+            if (inferenceCanvas.width !== inferenceWidth) inferenceCanvas.width = inferenceWidth;
+            if (inferenceCanvas.height !== inferenceHeight) inferenceCanvas.height = inferenceHeight;
+            const inferenceContext = inferenceCanvas.getContext("2d", { alpha: false });
+            if (inferenceContext && overlayContext) {
+              inferenceContext.drawImage(video, 0, 0, inferenceWidth, inferenceHeight);
+              const raw = await browserModel.detect(inferenceCanvas, 30, 0.35);
+              if (cancelled || sessionId !== cameraSessionRef.current) return;
 
-        let originalPredictions: Awaited<ReturnType<BrowserObjectDetectionModel["detect"]>> = [];
-        try {
-          originalPredictions = await browserModel.detect(video, 30, 0.35);
-        } catch (error) {
-          console.error("Primary object detection failed:", error);
-          if (!cancelled) setBrowserDetectedItem("Detection error — retry camera");
-        }
-        if (cancelled) return;
-        let predictions = originalPredictions.map((p) => ({ bbox: p.bbox, class: p.class, score: p.score }));
-        if (ctx) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+              const scaleX = sourceWidth / inferenceWidth;
+              const scaleY = sourceHeight / inferenceHeight;
+              const predictions = raw.map((prediction) => ({
+                ...prediction,
+                bbox: [
+                  prediction.bbox[0] * scaleX,
+                  prediction.bbox[1] * scaleY,
+                  prediction.bbox[2] * scaleX,
+                  prediction.bbox[3] * scaleY,
+                ] as [number, number, number, number],
+              }));
+              const visible = predictions.filter((prediction) => prediction.score >= displayThreshold);
 
-          const now = Date.now();
-          const currentSeen = new Set<string>();
-          const newItemsToAnnounce: string[] = [];
-          const detectedSummaries: string[] = [];
+              overlayContext.clearRect(0, 0, canvas.width, canvas.height);
+              const now = Date.now();
+              const alerts: string[] = [];
+              const summaries: string[] = [];
+              const stateDetections: Array<{ label: string; direction: string }> = [];
 
-          predictions.forEach((prediction) => {
-            if (prediction.score < 0.48) return;
+              for (const prediction of visible) {
+                const [x, y, width, height] = prediction.bbox;
+                const centerX = x + width / 2;
+                const direction = centerX < sourceWidth / 3 ? "left" : centerX < (sourceWidth * 2) / 3 ? "center" : "right";
+                const titleDirection = direction[0]!.toUpperCase() + direction.slice(1);
 
-            const [x, y, width, height] = prediction.bbox;
-            const cx = x + width / 2;
-            const dir =
-              cx < canvas.width / 3 ? "Left" : cx < (2 * canvas.width) / 3 ? "Center" : "Right";
+                overlayContext.strokeStyle = "#f59e0b";
+                overlayContext.lineWidth = Math.max(2, sourceWidth / 640);
+                overlayContext.strokeRect(x, y, width, height);
+                overlayContext.font = `bold ${Math.max(12, sourceWidth / 64)}px Inter, sans-serif`;
+                const label = `${prediction.class} (${titleDirection}) ${Math.round(prediction.score * 100)}%`;
+                const textWidth = overlayContext.measureText(label).width;
+                const labelY = y > 28 ? y - 26 : y;
+                overlayContext.fillStyle = "#f59e0b";
+                overlayContext.fillRect(x, labelY, textWidth + 12, 24);
+                overlayContext.fillStyle = "#0f172a";
+                overlayContext.fillText(label, x + 6, labelY + 17);
 
-            // Draw bounding box
-            ctx.strokeStyle = "#f59e0b";
-            ctx.lineWidth = 3;
-            ctx.strokeRect(x, y, width, height);
+                const trackKey = `${prediction.class}_${direction}`;
+                lastSeenObjectsRef.current.set(trackKey, now);
+                summaries.push(`${prediction.class} (${titleDirection})`);
+                stateDetections.push({ label: prediction.class, direction });
 
-            // Draw label container
-            ctx.fillStyle = "#f59e0b";
-            const label = `${prediction.class} (${dir}) ${Math.round(prediction.score * 100)}%`;
-            const textWidth = ctx.measureText(label).width;
-            ctx.fillRect(x, y > 24 ? y - 24 : y, textWidth + 12, 22);
+                if (prediction.score >= alertThreshold) {
+                  const lastAnnounced = announcedObjectsRef.current.get(trackKey);
+                  if (!lastAnnounced || now - lastAnnounced > 4000) {
+                    alerts.push(`${prediction.class} on the ${direction}`);
+                    announcedObjectsRef.current.set(trackKey, now);
+                  }
+                }
+              }
 
-            // Draw label text
-            ctx.fillStyle = "#0f172a";
-            ctx.font = "bold 12px Inter, sans-serif";
-            ctx.fillText(label, x + 6, y > 24 ? y - 8 : y + 16);
+              for (const [key, seenAt] of lastSeenObjectsRef.current) {
+                if (now - seenAt > 3500) {
+                  lastSeenObjectsRef.current.delete(key);
+                  announcedObjectsRef.current.delete(key);
+                }
+              }
 
-            const trackKey = `${prediction.class}_${dir.toLowerCase()}`;
-            currentSeen.add(trackKey);
-            lastSeenObjectsRef.current.set(trackKey, now);
-            detectedSummaries.push(`${prediction.class} (${dir})`);
+              if (alerts.length > 0) {
+                const message = alerts.length === 1
+                  ? alerts[0]!
+                  : `${alerts.slice(0, 3).join(", ")}${alerts.length > 3 ? ", and more" : ""}`;
+                speakBrowser(message);
+              }
 
-            // Check if this distinct object in this zone has been announced
-            const lastAnnounced = announcedObjectsRef.current.get(trackKey);
-            if (!lastAnnounced || now - lastAnnounced > 4000) {
-              newItemsToAnnounce.push(`${prediction.class} on the ${dir.toLowerCase()}`);
-              announcedObjectsRef.current.set(trackKey, now);
-            }
-          });
+              const uniqueSummaries = Array.from(new Set(summaries));
+              const summary = uniqueSummaries.length > 0 ? uniqueSummaries.join(" · ") : "No objects detected";
+              const uniqueStateDetections = Array.from(
+                new Map(stateDetections.map((item) => [`${item.label}:${item.direction}`, item])).values(),
+              );
+              const stateSignature = uniqueStateDetections.map((item) => `${item.label}:${item.direction}`).join("|");
+              if (stateSignature !== browserDetectionSignatureRef.current) {
+                browserDetectionSignatureRef.current = stateSignature;
+                setBrowserDetectedItem(summary);
+                setBrowserDetections(uniqueStateDetections);
+              }
 
-          // Clean up objects that have left the scene for > 3.5s
-          for (const [key, seenTime] of lastSeenObjectsRef.current.entries()) {
-            if (now - seenTime > 3500) {
-              lastSeenObjectsRef.current.delete(key);
-              announcedObjectsRef.current.delete(key);
-            }
-          }
-
-          // Announce every newly detected object name once
-          if (newItemsToAnnounce.length > 0) {
-            let message = "";
-            if (newItemsToAnnounce.length === 1) {
-              message = newItemsToAnnounce[0] ?? "";
-            } else if (newItemsToAnnounce.length === 2) {
-              message = `${newItemsToAnnounce[0] ?? ""}, and ${newItemsToAnnounce[1] ?? ""}`;
-            } else {
-              message =
-                `${newItemsToAnnounce.slice(0, 3).join(", ")}, and ${newItemsToAnnounce[3] ?? ""}`.replace(
-                  /,\s*and\s*$/,
-                  "",
+              if (visible.length > 0) {
+                const top = visible.reduce((best, current) =>
+                  current.bbox[2] * current.bbox[3] > best.bbox[2] * best.bbox[3] ? current : best,
                 );
+                reportVisionTelemetry(top.class);
+              }
             }
-            speakBrowser(message);
-          }
-
-          if (detectedSummaries.length > 0 && predictions.length > 0) {
-            const top = predictions.reduce(
-              (prev, curr) => (curr.bbox[3] > prev.bbox[3] ? curr : prev),
-              predictions[0]!,
-            );
-            const centerX = top.bbox[0] + top.bbox[2] / 2;
-            const topDir: "left" | "center" | "right" =
-              centerX < canvas.width * 0.33
-                ? "left"
-                : centerX > canvas.width * 0.66
-                  ? "right"
-                  : "center";
-            onVisionTelemetry?.({
-              object: top.class,
-            });
-
-            // Remove duplicates for display summary
-            const uniqueSummaries = Array.from(new Set(detectedSummaries));
-            setBrowserDetectedItem(uniqueSummaries.join(" · "));
-            setBrowserDetections(
-              predictions.filter(p => p.score >= 0.48).map((p) => {
-                const cX = p.bbox[0] + p.bbox[2] / 2;
-                const dir =
-                  cX < canvas.width * 0.33 ? "left" : cX > canvas.width * 0.66 ? "right" : "center";
-                return {
-                  label: p.class,
-                  direction: dir,
-                  };
-              }),
-            );
-          } else {
-            setBrowserDetectedItem("No objects detected");
-            setBrowserDetections([]);
+          } catch (error) {
+            console.error("Primary object detection failed:", error);
+            if (!cancelled && sessionId === cameraSessionRef.current) {
+              overlayContext?.clearRect(0, 0, canvas.width, canvas.height);
+              setBrowserDetectedItem("Detection paused — check the selected camera");
+            }
+          } finally {
+            browserInferenceBusyRef.current = false;
           }
         }
       }
 
-      if (!cancelled && isBrowserCameraActive && engineMode === "browser") {
-        animationFrameId = requestAnimationFrame(detectFrame);
+      if (!cancelled && sessionId === cameraSessionRef.current && isBrowserCameraActive && engineMode === "browser") {
+        timerId = window.setTimeout(() => void detectFrame(), detectionIntervalMs);
       }
     };
 
@@ -429,8 +549,11 @@ export function BlindsEyeLens({
       detectFrame();
     }
 
-    return () => { cancelled = true; cancelAnimationFrame(animationFrameId); };
-  }, [isBrowserCameraActive, browserModel, engineMode, speakBrowser, onVisionTelemetry]);
+    return () => {
+      cancelled = true;
+      if (timerId !== undefined) window.clearTimeout(timerId);
+    };
+  }, [cameraSession, isBrowserCameraActive, browserModel, engineMode, speakBrowser, reportVisionTelemetry]);
 
   const threatColor = (level?: string) => {
     switch (level) {
@@ -472,7 +595,11 @@ export function BlindsEyeLens({
               {isServerLive && engineMode === "yolo"
                 ? `YOLO11 · ${serverStatus?.mode ?? "all"} mode · ${serverStatus?.fps ?? 0} FPS`
                 : engineMode === "browser"
-                  ? browserModel
+                  ? browserModelError
+                    ? "Browser AI unavailable"
+                    : !isBrowserCameraActive
+                      ? "Choose a camera to start"
+                      : browserModel
                     ? "Object detection active"
                     : "Loading browser AI..."
                   : "Server not connected"}
@@ -593,12 +720,18 @@ export function BlindsEyeLens({
                   />
                   <Button
                     size="sm"
-                    disabled={isLoadingBrowserModel || !selectedCameraId}
+                    disabled={isStartingCamera || isLoadingBrowserModel || !selectedCameraId}
                     onClick={() => startBrowserCamera()}
                     className="mt-1 bg-white text-black hover:bg-white/90 font-bold shadow-md"
                   >
-                    {isLoadingBrowserModel ? "Loading AI..." : "Open Camera"}
+                    {isStartingCamera ? "Opening Camera…" : isLoadingBrowserModel ? "Loading AI…" : "Open Camera"}
                   </Button>
+                  {!selectedCameraId && (
+                    <p className="max-w-xs text-xs text-amber-200" role="status">
+                      Choose a camera above. If the list is empty, allow camera access first.
+                    </p>
+                  )}
+                  {cameraError && <p className="max-w-xs text-xs text-rose-300" role="alert">{cameraError}</p>}
                 </div>
               </div>
             )}
@@ -631,6 +764,15 @@ export function BlindsEyeLens({
           <Button size="sm" variant="destructive" onClick={stopBrowserCamera}>
             <CameraOff className="mr-1.5 size-4" /> Stop Camera
           </Button>
+          {cameraError && <p className="w-full text-xs text-rose-400" role="alert">{cameraError}</p>}
+          {browserModelError && (
+            <div className="flex w-full items-center justify-between gap-2 text-xs text-rose-400" role="alert">
+              <span>{browserModelError}</span>
+              <Button size="sm" variant="outline" onClick={() => setModelRetryKey((key) => key + 1)}>
+                <RefreshCw className="mr-1.5 size-3.5" /> Retry AI
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
