@@ -58,7 +58,7 @@ export function BlindsEyeLens({
   onCameraStatusChange,
 }: BlindsEyeLensProps = {}) {
   const [engineMode, setEngineMode] = useState<"yolo" | "browser">("browser");
-  const [browserDetectionMode, setBrowserDetectionMode] = useState<"original" | "combined" | "small">("original");
+  const [browserDetectionMode, setBrowserDetectionMode] = useState<"original" | "combined" | "small">("small");
   const [extraDetectorStatus, setExtraDetectorStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const extraDetectorReadyRef = useRef(false);
   const [smallStatus, setSmallStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -546,7 +546,7 @@ export function BlindsEyeLens({
                 ? `YOLO11 · ${serverStatus?.mode ?? "all"} mode · ${serverStatus?.fps ?? 0} FPS`
                 : engineMode === "browser"
                   ? browserModel
-                    ? browserDetectionMode === "small" ? `Small Objects (${smallStatus})` : browserDetectionMode === "combined" ? `COCO-SSD + YOLOS (${extraDetectorStatus})` : "COCO-SSD loaded"
+                    ? "Object detection active"
                     : "Loading browser AI..."
                   : "Server not connected"}
             </p>
@@ -594,18 +594,6 @@ export function BlindsEyeLens({
           </Button>
         </div>
       </div>
-
-      {engineMode === "browser" && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-          <span className="font-semibold text-muted-foreground">Browser detection:</span>
-          <Button size="sm" variant={browserDetectionMode === "original" ? "default" : "outline"} onClick={() => { setBrowserDetectionMode("original"); extraDetectionsRef.current = []; }}>Original COCO-SSD</Button>
-          <Button size="sm" variant={browserDetectionMode === "combined" ? "default" : "outline"} onClick={() => setBrowserDetectionMode("combined")}>Combined (experimental)</Button>
-          <Button size="sm" variant={browserDetectionMode === "small" ? "default" : "outline"} onClick={() => setBrowserDetectionMode("small")}>Small Objects (experimental)</Button>
-          {browserDetectionMode === "small" && <span role="status" className="text-muted-foreground">Text-guided model: {smallStatus} · First download may take time</span>}
-          {browserDetectionMode === "combined" && <span role="status" className="text-muted-foreground">Secondary YOLOS model: {extraDetectorStatus}</span>}
-          <span className="text-muted-foreground">Experimental YOLOS is not Ultralytics YOLO; compare accuracy before relying on it.</span>
-        </div>
-      )}
 
       {/* Main Viewport Container */}
       <div className="relative mt-4 aspect-video w-full overflow-hidden rounded-xl border border-border bg-black flex items-center justify-center">
