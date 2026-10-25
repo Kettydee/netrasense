@@ -50,23 +50,12 @@ export function CameraDeviceSelector({
       const videoInputs = devices.filter((d) => d.kind === "videoinput");
       setCameras(videoInputs);
 
-      // Auto-select DroidCam if available and nothing selected yet
-      if (!selectedId) {
-        const droidCam = videoInputs.find((d) => /droidcam|phone|iriun/i.test(d.label));
-        if (droidCam) {
-          setSelectedId(droidCam.deviceId);
-          onSelectCamera(droidCam.deviceId);
-        } else if (videoInputs.length > 0 && videoInputs[0]) {
-          setSelectedId(videoInputs[0].deviceId);
-          onSelectCamera(videoInputs[0].deviceId);
-        }
-      }
     } catch (err) {
       console.warn("Could not enumerate camera devices:", err);
     } finally {
       setIsRefreshing(false);
     }
-  }, [selectedId, onSelectCamera]);
+  }, []);
 
   useEffect(() => {
     loadCameras();
@@ -104,7 +93,7 @@ export function CameraDeviceSelector({
               )}
               <span className="truncate">
                 {cameras.find((c) => c.deviceId === selectedId)?.label ||
-                  (cameras.length > 0 ? "Select Camera" : "Camera (Default)")}
+                  (selectedId ? "Selected Camera" : "Choose Camera")}
               </span>
             </div>
           </SelectTrigger>
@@ -112,7 +101,7 @@ export function CameraDeviceSelector({
           <SelectContent className="w-[260px] rounded-xl border border-border bg-card text-foreground shadow-xl p-1 z-50">
             {cameras.length === 0 ? (
               <div className="p-3 text-center text-xs text-muted-foreground">
-                No cameras listed yet. Click &ldquo;Open Camera&rdquo; first to grant permission.
+                Allow camera access in your browser, then refresh the list and choose a camera.
               </div>
             ) : (
               cameras.map((camera, index) => {
@@ -255,3 +244,4 @@ export function CameraDeviceSelector({
     </div>
   );
 }
+
