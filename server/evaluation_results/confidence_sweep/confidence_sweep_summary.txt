@@ -3,7 +3,7 @@
 ========================================================================================
 Dataset          : COCO-128 (Genuine Ground-Truth Bounding Boxes)
 Dataset License  : Creative Commons Attribution 4.0 (CC BY 4.0)
-Model Weights    : yolo11n.pt
+Model Weights    : /Users/harshbothra/Desktop/netrasense/yolo11n.pt
 Image Resolution : 640x640
 IoU Threshold    : 0.6
 

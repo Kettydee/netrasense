@@ -563,6 +563,23 @@ function DashboardPage() {
     placeholderData: () => DEFAULT_STATUS,
   });
 
+  // Track whether the last unified-status fetch actually succeeded. A failed
+  // fetch (network error, server down, or non-2xx response) returns the
+  // placeholder, which must never be rendered as live telemetry. This keeps
+  // stale or missing readings from being displayed as though they were
+  // current while also avoiding a full UI reset on every poll.
+  const isStatusLoaded = statusQuery.isSuccess && statusQuery.data !== DEFAULT_STATUS;
+  const statusAgeSeconds: number | null =
+    isStatusLoaded && statusQuery.data?.sensor_data?.timestamp != null
+      ? Math.max(
+          0,
+          (Date.now() - new Date(statusQuery.data.sensor_data.timestamp).getTime()) / 1000,
+        )
+      : null;
+  const isSensorDataFresh =
+    isStatusLoaded && statusAgeSeconds !== null && statusAgeSeconds <= SENSOR_HEARTBEAT_TIMEOUT_S;
+  const isStatusReady = isStatusLoaded;
+
   const hw = statusQuery.data?.hardware; // shorthand
 
   const todayStats = statsQuery.data?.find((s) => s.date === today);
@@ -592,8 +609,7 @@ function DashboardPage() {
         // detection remains visible through liveVision, but must not be stored
         // as a fabricated 0 cm ultrasonic encounter.
         if (currentSensorDist === null) return;
-        const currentThreat =
-          classifyDistance(currentSensorDist);
+        const currentThreat = classifyDistance(currentSensorDist);
         const isObstacle = currentThreat !== "Normal";
         let newDodged = localDailyDodged;
         const newDist = localDailyDistM + 15;
@@ -736,10 +752,14 @@ function DashboardPage() {
     ? isWebSerialFresh
       ? (webSerialData?.distance_cm ?? null)
       : null
-    : hw?.ultrasonic?.distance_cm;
+    : isStatusLoaded
+      ? (statusQuery.data?.sensor_data?.distance_cm ?? null)
+      : null;
   const ultrasonicThreatHw = isWebSerialConnected
     ? (webSerialData?.threat_level ?? null)
-    : hw?.ultrasonic?.threat_level;
+    : isStatusLoaded
+      ? (statusQuery.data?.sensor_data?.threat_level ?? null)
+      : null;
   const cameraConnected = hw?.camera?.connected ?? false;
   const aiLoaded = hw?.ai?.loaded ?? false;
   const aiProcessing = hw?.ai?.processing ?? false;
@@ -773,8 +793,17 @@ function DashboardPage() {
     ? (webSerialData?.threat_level ?? null)
     : (hw?.ultrasonic?.threat_level ?? statusQuery.data?.sensor_data?.threat_level ?? null);
 
+  // Backend sensor data is only usable when the unified-status fetch has
+  // succeeded and the reported sensor_data is fresh.  If the API has not
+  // returned (isStatusLoaded is false), the placeholder must not be
+  // rendered as live telemetry.  If the server-reported data is stale or
+  // missing, hasBackendSensorData is false so the dashboard shows no
+  // current measurement rather than an apparent but old one.
   const hasBackendSensorData =
-    (hw?.ultrasonic?.active || !!statusQuery.data?.sensor_data) && rawHwDistance !== null;
+    isStatusLoaded &&
+    (hw?.ultrasonic?.active || !!statusQuery.data?.sensor_data) &&
+    rawHwDistance !== null &&
+    isSensorDataFresh;
   const hasSensorData = isWebSerialConnected
     ? webSerialData !== null && rawHwDistance !== null
     : hasBackendSensorData;
@@ -1013,10 +1042,8 @@ function DashboardPage() {
           <section aria-labelledby="vision-heading">
             <h2 id="vision-heading" className="sr-only">
               Blind's Eye Visual Recognition
-            </h2>
-            <BlindsEyeLens
-              onVisionTelemetry={handleVisionTelemetry}
-            />
+            </h2>{" "}
+            <BlindsEyeLens onVisionTelemetry={handleVisionTelemetry} />
           </section>
 
           {/* --- LIVE ENVIRONMENT COMMAND SECTION --- */}
@@ -1126,7 +1153,7 @@ function DashboardPage() {
                 )
               ) : isWebSerialConnected ? (
                 <p className="flex items-center gap-2">
-                  <span aria-hidden="true">🟢</span>
+                  <span aria-hidden="true">⚪</span>
                   <span>USB connected — waiting for the first sensor reading…</span>
                 </p>
               ) : isLiveVisionActive ? (

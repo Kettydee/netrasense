@@ -1,0 +1,580 @@
+{
+  "policy_results": {
+    "camera_only": {
+      "pass": 17,
+      "fail": 0,
+      "gt_true_scenarios": 14,
+      "gt_true_warned": 3,
+      "gt_false_warned": 0
+    },
+    "ultrasonic_only": {
+      "pass": 17,
+      "fail": 0,
+      "gt_true_scenarios": 14,
+      "gt_true_warned": 9,
+      "gt_false_warned": 0
+    },
+    "legacy_weighted": {
+      "pass": 17,
+      "fail": 0,
+      "gt_true_scenarios": 14,
+      "gt_true_warned": 10,
+      "gt_false_warned": 0
+    },
+    "reliability_aware": {
+      "pass": 17,
+      "fail": 0,
+      "gt_true_scenarios": 14,
+      "gt_true_warned": 11,
+      "gt_false_warned": 0
+    }
+  },
+  "per_scenario": [
+    {
+      "scenario_id": "S01-no-evidence",
+      "gt_warning": null,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": false,
+        "actual_severity": "Normal",
+        "actual_warning": false,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S02-camera-only-person",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": true,
+        "actual_severity": "WARNING",
+        "actual_warning": true,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": true,
+        "actual_severity": "Collision",
+        "actual_warning": true,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": true,
+        "actual_severity": "WARNING",
+        "actual_warning": true,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S03-ultrasonic-only-80cm",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": true,
+        "actual_severity": "ALARM",
+        "actual_warning": true,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": true,
+        "actual_severity": "Alarming",
+        "actual_warning": true,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": true,
+        "actual_severity": "ALARM",
+        "actual_warning": true,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S04-agreeing-80cm-person",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": true,
+        "actual_severity": "WARNING",
+        "actual_warning": true,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": true,
+        "actual_severity": "ALARM",
+        "actual_warning": true,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": true,
+        "actual_severity": "Collision",
+        "actual_warning": true,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": true,
+        "actual_severity": "ALARM",
+        "actual_warning": true,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S05-conflict-far-ultra-visual-person",
+      "gt_warning": null,
+      "camera_only": {
+        "expected_warning": true,
+        "actual_severity": "WARNING",
+        "actual_warning": true,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": false,
+        "actual_severity": "NORMAL",
+        "actual_warning": false,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": true,
+        "actual_severity": "Warning",
+        "actual_warning": true,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": true,
+        "actual_severity": "WARNING",
+        "actual_warning": true,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S06-ultra-50-exact",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": true,
+        "actual_severity": "ALARM",
+        "actual_warning": true,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": true,
+        "actual_severity": "Alarming",
+        "actual_warning": true,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": true,
+        "actual_severity": "ALARM",
+        "actual_warning": true,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S07-ultra-100-exact",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": true,
+        "actual_severity": "WARNING",
+        "actual_warning": true,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": true,
+        "actual_severity": "Alarming",
+        "actual_warning": true,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": true,
+        "actual_severity": "WARNING",
+        "actual_warning": true,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S08-ultra-300-exact",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": true,
+        "actual_severity": "WARNING",
+        "actual_warning": true,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": false,
+        "actual_severity": "Normal",
+        "actual_warning": false,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": true,
+        "actual_severity": "WARNING",
+        "actual_warning": true,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S09-ultra-301-normal",
+      "gt_warning": false,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": false,
+        "actual_severity": "NORMAL",
+        "actual_warning": false,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": false,
+        "actual_severity": "Normal",
+        "actual_warning": false,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": false,
+        "actual_severity": "NORMAL",
+        "actual_warning": false,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S10-ultra-49-critical",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": true,
+        "actual_severity": "CRITICAL",
+        "actual_warning": true,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": true,
+        "actual_severity": "Alarming",
+        "actual_warning": true,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": true,
+        "actual_severity": "CRITICAL",
+        "actual_warning": true,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S11-invalid-ultrasonic",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": false,
+        "actual_severity": "Normal",
+        "actual_warning": false,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S12-stale-ultrasonic",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": false,
+        "actual_severity": "Normal",
+        "actual_warning": false,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S13-fresh-at-exact-3s",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": true,
+        "actual_severity": "ALARM",
+        "actual_warning": true,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": true,
+        "actual_severity": "Alarming",
+        "actual_warning": true,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": true,
+        "actual_severity": "ALARM",
+        "actual_warning": true,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S14-stale-just-past-3s",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": false,
+        "actual_severity": "Normal",
+        "actual_warning": false,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S15-camera-disconnected",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": true,
+        "actual_severity": "ALARM",
+        "actual_warning": true,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": true,
+        "actual_severity": "Alarming",
+        "actual_warning": true,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": true,
+        "actual_severity": "ALARM",
+        "actual_warning": true,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S16-ultrasonic-reconnect-recovery",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": true,
+        "actual_severity": "ALARM",
+        "actual_warning": true,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": true,
+        "actual_severity": "Alarming",
+        "actual_warning": true,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": true,
+        "actual_severity": "ALARM",
+        "actual_warning": true,
+        "match": true
+      }
+    },
+    {
+      "scenario_id": "S17-ultrasonic-disconnected-visual",
+      "gt_warning": true,
+      "camera_only": {
+        "expected_warning": true,
+        "actual_severity": "WARNING",
+        "actual_warning": true,
+        "match": true
+      },
+      "ultrasonic_only": {
+        "expected_warning": false,
+        "actual_severity": "NO DATA",
+        "actual_warning": false,
+        "match": true
+      },
+      "legacy_weighted": {
+        "expected_warning": true,
+        "actual_severity": "Collision",
+        "actual_warning": true,
+        "match": true
+      },
+      "reliability_aware": {
+        "expected_warning": true,
+        "actual_severity": "WARNING",
+        "actual_warning": true,
+        "match": true
+      }
+    }
+  ],
+  "mismatches": {
+    "camera_only": [],
+    "ultrasonic_only": [],
+    "legacy_weighted": [],
+    "reliability_aware": []
+  },
+  "harness_metrics": {
+    "camera_only": {
+      "labeled_trials": 15,
+      "unknown_ground_truth": 2,
+      "warning_precision": 1.0,
+      "warning_recall": 0.21428571428571427,
+      "missed_warning_rate": 0.7857142857142857,
+      "false_warning_rate": 0.0,
+      "confusion_matrix": {
+        "tp": 3,
+        "fp": 0,
+        "fn": 11,
+        "tn": 1
+      }
+    },
+    "ultrasonic_only": {
+      "labeled_trials": 15,
+      "unknown_ground_truth": 2,
+      "warning_precision": 1.0,
+      "warning_recall": 0.6428571428571429,
+      "missed_warning_rate": 0.35714285714285715,
+      "false_warning_rate": 0.0,
+      "confusion_matrix": {
+        "tp": 9,
+        "fp": 0,
+        "fn": 5,
+        "tn": 1
+      }
+    },
+    "legacy_weighted": {
+      "labeled_trials": 15,
+      "unknown_ground_truth": 2,
+      "warning_precision": 1.0,
+      "warning_recall": 0.7142857142857143,
+      "missed_warning_rate": 0.2857142857142857,
+      "false_warning_rate": 0.0,
+      "confusion_matrix": {
+        "tp": 10,
+        "fp": 0,
+        "fn": 4,
+        "tn": 1
+      }
+    },
+    "reliability_aware": {
+      "labeled_trials": 15,
+      "unknown_ground_truth": 2,
+      "warning_precision": 1.0,
+      "warning_recall": 0.7857142857142857,
+      "missed_warning_rate": 0.21428571428571427,
+      "false_warning_rate": 0.0,
+      "confusion_matrix": {
+        "tp": 11,
+        "fp": 0,
+        "fn": 3,
+        "tn": 1
+      }
+    }
+  },
+  "data_quality": {
+    "invalid_ultrasonic_rate": 0.23529411764705882,
+    "recovery_events": 1,
+    "recovery_success_rate": 1.0,
+    "latency": "not calculated: replay timestamps are not physical sensor-to-warning latency"
+  }
+}

@@ -438,7 +438,8 @@ export function BlindsEyeLens({
     }
   };
 
-  const detections = serverStatus?.detections ?? [];  const leftDets = detections.filter((d) => d.direction === "left");
+  const detections = serverStatus?.detections ?? [];
+  const leftDets = detections.filter((d) => d.direction === "left");
   const centerDets = detections.filter((d) => d.direction === "center");
   const rightDets = detections.filter((d) => d.direction === "right");
   const _leftDets = leftDets;
@@ -773,7 +774,8 @@ export function BlindsEyeLens({
                 browserDetectedItem !== "Lens Inactive"
               ? [browserDetectedItem]
               : []
-        }        detections={
+        }
+        detections={
           engineMode === "yolo"
             ? detections.map((d) => {
                 const distanceCm =

@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml">
+<w:body>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="Heading1"/>
+</w:rPr>
+<w:t>II. OBJECTIVES AND SCOPE</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="Heading2"/>
+</w:rPr>
+<w:t>A. Problem Statement and Motivation</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>NetraSense is an experimental Internet of Things (IoT) prototype that combines a camera-based object-detection pipeline with an HC-SR04 ultrasonic ranging channel and an Arduino-local buzzer. This paper documents the implemented system and specifies an evaluation-ready methodology rather than claiming field performance that has not yet been measured. The central design decision is freshness-aware, decision-level fusion: a valid, fresh ultrasonic measurement and a visual detection may each support a warning, but their measurements are not averaged or assumed to describe the same object without an established object-association method.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The problem addressed is how to make the behavior of a low-cost vision-and-ultrasonic obstacle-warning prototype explicit and testable when observations may be missing, invalid, stale, or not directly associable. The project does not establish verified obstacle avoidance or navigation safety.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The contribution of this paper is an implementation-grounded and protocol-ready framework, not a claim that NetraSense improves obstacle detection or is safe for navigation. Specifically, it documents (i) a failure-aware sensor and data path, (ii) a deterministic policy for representing sensor availability and warning states, and (iii) provenance-aware recording, validation, and replay tooling to support future comparisons of warning policies. Physical effectiveness, usability, and safety remain research questions.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="Heading2"/>
+</w:rPr>
+<w:t>B. Objectives</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>1. Integrate YOLO11n visual detections and HC-SR04 ultrasonic sensing into a common warning framework without claiming that their combination has been demonstrated to improve detection accuracy.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>2. Handle invalid telemetry, stale readings, disconnections, and unavailable sensing at the components responsible for those conditions, and prevent unavailable sensor data from being interpreted as evidence that the path is clear.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>3. Evaluate data freshness using host-side receipt and monotonic-clock information, distinguishing receipt-time freshness from true acquisition-time age because the firmware does not transmit a source-side acquisition timestamp.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>4. Apply a conservative fusion policy that represents the availability of distinct input signals through the implemented fusion states and populates a numeric fused distance only when the production implementation’s single-source condition is satisfied.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>5. Document host-side threat-classification boundaries and Arduino buzzer-actuation bands separately, verifying consistency between the host classifier and dashboard threat display without implying that the firmware uses identical thresholds.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>6. Provide software verification through unit and regression tests, model diagnostic evaluation, and an offline replay workflow, while distinguishing software repeatability from controlled physical experiments.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>7. Separate software verification and model diagnostic results from physical-system validation and real-world performance, which remain unverified by the evidence documented in this paper.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="Heading2"/>
+</w:rPr>
+<w:t>C. Scope and Intended Contribution</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The implemented system consists of an Arduino-connected HC-SR04 ultrasonic sensor, a host-side serial ingestion and normalization layer, a Python sensor-bridge and vision-service stack, and a browser-based monitoring dashboard. The buzzer is controlled locally by the Arduino firmware; the host does not command it in the production configuration. The paper describes a prototype warning framework and its software verification, not a physically validated safety or navigation system.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="Heading2"/>
+</w:rPr>
+<w:t>C.1 Hardware and Firmware</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The Arduino firmware configures the HC-SR04 trigger and echo connections on D9 and D10, a piezo buzzer on D11, serial communication at 9600 baud, and a nominal sampling interval of 75 ms. The firmware performs an ultrasonic measurement with an echo timeout of 24,000 microseconds and accepts measurements in the physical range of 2–380 cm.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>A valid measurement is transmitted in the form {"distance_cm":N,"valid":true}, where N is the measured distance in the accepted range.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>A failed measurement caused by a missing echo is represented as {"distance_cm":null,"valid":false,"status":"NO_ECHO"}. A measurement outside the accepted physical range is represented as {"distance_cm":null,"valid":false,"status":"OUT_OF_RANGE"}.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>Failed measurements are represented explicitly rather than as measured distances. This allows the host to distinguish a failed measurement from a valid distance reading. However, the absence of a valid measurement does not, by itself, establish whether an obstacle is present or absent.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The firmware does not transmit a source-side acquisition timestamp. Consequently, host-side timestamps and elapsed-time measurements cannot establish the true age of a measurement since acquisition.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The firmware maps valid distance readings to buzzer patterns. It remains silent at distances greater than or equal to 300 cm, emits slow beeps for distances greater than or equal to 200 cm but below 300 cm, emits moderate beeps for distances greater than or equal to 100 cm but below 200 cm, and emits rapid beeps below 100 cm. These are implemented actuator rules, not experimentally validated safety distances.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="Heading2"/>
+</w:rPr>
+<w:t>C.2 Host-Side Data Handling and Freshness</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The host serial reader normalizes incoming telemetry, rejects explicitly invalid or failure records, and checks received distance values against its accepted input rules. It preserves the firmware’s NO_ECHO and OUT_OF_RANGE failure markers rather than treating them as measured distances.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The host evaluates freshness using a monotonic elapsed-time measurement associated with the last accepted sensor reading. The production freshness timeout defaults to 3.0 seconds. A reading is considered stale when its elapsed age is strictly greater than the configured timeout; at exactly 3.0 seconds, it remains fresh under the default configuration.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>A stale state is not renewed merely because a stale value remains available. A new valid reading is required to renew the accepted sensor state. The timeout is an operational freshness rule based on host-side timing, not a measurement of the true age of the reading since the ultrasonic acquisition occurred.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>Responsibilities are distributed across the system. The firmware generates distance measurements and explicit failure records. The host validates telemetry and evaluates the server-side freshness state. The dashboard consumes status information and may apply its own display timers or Web Serial freshness checks; these frontend display mechanisms should not be conflated with the server-side freshness evaluator.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="Heading2"/>
+</w:rPr>
+<w:t>C.3 Threat Classification</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The production host threat classifier uses the following distance boundaries:</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="ListParagraph"/>
+</w:rPr>
+<w:t>NORMAL: distance greater than 300 cm.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="ListParagraph"/>
+</w:rPr>
+<w:t>WARNING: distance greater than or equal to 100 cm and less than or equal to 300 cm.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="ListParagraph"/>
+</w:rPr>
+<w:t>ALARM: distance greater than or equal to 50 cm and less than 100 cm.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="ListParagraph"/>
+</w:rPr>
+<w:t>CRITICAL: distance below 50 cm.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The host threat classifier and dashboard distance-meter display follow these documented classification boundaries.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The Arduino firmware uses separate buzzer-actuation bands: silent at distances greater than or equal to 300 cm, slow beeps from 200 cm to below 300 cm, moderate beeps from 100 cm to below 200 cm, and rapid beeps below 100 cm. These bands describe actuator behavior and are not identical to the host threat-classification boundaries.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>Neither the classification thresholds nor the buzzer patterns should be interpreted as validated safety limits. In particular, the absence of a buzzer warning does not establish that the environment is safe.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="Heading2"/>
+</w:rPr>
+<w:t>C.4 Fusion and State Reporting</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>Production fusion is implemented by the reliability-aware EnsembleClassifier. It processes ultrasonic distance information, YOLO visual detection evidence, and optional monocular depth information as distinct signal sources. The existence of separate signal sources does not imply statistical independence.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>Depth estimation is an optional capability that can provide a third signal to the production fusion classifier when a depth session is loaded. The evaluated baseline is a YOLO11n object-detection diagnostic benchmark on COCO-128; its saved evaluation artifacts do not establish whether depth estimation was enabled or disabled during the run. Accordingly, this paper makes no claim of depth-assisted performance in the baseline evaluation. Depth estimation is treated as an optional implementation capability rather than a verified evaluated modality.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The production fusion classifier reports a fused threat level and a sensing state. When no valid signal source is available, the fused threat level is reported as NO DATA. When exactly one distinct input source contributes usable information, the sensing state is SENSOR DEGRADED; when two or more distinct input sources contribute usable information, the sensing state is FUSED. The EnsembleResult data structure declares NO VALID DATA as its initial sensing-state value, but the production fusion logic assigns NO DATA, SENSOR DEGRADED, or FUSED according to its runtime conditions. The dashboard exposes the fusion result through fused_threat_level, sensing_state, and fused_distance_cm. It does not invent a numeric fused distance when the implementation’s single-source condition for reporting that value is not satisfied.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>Visual detections contribute object-detection and threat evidence. In the evaluated baseline configuration, YOLO11n produces detections such as bounding boxes and class labels but does not, by itself, provide calibrated physical distances. Depth estimation is implemented as an optional capability, but it is not active in the evaluated baseline configuration. Therefore, this paper does not claim depth-assisted performance for that baseline.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The displayed agreement value is a deterministic agreement or coverage index, not a calibrated probability. It combines a severity-agreement component with average signal confidence. It must not be interpreted as a calibrated probability of an obstacle, a validated measure of physical agreement about the same object, or evidence of improved detection accuracy.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:rStyle w:val="Heading2"/>
+</w:rPr>
+<w:t>C.5 Verification and Evaluation Limitations</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The repository contains software verification and model diagnostic evaluation. The server test suite covers areas including telemetry parsing, warning-state transitions, fusion-state generation, and replay behavior. These tests establish software behavior within their tested conditions; they do not establish physical sensor performance or real-world navigation safety.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The reported model diagnostic evaluation uses the COCO-128 dataset. These results are diagnostic and should not be presented as evidence of generalization to a deployment environment or as a representative measurement of real-world obstacle-warning performance.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The repository also provides a recording, validation, and replay workflow. The fusion_experiment.py script supports replay of JSONL scenarios through camera-only, ultrasonic-only, legacy weighted-baseline, and reliability-aware fusion configurations. The workflow records information including input ordering, exclusions, recording types, schema metadata, and manifest and payload SHA-256 hashes. The associated tests check relevant validation and replay behavior, including deterministic classification of accepted records. Such software-level repeatability is not physical evidence.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>Simulated and fault-injection records can test how the software handles specified inputs, but they do not substitute for physical measurements. Replay timestamps and program execution time must not be described as measured sensor-to-warning latency.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>The project specifies a controlled physical-test protocol and a checklist covering camera-only, ultrasonic-only, and combined operation; invalid and fault-injection scenarios; serial disconnection and recovery; and buzzer actuation timing. The existence of this protocol does not establish that the physical tests have been executed. Based on the evidence documented for this paper, controlled physical validation has not been established.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:spacing w:after="480" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:r>
+<w:t>Accordingly, this paper does not claim improved accuracy, fewer false warnings, superior performance over individual sensors, superiority over alternative fusion methods, calibrated distance estimation, validated physical performance, or real-world navigation safety. Such claims require appropriate ground-truth data, controlled physical trials, and comparative results under defined conditions.</w:t>
+</w:r>
+</w:p>
+</w:body>
+</w:document>

@@ -152,6 +152,84 @@ export type Database = {
           },
         ];
       };
+      fusion_state_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          scenario_id: string;
+          timestamp: string;
+          fused_threat_level: string;
+          sensing_state: string;
+          fused_distance_cm: number | null;
+          confidence: number;
+          fresh: boolean;
+          age_seconds: number | null;
+          signal_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          scenario_id: string;
+          timestamp: string;
+          fused_threat_level: string;
+          sensing_state: string;
+          fused_distance_cm?: number | null;
+          confidence: number;
+          fresh: boolean;
+          age_seconds?: number | null;
+          signal_count?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          scenario_id?: string;
+          timestamp?: string;
+          fused_threat_level?: string;
+          sensing_state?: string;
+          fused_distance_cm?: number | null;
+          confidence?: number;
+          fresh?: boolean;
+          age_seconds?: number | null;
+          signal_count?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      alert_logs: {
+        Row: {
+          id: string;
+          user_id: string;
+          timestamp: string;
+          level: "info" | "warning" | "alert" | "critical";
+          severity: "low" | "medium" | "high" | "critical";
+          message: string;
+          related_fixtures: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          timestamp: string;
+          level: "info" | "warning" | "alert" | "critical";
+          severity: "low" | "medium" | "high" | "critical";
+          message: string;
+          related_fixtures?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          timestamp?: string;
+          level?: "info" | "warning" | "alert" | "critical";
+          severity?: "low" | "medium" | "high" | "critical";
+          message?: string;
+          related_fixtures?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

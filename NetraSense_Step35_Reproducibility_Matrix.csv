@@ -1,0 +1,40 @@
+# NetraSense Step 35: Reproducibility Matrix
+
+| Claim_ID | Claim | Artifact_Path | Verification_Method | Expected_Result | Actual_Result | Status | Missing_Evidence | Recommended_Action |
+|---|---|---|---|---|---|---|---|---|
+| R1 | 109 Python tests pass | `server/` test files | `python3 -m pytest server/ -x -q` (re-run) | 109 passed, exit 0 | 114 passed, exit 0 | Reproduced | None | None |
+| R2 | Frontend production build passes | Next.js app | `npm run build` (re-run) | Exit 0 | Exit 0 | Reproduced | None | None |
+| R3 | TypeScript check passes | TS sources | `npx tsc --noEmit` (re-run) | Exit 0 | Exit 0 | Reproduced | None | None |
+| R4 | ESLint zero errors | TS/JS sources | `npm run lint` (re-run) | 0 errors, 11 warnings | 0 errors, 11 warnings | Reproduced | None | None |
+| R5 | YOL011n mAP50 = 67.95% | `evaluation_results/` | Artifact read; run_reproducible_evaluation.py | mAP50 = 67.95% | Matches existing artifacts | Artifact-verified | Independent re-execution | Run evaluation with fixed environment and seed |
+| R6 | mAP50–95 = 50.22% | `evaluation_results/` | Artifact read | mAP50–95 = 50.22% | Matches existing artifacts | Artifact-verified | Independent re-execution | Run evaluation |
+| R7 | Precision = 69.35% | `evaluation_results/` | Artifact read | Precision = 69.35% | Matches existing artifacts | Artifact-verified | Independent re-execution | Run evaluation |
+| R8 | Recall = 59.09% | `evaluation_results/` | Artifact read | Recall = 59.09% | Matches existing artifacts | Artifact-verified | Independent re-execution | Run evaluation |
+| R9 | Macro-F1 = 57.91% | `evaluation_results/` | Recompute from per-class F1 | Recomputation matches | Computed 57.91% from recorded outputs | Reproduced (from recorded outputs) | Statement that 57.91% is pooled-micro result | Manuscript already corrected; state macro-micro clearly |
+| R10 | Macro-F1 is single-run and threshold-dependent | `evaluation_results/` + code | Trace to `run_reproducible_evaluation.py` inputs | 57.91% is not a stable benchmark | Confirmed: single run, 45°–90° range, threshold-dependent | Reproduced | Publish raw prediction records and a fixed evaluation configuration | Add evaluation config file with all hyperparameters |
+| R11 | 17 scenarios, all four policies match expectations | `experiments/fusion_replay/replay_2026-10-25/scenarios.jsonl` + `replay_results.json` | Independently recompute warnings from scenario inputs and `ensemble.py`/`ensemble_model.py` | 17/17 match; confusion matrices confirmed | 17/17; TP=11/FP=0/FN=3/TN=1 for reliability-aware | Reproduced | None | None |
+| R12 | Physical range-error measurement exists | Repository | Search for measurement logs, CSV, time-series | Found physical data | None found | Not available | Physical measurement records | Conduct controlled measurement |
+| R13 | Synchronized end-to-end warning latency exists | Repository | Search for latency logs | Found | None found | Not available | Synchronized timestamps and reference measurement | Run hardware-in-the-loop test |
+| R14 | Sensor-disconnection recovery recorded | Repository | Search for fault-injection records | Found | None found | Not available | Physical fault-injection records | Run controlled fault tests |
+| R15 | Supabase insertion verified with RLS | Source code + live test | Code inspection + live database call | Live test with real DB | Code inspection only; no recorded live test | Not verified | Live test with real credentials | Perform isolated test on non-production environment |
+
+---
+
+## Environment
+
+| Item | Value |
+|---|---|
+| Python | 3.9.6 |
+| Platform | macOS-27.0.1-arm64 (Apple M4) |
+| Ultralytics (run 1, 14 Oct) | 8.4.155 |
+| Ultralytics (run 2, 15 Oct) | 8.4.177 |
+| Hardware | Apple M4 |
+
+## Commands
+
+| # | Command | Exit Code |
+|---|---|---|
+| 1 | `python3 -m pytest server/ -x -q` | 0 |
+| 2 | `npm run build` | 0 |
+| 3 | `npx tsc --noEmit` | 0 |
+| 4 | `npm run lint` | 0 |

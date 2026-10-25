@@ -1,0 +1,44 @@
+{
+  "experiment_id": "baseline-yolo11n-coco128",
+  "evaluation_type": "ground-truth object-detection accuracy",
+  "source_revision": "1ef58f1 (baseline); eval-related commits including af94738",
+  "evaluated_at": "2026-10-15T22:03:00Z",
+  "model_weights": {
+    "path": "/Users/harshbothra/Desktop/netrasense/yolo11n.pt",
+    "sha256": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+    "architecture": "YOLO11n",
+    "params": "2,616,248",
+    "gflops": 6.5
+  },
+  "dataset": {
+    "name": "COCO-128",
+    "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+    "images_path": "/opt/homebrew/datasets/coco128/images/train2017",
+    "images_count": 128,
+    "total_ground_truth_targets": 929,
+    "active_classes_count": 71,
+    "annotation_format": "YOLO txt / COCO JSON ground-truth boxes",
+    "benchmark_classification": "Diagnostic sanity check (not independent field validation)"
+  },
+  "evaluation_configuration": {
+    "image_size": 640,
+    "confidence_threshold": 0.001,
+    "nms_iou_threshold": 0.6,
+    "matching_iou": 0.5,
+    "evaluation_device": "CPU (Apple M4)",
+    "framework": "Ultralytics YOLO",
+    "framework_version": "8.4.177",
+    "pytorch_version": "2.8.0",
+    "python_version": "3.9.6",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+  },
+  "metrics_recorded": [
+    "Precision (macro)",
+    "Recall (macro)",
+    "F1-Score (harmonic mean of macro P & R)",
+    "mAP@50",
+    "mAP@50-95",
+    "Per-class precision, recall, F1, mAP@50"
+  ],
+  "dataset_classification": "The adopted COCO-128 evaluation is a lightweight diagnostic benchmark. It does not represent the full diversity of real-world obstacles or rare navigational hazards encountered by a body-worn assistive device. No claims of navigation safety, real-world obstacle-avoidance reliability, or physical sensor fusion performance are made or implied based on these software benchmark results."
+}

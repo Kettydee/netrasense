@@ -51,7 +51,7 @@ class Detection:
     direction: str        # "left" | "center" | "right"
     depth_meters: Optional[float] = None
     distance_cm: Optional[int] = None
-    threat_level: str = "Normal"  # "Normal" | "Warning" | "Alarming" | "Collision"
+    threat_level: Optional[str] = None  # None | "Normal" | "Warning" | "Alarming" | "Collision"
     motion_state: str = "Stationary"  # "Stationary" | "Moving"
 
 
@@ -285,7 +285,9 @@ class VisionPipeline:
             self._prev_tracks[track_id] = (cx, cy, now)
 
             # Without the depth model these are filled in by
-            # process_frame() depth-fusion; default to None / Normal.
+            # process_frame() depth-fusion; default to None so the
+            # ensemble's conservative fallback assigns WARNING for
+            # detections that lack metric distance evidence.
             detections.append(Detection(
                 label=label,
                 confidence=conf,
@@ -294,7 +296,7 @@ class VisionPipeline:
                 direction=direction,
                 depth_meters=None,
                 distance_cm=None,
-                threat_level="Normal",
+                threat_level=None,
                 motion_state=motion_state,
             ))
 

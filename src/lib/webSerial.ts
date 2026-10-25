@@ -315,9 +315,13 @@ export class WebSerialReader {
 
       // Impossible measurements (<= 0) and the legacy 400 cm no-echo sentinel
       // are dropped: an invalid reading must never be reported as a safe path.
-      if (rawDistance <= 0 || rawDistance >= 400) return;
+      if (this.isInvalidDistance(rawDistance)) return;
 
-      // Limit to sensor envelope (2 cm to 400 cm) and adopt real-time distance immediately with zero lag
+      // Adopt the new reading only when it is a genuine, finite metric
+      // distance; an invalid line never refreshes the previously published
+      // distance. This preserves connection-state behaviour and prevents a
+      // malformed or out-of-envelope line from making the previous reading
+      // appear current again.
       const bounded = Math.max(2, Math.min(400, rawDistance));
       const finalDistance = Number(bounded.toFixed(1));
 
@@ -348,6 +352,17 @@ export class WebSerialReader {
     } catch (error) {
       console.warn("Ignoring malformed web serial line:", error);
     }
+  }
+
+  /**
+   * Sentinel semantics: a distance of exactly 400 cm is the legacy
+   * no-echo failure marker, not a valid reading.  The browser layer must
+   * therefore treat a parsed 400.0 as an invalid reading (which drops the
+   * line) rather than clamping it to the sensor envelope and publishing a
+   * normal-looking distance.
+   */
+  private isInvalidDistance(rawDistance: number): boolean {
+    return rawDistance <= 0 || rawDistance >= 400;
   }
 
   private async closePort(): Promise<void> {

@@ -2,7 +2,7 @@
   "evaluation_name": "YOLO11n Object Detection Accuracy Benchmark",
   "evaluation_scope": "Ground-Truth Evaluation (Independent of Latency Benchmarks)",
   "model_architecture": "YOLO11n",
-  "weights_file": "yolo11n.pt",
+  "weights_file": "/Users/harshbothra/Desktop/netrasense/yolo11n.pt",
   "dataset_name": "COCO-128",
   "dataset_license": "Creative Commons Attribution 4.0 (CC BY 4.0)",
   "dataset_source": "https://cocodataset.org / Ultralytics Verified Ground-Truth",
@@ -19,8 +19,8 @@
     "precision": 0.6935,
     "recall": 0.5909,
     "f1_score": 0.6381,
-    "mAP_50": 0.6795,
-    "mAP_50_95": 0.5022
+    "mAP_50": 0.6801,
+    "mAP_50_95": 0.5026
   },
   "selected_assistive_obstacle_classes": {
     "person": {
@@ -28,7 +28,7 @@
       "precision": 0.8246,
       "recall": 0.6849,
       "f1_score": 0.7483,
-      "mAP50": 0.795
+      "mAP50": 0.7959
     },
     "bicycle": {
       "class_id": 1,
@@ -93,7 +93,7 @@
       "precision": 0.8246,
       "recall": 0.6849,
       "f1_score": 0.7483,
-      "mAP50": 0.795
+      "mAP50": 0.7959
     },
     "bicycle": {
       "class_id": 1,
@@ -282,7 +282,7 @@
       "precision": 1.0,
       "recall": 0.476,
       "f1_score": 0.645,
-      "mAP50": 0.7075
+      "mAP50": 0.7512
     },
     "suitcase": {
       "class_id": 28,

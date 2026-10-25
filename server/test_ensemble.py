@@ -84,6 +84,32 @@ class ReliabilityAwareFusionTests(unittest.TestCase):
         self.assertEqual(result.ultrasonic_distance, 80.0)
         self.assertIsNone(result.yolo_distance)
 
+    def test_invalid_distance_values_are_never_classified(self) -> None:
+        invalid_values = [float("nan"), float("inf"), float("-inf"), True, False, 0, -5]
+        for value in invalid_values:
+            with self.subTest(value=value):
+                result = self.ensemble.classify(ultrasonic_cm=value)
+                self.assertEqual(result.fused_threat_level, "NO DATA")
+                self.assertEqual(result.sensing_state, "NO VALID DATA")
+                self.assertIsNone(result.fused_distance_cm)
+
+    def test_string_distance_is_not_accepted(self) -> None:
+        # A string cannot be a valid metric distance; the ensemble must not
+        # silently coerce it into a number and classify it.
+        result = self.ensemble.classify(ultrasonic_cm="400")
+        self.assertEqual(result.fused_threat_level, "NO DATA")
+        self.assertEqual(result.sensing_state, "NO VALID DATA")
+        self.assertIsNone(result.fused_distance_cm)
+
+    def test_legacy_400_cm_no_echo_sentinel_is_not_normal(self) -> None:
+        # The firmware encodes a failed ultrasonic measurement (no echo) as the
+        # legacy 400.0 cm sentinel.  The ensemble must not turn this into a
+        # NORMAL threat level; it is unavailable data, not a calibrated range.
+        result = self.ensemble.classify(ultrasonic_cm=400.0)
+        self.assertEqual(result.fused_threat_level, "NO DATA")
+        self.assertEqual(result.sensing_state, "NO VALID DATA")
+        self.assertIsNone(result.fused_distance_cm)
+
 
 if __name__ == "__main__":
     unittest.main()

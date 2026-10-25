@@ -1,0 +1,766 @@
+{
+  "evaluation_type": "offline replay; not physical measurement unless input records declare recording_type=physical",
+  "input_order": "preserved",
+  "manifest": {
+    "schema_version": "1.0",
+    "source_path": "../experiments/fusion_replay/replay_2026-10-25/scenarios.jsonl",
+    "source_sha256": "878b7a7caf6fa2b67e50f393f3cb04ceb2d77c97c86aa855d9ea884fa84d8442",
+    "accepted_records": 17,
+    "excluded_records": 0,
+    "accepted_payload_sha256": "ef47d3fc9be4d0d9e6a413b954ca1abb09ac1efde29b04be34dd3d5b8431d4fd",
+    "recording_types": {
+      "simulated": 11,
+      "fault_injection": 6
+    },
+    "categories": {
+      "no_evidence": 1,
+      "visual_only_evidence": 1,
+      "ultrasonic_only_evidence": 1,
+      "both_agreeing": 1,
+      "conflicting_evidence": 1,
+      "boundary_ultrasonic": 5,
+      "invalid_ultrasonic": 1,
+      "stale_ultrasonic": 1,
+      "freshness_boundary": 2,
+      "camera_unavailable": 1,
+      "recovery": 1,
+      "ultrasonic_unavailable": 1
+    },
+    "ground_truth": {
+      "unknown": 2,
+      "true": 14,
+      "false": 1
+    },
+    "software": {
+      "python": "3.9.6",
+      "platform": "macOS-27.0.1-arm64-arm-64bit",
+      "policy": "reliability-aware-v1"
+    }
+  },
+  "records": [
+    {
+      "scenario_id": "S01-no-evidence",
+      "timestamp": "2026-10-25T12:00:00Z",
+      "timestamp_source": "manual",
+      "recording_type": "simulated",
+      "scenario_category": "no_evidence",
+      "ground_truth_warning": null,
+      "ground_truth_obstacle_present": null,
+      "ground_truth_distance_cm": null,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": false,
+      "ultrasonic_distance_cm": null,
+      "ultrasonic_age_s": null,
+      "fault_event": "NONE",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "legacy_weighted": {
+        "severity": "Normal",
+        "warning": false
+      },
+      "reliability_aware": {
+        "severity": "NO DATA",
+        "warning": false,
+        "sensing_state": "NO VALID DATA",
+        "warning_decision_timestamp": "2026-10-25T12:00:00Z"
+      }
+    },
+    {
+      "scenario_id": "S02-camera-only-person",
+      "timestamp": "2026-10-25T12:00:01Z",
+      "timestamp_source": "manual",
+      "recording_type": "simulated",
+      "scenario_category": "visual_only_evidence",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": null,
+      "camera_available": true,
+      "camera_fresh": true,
+      "camera_detections": [
+        {
+          "label": "person",
+          "class": "person",
+          "confidence": 0.8,
+          "threat_level": null,
+          "distance_cm": null,
+          "direction": "center",
+          "motion_state": "Moving",
+          "box": [
+            200,
+            100,
+            440,
+            380
+          ]
+        }
+      ],
+      "ultrasonic_valid": false,
+      "ultrasonic_distance_cm": null,
+      "ultrasonic_age_s": null,
+      "fault_event": "NONE",
+      "camera_only": {
+        "severity": "WARNING",
+        "warning": true
+      },
+      "ultrasonic_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "legacy_weighted": {
+        "severity": "Collision",
+        "warning": true
+      },
+      "reliability_aware": {
+        "severity": "WARNING",
+        "warning": true,
+        "sensing_state": "SENSOR DEGRADED",
+        "warning_decision_timestamp": "2026-10-25T12:00:01Z"
+      }
+    },
+    {
+      "scenario_id": "S03-ultrasonic-only-80cm",
+      "timestamp": "2026-10-25T12:00:02Z",
+      "timestamp_source": "manual",
+      "recording_type": "simulated",
+      "scenario_category": "ultrasonic_only_evidence",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": 80,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": 80.0,
+      "ultrasonic_age_s": 0.1,
+      "fault_event": "NONE",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "ALARM",
+        "warning": true
+      },
+      "legacy_weighted": {
+        "severity": "Alarming",
+        "warning": true
+      },
+      "reliability_aware": {
+        "severity": "ALARM",
+        "warning": true,
+        "sensing_state": "SENSOR DEGRADED",
+        "warning_decision_timestamp": "2026-10-25T12:00:02Z"
+      }
+    },
+    {
+      "scenario_id": "S04-agreeing-80cm-person",
+      "timestamp": "2026-10-25T12:00:03Z",
+      "timestamp_source": "manual",
+      "recording_type": "simulated",
+      "scenario_category": "both_agreeing",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": 80,
+      "camera_available": true,
+      "camera_fresh": true,
+      "camera_detections": [
+        {
+          "label": "person",
+          "class": "person",
+          "confidence": 0.8,
+          "threat_level": null,
+          "distance_cm": null,
+          "direction": "center",
+          "motion_state": "Moving",
+          "box": [
+            200,
+            100,
+            440,
+            380
+          ]
+        }
+      ],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": 80.0,
+      "ultrasonic_age_s": 0.1,
+      "fault_event": "NONE",
+      "camera_only": {
+        "severity": "WARNING",
+        "warning": true
+      },
+      "ultrasonic_only": {
+        "severity": "ALARM",
+        "warning": true
+      },
+      "legacy_weighted": {
+        "severity": "Collision",
+        "warning": true
+      },
+      "reliability_aware": {
+        "severity": "ALARM",
+        "warning": true,
+        "sensing_state": "FUSED",
+        "warning_decision_timestamp": "2026-10-25T12:00:03Z"
+      }
+    },
+    {
+      "scenario_id": "S05-conflict-far-ultra-visual-person",
+      "timestamp": "2026-10-25T12:00:04Z",
+      "timestamp_source": "manual",
+      "recording_type": "simulated",
+      "scenario_category": "conflicting_evidence",
+      "ground_truth_warning": null,
+      "ground_truth_obstacle_present": null,
+      "ground_truth_distance_cm": null,
+      "camera_available": true,
+      "camera_fresh": true,
+      "camera_detections": [
+        {
+          "label": "person",
+          "class": "person",
+          "confidence": 0.8,
+          "threat_level": null,
+          "distance_cm": null,
+          "direction": "center",
+          "motion_state": "Moving",
+          "box": [
+            200,
+            100,
+            440,
+            380
+          ]
+        }
+      ],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": 350.0,
+      "ultrasonic_age_s": 0.1,
+      "fault_event": "NONE",
+      "camera_only": {
+        "severity": "WARNING",
+        "warning": true
+      },
+      "ultrasonic_only": {
+        "severity": "NORMAL",
+        "warning": false
+      },
+      "legacy_weighted": {
+        "severity": "Warning",
+        "warning": true
+      },
+      "reliability_aware": {
+        "severity": "WARNING",
+        "warning": true,
+        "sensing_state": "FUSED",
+        "warning_decision_timestamp": "2026-10-25T12:00:04Z"
+      }
+    },
+    {
+      "scenario_id": "S06-ultra-50-exact",
+      "timestamp": "2026-10-25T12:00:05Z",
+      "timestamp_source": "manual",
+      "recording_type": "simulated",
+      "scenario_category": "boundary_ultrasonic",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": 50,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": 50.0,
+      "ultrasonic_age_s": 0.2,
+      "fault_event": "NONE",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "ALARM",
+        "warning": true
+      },
+      "legacy_weighted": {
+        "severity": "Alarming",
+        "warning": true
+      },
+      "reliability_aware": {
+        "severity": "ALARM",
+        "warning": true,
+        "sensing_state": "SENSOR DEGRADED",
+        "warning_decision_timestamp": "2026-10-25T12:00:05Z"
+      }
+    },
+    {
+      "scenario_id": "S07-ultra-100-exact",
+      "timestamp": "2026-10-25T12:00:06Z",
+      "timestamp_source": "manual",
+      "recording_type": "simulated",
+      "scenario_category": "boundary_ultrasonic",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": 100,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": 100.0,
+      "ultrasonic_age_s": 0.2,
+      "fault_event": "NONE",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "WARNING",
+        "warning": true
+      },
+      "legacy_weighted": {
+        "severity": "Alarming",
+        "warning": true
+      },
+      "reliability_aware": {
+        "severity": "WARNING",
+        "warning": true,
+        "sensing_state": "SENSOR DEGRADED",
+        "warning_decision_timestamp": "2026-10-25T12:00:06Z"
+      }
+    },
+    {
+      "scenario_id": "S08-ultra-300-exact",
+      "timestamp": "2026-10-25T12:00:07Z",
+      "timestamp_source": "manual",
+      "recording_type": "simulated",
+      "scenario_category": "boundary_ultrasonic",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": 300,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": 300.0,
+      "ultrasonic_age_s": 0.2,
+      "fault_event": "NONE",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "WARNING",
+        "warning": true
+      },
+      "legacy_weighted": {
+        "severity": "Normal",
+        "warning": false
+      },
+      "reliability_aware": {
+        "severity": "WARNING",
+        "warning": true,
+        "sensing_state": "SENSOR DEGRADED",
+        "warning_decision_timestamp": "2026-10-25T12:00:07Z"
+      }
+    },
+    {
+      "scenario_id": "S09-ultra-301-normal",
+      "timestamp": "2026-10-25T12:00:08Z",
+      "timestamp_source": "manual",
+      "recording_type": "simulated",
+      "scenario_category": "boundary_ultrasonic",
+      "ground_truth_warning": false,
+      "ground_truth_obstacle_present": false,
+      "ground_truth_distance_cm": 301,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": 301.0,
+      "ultrasonic_age_s": 0.2,
+      "fault_event": "NONE",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "NORMAL",
+        "warning": false
+      },
+      "legacy_weighted": {
+        "severity": "Normal",
+        "warning": false
+      },
+      "reliability_aware": {
+        "severity": "NORMAL",
+        "warning": false,
+        "sensing_state": "SENSOR DEGRADED",
+        "warning_decision_timestamp": "2026-10-25T12:00:08Z"
+      }
+    },
+    {
+      "scenario_id": "S10-ultra-49-critical",
+      "timestamp": "2026-10-25T12:00:09Z",
+      "timestamp_source": "manual",
+      "recording_type": "simulated",
+      "scenario_category": "boundary_ultrasonic",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": 49,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": 49.0,
+      "ultrasonic_age_s": 0.2,
+      "fault_event": "NONE",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "CRITICAL",
+        "warning": true
+      },
+      "legacy_weighted": {
+        "severity": "Alarming",
+        "warning": true
+      },
+      "reliability_aware": {
+        "severity": "CRITICAL",
+        "warning": true,
+        "sensing_state": "SENSOR DEGRADED",
+        "warning_decision_timestamp": "2026-10-25T12:00:09Z"
+      }
+    },
+    {
+      "scenario_id": "S11-invalid-ultrasonic",
+      "timestamp": "2026-10-25T12:00:10Z",
+      "timestamp_source": "manual",
+      "recording_type": "fault_injection",
+      "scenario_category": "invalid_ultrasonic",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": null,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": false,
+      "ultrasonic_distance_cm": null,
+      "ultrasonic_age_s": 0.1,
+      "fault_event": "INVALID_READING",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "legacy_weighted": {
+        "severity": "Normal",
+        "warning": false
+      },
+      "reliability_aware": {
+        "severity": "NO DATA",
+        "warning": false,
+        "sensing_state": "NO VALID DATA",
+        "warning_decision_timestamp": "2026-10-25T12:00:10Z"
+      }
+    },
+    {
+      "scenario_id": "S12-stale-ultrasonic",
+      "timestamp": "2026-10-25T12:00:11Z",
+      "timestamp_source": "manual",
+      "recording_type": "fault_injection",
+      "scenario_category": "stale_ultrasonic",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": null,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": null,
+      "ultrasonic_age_s": 4.0,
+      "fault_event": "STALE",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "legacy_weighted": {
+        "severity": "Normal",
+        "warning": false
+      },
+      "reliability_aware": {
+        "severity": "NO DATA",
+        "warning": false,
+        "sensing_state": "NO VALID DATA",
+        "warning_decision_timestamp": "2026-10-25T12:00:11Z"
+      }
+    },
+    {
+      "scenario_id": "S13-fresh-at-exact-3s",
+      "timestamp": "2026-10-25T12:00:12Z",
+      "timestamp_source": "manual",
+      "recording_type": "simulated",
+      "scenario_category": "freshness_boundary",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": 80,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": 80.0,
+      "ultrasonic_age_s": 3.0,
+      "fault_event": "NONE",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "ALARM",
+        "warning": true
+      },
+      "legacy_weighted": {
+        "severity": "Alarming",
+        "warning": true
+      },
+      "reliability_aware": {
+        "severity": "ALARM",
+        "warning": true,
+        "sensing_state": "SENSOR DEGRADED",
+        "warning_decision_timestamp": "2026-10-25T12:00:12Z"
+      }
+    },
+    {
+      "scenario_id": "S14-stale-just-past-3s",
+      "timestamp": "2026-10-25T12:00:13Z",
+      "timestamp_source": "manual",
+      "recording_type": "fault_injection",
+      "scenario_category": "freshness_boundary",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": null,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": null,
+      "ultrasonic_age_s": 3.001,
+      "fault_event": "STALE",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "legacy_weighted": {
+        "severity": "Normal",
+        "warning": false
+      },
+      "reliability_aware": {
+        "severity": "NO DATA",
+        "warning": false,
+        "sensing_state": "NO VALID DATA",
+        "warning_decision_timestamp": "2026-10-25T12:00:13Z"
+      }
+    },
+    {
+      "scenario_id": "S15-camera-disconnected",
+      "timestamp": "2026-10-25T12:00:14Z",
+      "timestamp_source": "manual",
+      "recording_type": "fault_injection",
+      "scenario_category": "camera_unavailable",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": 80,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": 80.0,
+      "ultrasonic_age_s": 0.1,
+      "fault_event": "DISCONNECTED",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "ALARM",
+        "warning": true
+      },
+      "legacy_weighted": {
+        "severity": "Alarming",
+        "warning": true
+      },
+      "reliability_aware": {
+        "severity": "ALARM",
+        "warning": true,
+        "sensing_state": "SENSOR DEGRADED",
+        "warning_decision_timestamp": "2026-10-25T12:00:14Z"
+      }
+    },
+    {
+      "scenario_id": "S16-ultrasonic-reconnect-recovery",
+      "timestamp": "2026-10-25T12:00:15Z",
+      "timestamp_source": "manual",
+      "recording_type": "fault_injection",
+      "scenario_category": "recovery",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": 80,
+      "camera_available": false,
+      "camera_fresh": false,
+      "camera_detections": [],
+      "ultrasonic_valid": true,
+      "ultrasonic_distance_cm": 80.0,
+      "ultrasonic_age_s": 0.1,
+      "fault_event": "RECONNECTED",
+      "camera_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "ultrasonic_only": {
+        "severity": "ALARM",
+        "warning": true
+      },
+      "legacy_weighted": {
+        "severity": "Alarming",
+        "warning": true
+      },
+      "reliability_aware": {
+        "severity": "ALARM",
+        "warning": true,
+        "sensing_state": "SENSOR DEGRADED",
+        "warning_decision_timestamp": "2026-10-25T12:00:15Z"
+      }
+    },
+    {
+      "scenario_id": "S17-ultrasonic-disconnected-visual",
+      "timestamp": "2026-10-25T12:00:16Z",
+      "timestamp_source": "manual",
+      "recording_type": "fault_injection",
+      "scenario_category": "ultrasonic_unavailable",
+      "ground_truth_warning": true,
+      "ground_truth_obstacle_present": true,
+      "ground_truth_distance_cm": null,
+      "camera_available": true,
+      "camera_fresh": true,
+      "camera_detections": [
+        {
+          "label": "person",
+          "class": "person",
+          "confidence": 0.8,
+          "threat_level": null,
+          "distance_cm": null,
+          "direction": "center",
+          "motion_state": "Moving",
+          "box": [
+            200,
+            100,
+            440,
+            380
+          ]
+        }
+      ],
+      "ultrasonic_valid": false,
+      "ultrasonic_distance_cm": null,
+      "ultrasonic_age_s": null,
+      "fault_event": "DISCONNECTED",
+      "camera_only": {
+        "severity": "WARNING",
+        "warning": true
+      },
+      "ultrasonic_only": {
+        "severity": "NO DATA",
+        "warning": false
+      },
+      "legacy_weighted": {
+        "severity": "Collision",
+        "warning": true
+      },
+      "reliability_aware": {
+        "severity": "WARNING",
+        "warning": true,
+        "sensing_state": "SENSOR DEGRADED",
+        "warning_decision_timestamp": "2026-10-25T12:00:16Z"
+      }
+    }
+  ],
+  "excluded_records": [],
+  "metrics": {
+    "camera_only": {
+      "labeled_trials": 15,
+      "unknown_ground_truth": 2,
+      "confusion_matrix": {
+        "tp": 3,
+        "fp": 0,
+        "fn": 11,
+        "tn": 1
+      },
+      "warning_precision": 1.0,
+      "warning_recall": 0.21428571428571427,
+      "missed_warning_rate": 0.7857142857142857,
+      "false_warning_rate": 0.0
+    },
+    "ultrasonic_only": {
+      "labeled_trials": 15,
+      "unknown_ground_truth": 2,
+      "confusion_matrix": {
+        "tp": 9,
+        "fp": 0,
+        "fn": 5,
+        "tn": 1
+      },
+      "warning_precision": 1.0,
+      "warning_recall": 0.6428571428571429,
+      "missed_warning_rate": 0.35714285714285715,
+      "false_warning_rate": 0.0
+    },
+    "legacy_weighted": {
+      "labeled_trials": 15,
+      "unknown_ground_truth": 2,
+      "confusion_matrix": {
+        "tp": 10,
+        "fp": 0,
+        "fn": 4,
+        "tn": 1
+      },
+      "warning_precision": 1.0,
+      "warning_recall": 0.7142857142857143,
+      "missed_warning_rate": 0.2857142857142857,
+      "false_warning_rate": 0.0
+    },
+    "reliability_aware": {
+      "labeled_trials": 15,
+      "unknown_ground_truth": 2,
+      "confusion_matrix": {
+        "tp": 11,
+        "fp": 0,
+        "fn": 3,
+        "tn": 1
+      },
+      "warning_precision": 1.0,
+      "warning_recall": 0.7857142857142857,
+      "missed_warning_rate": 0.21428571428571427,
+      "false_warning_rate": 0.0
+    }
+  },
+  "data_quality": {
+    "invalid_ultrasonic_rate": 0.23529411764705882,
+    "recovery_events": 1,
+    "recovery_success_rate": 1.0,
+    "latency": "not calculated: replay timestamps are not physical sensor-to-warning latency"
+  }
+}

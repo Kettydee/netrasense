@@ -1,0 +1,101 @@
+{
+  "audit": "NetraSense Step 21 independent recomputation of the 2026-10-25 comparative fusion replay",
+  "commit": "0b22525b3abb13f03ebc35f0637fa95dab531ad5",
+  "python": "3.9.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "artifact_hash_verification": {
+    "source_sha256_reported": "878b7a7caf6fa2b67e50f393f3cb04ceb2d77c97c86aa855d9ea884fa84d8442",
+    "source_sha256_recomputed": "878b7a7caf6fa2b67e50f393f3cb04ceb2d77c97c86aa855d9ea884fa84d8442",
+    "source_sha256_verified": true,
+    "accepted_payload_definition": "json.dumps(accepted_records_after_setdefault_fixups, sort_keys=True, separators=(',',':')) -> sha256 (verified against fusion_experiment.py _manifest source)",
+    "accepted_payload_sha256_reported": "ef47d3fc9be4d0d9e6a413b954ca1abb09ac1efde29b04be34dd3d5b8431d4fd",
+    "accepted_payload_sha256_recomputed": "ef47d3fc9be4d0d9e6a413b954ca1abb09ac1efde29b04be34dd3d5b8431d4fd",
+    "accepted_payload_verified": true
+  },
+  "recomputed_metrics": {
+    "camera_only": {
+      "included_labeled_records": 15,
+      "unknown_label_records": 2,
+      "tp": 3,
+      "fp": 0,
+      "fn": 11,
+      "tn": 1,
+      "warning_precision": 1.0,
+      "warning_recall": 0.21428571428571427,
+      "false_warning_rate": 0.0,
+      "missed_warning_rate": 0.7857142857142857,
+      "expectation_mismatches": [],
+      "scenarios_matched_expectation": "17/17"
+    },
+    "ultrasonic_only": {
+      "included_labeled_records": 15,
+      "unknown_label_records": 2,
+      "tp": 9,
+      "fp": 0,
+      "fn": 5,
+      "tn": 1,
+      "warning_precision": 1.0,
+      "warning_recall": 0.6428571428571429,
+      "false_warning_rate": 0.0,
+      "missed_warning_rate": 0.35714285714285715,
+      "expectation_mismatches": [],
+      "scenarios_matched_expectation": "17/17"
+    },
+    "legacy_weighted": {
+      "included_labeled_records": 15,
+      "unknown_label_records": 2,
+      "tp": 10,
+      "fp": 0,
+      "fn": 4,
+      "tn": 1,
+      "warning_precision": 1.0,
+      "warning_recall": 0.7142857142857143,
+      "false_warning_rate": 0.0,
+      "missed_warning_rate": 0.2857142857142857,
+      "expectation_mismatches": [],
+      "scenarios_matched_expectation": "17/17"
+    },
+    "reliability_aware": {
+      "included_labeled_records": 15,
+      "unknown_label_records": 2,
+      "tp": 11,
+      "fp": 0,
+      "fn": 3,
+      "tn": 1,
+      "warning_precision": 1.0,
+      "warning_recall": 0.7857142857142857,
+      "false_warning_rate": 0.0,
+      "missed_warning_rate": 0.21428571428571427,
+      "expectation_mismatches": [],
+      "scenarios_matched_expectation": "17/17"
+    }
+  },
+  "harness_summary_crosscheck": {
+    "camera_only": "exact_match",
+    "ultrasonic_only": "exact_match",
+    "legacy_weighted": "exact_match",
+    "reliability_aware": "exact_match"
+  },
+  "recovery": {
+    "events_recomputed": 1,
+    "valid_among_recovered": 1,
+    "success_rate": 1.0,
+    "note": "one designed recovery scenario; does not establish physical recovery robustness"
+  },
+  "integrity": {
+    "jsonl_records": 17,
+    "unique_ids": true,
+    "schema_violations": [],
+    "json_files_parse": true,
+    "scenario_result_assoc_1to1": true,
+    "records_missing_policy_blocks": [],
+    "recording_types": {
+      "simulated": 11,
+      "fault_injection": 6
+    }
+  },
+  "limitations": [
+    "Expected outputs are stored in scenarios.jsonl alongside the inputs; chronological pre-declaration cannot be proven from file metadata. The 17/17 match is an implementation check against author-declared expectations, not independent ground-truth validation.",
+    "Legacy fabricated 400 cm consensus distance and 'Path clear. Proceed safely.' action are properties of server/ensemble_model.py fuse() (else-branch consensus_dist=400.0); they are NOT fields of replay_results.json rows, so they are verified by code inspection, not from raw outputs."
+  ]
+}

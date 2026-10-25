@@ -36,6 +36,26 @@ from typing import Optional
 
 from threat_levels import classify_distance_cm
 
+
+def _is_valid_distance_cm(value: object) -> bool:
+    """Return True only for a finite, non-Boolean, in-range distance.
+
+    Booleans are a subclass of int and are rejected even though True/False
+    compare numerically.  NaN and infinities are rejected by the range check,
+    but explicit rejection makes the contract visible.  The boundary 400 cm
+    is rejected because legacy firmware encodes a failed/no-echo measurement
+    as the sentinel 400.0.
+    """
+    if isinstance(value, bool):
+        return False
+    if not isinstance(value, (int, float)):
+        return False
+    if isinstance(value, float) and not math.isfinite(value):
+        return False
+    if not (2.0 <= value < 400.0):
+        return False
+    return True
+
 # ── Threat level definitions (shared across all signals) ─────────────
 THREAT_LEVELS = ("NORMAL", "WARNING", "ALARM", "CRITICAL")
 
@@ -223,7 +243,12 @@ class EnsembleClassifier:
         """Process ultrasonic sensor reading."""
         if distance_cm is None:
             return None
-        if not (self._min_distance <= distance_cm <= self._max_distance):
+        # The inclusive <= max_distance would accept the legacy 400.0 cm
+        # no-echo sentinel as a valid NORMAL reading.  Use strict < so that
+        # the documented firmware failure sentinel (400 cm) is never converted
+        # into a threat level.  Non-finite values (NaN, +/-inf) are rejected
+        # by _is_valid_distance_cm before arithmetic is attempted.
+        if not _is_valid_distance_cm(distance_cm):
             return None
 
         # Distance classification is deterministic.  Do not trust an
@@ -292,7 +317,11 @@ class EnsembleClassifier:
         """Process depth estimation signal."""
         if distance_cm is None:
             return None
-        if not (self._min_distance <= distance_cm <= self._max_distance):
+        # Depth is an optional, monocular signal with scale ambiguity.  The
+        # same finite, non-Boolean, in-range validation as the ultrasonic
+        # channel applies; the legacy 400 cm no-echo sentinel must not be
+        # interpreted as a valid depth distance.
+        if not _is_valid_distance_cm(distance_cm):
             return None
 
         # Monocular depth has scale ambiguity — lower confidence

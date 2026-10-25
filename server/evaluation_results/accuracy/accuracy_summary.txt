@@ -6,15 +6,15 @@ Dataset             : COCO-128 (Genuine Ground-Truth Bounding Boxes)
 Dataset License     : Creative Commons Attribution 4.0 (CC BY 4.0)
 Images Evaluated    : 128 images
 Ground-Truth Targets: 929 object instances across 80 classes
-Model Weights       : yolo11n.pt (YOLO11n, 2.6M params, 6.5 GFLOPs)
+Model Weights       : /Users/harshbothra/Desktop/netrasense/yolo11n.pt (YOLO11n, 2.6M params, 6.5 GFLOPs)
 
 OVERALL DETECTION ACCURACY:
 ------------------------------------------------------------------------
 Precision (P)       : 69.35%
 Recall (R)          : 59.09%
 F1-Score            : 63.81%
-mAP@50              : 67.95%
-mAP@50-95           : 50.22%
+mAP@50              : 68.01%
+mAP@50-95           : 50.26%
 
 KEY ASSISTIVE OBSTACLE CLASSES:
 ------------------------------------------------------------------------

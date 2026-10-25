@@ -12,6 +12,7 @@ import os
 import sys
 import time
 import threading
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -87,6 +88,46 @@ def add_security_headers(response):
 # references the same value.
 SENSOR_HEARTBEAT_TIMEOUT_S = 3.0
 
+
+@dataclass(frozen=True)
+class FusionState:
+    """Authoritative fusion output shared with the frontend.
+
+    This shape is the single source of truth for the NetraSense dashboard:
+    fused threat level, sensing state, and the fused distance field.  It is
+    deliberately minimal so consumers cannot mislead themselves with
+    per-signal fields that were never averaged.
+    """
+
+    fused_threat_level: str
+    sensing_state: str
+    fused_distance_cm: Optional[float]
+    confidence: float
+    fresh: bool
+    age_seconds: Optional[float]
+    signal_count: int
+
+
+@dataclass(frozen=True)
+class AlertLog:
+    """A machine-actionable record of a state transition or warning event.
+
+    Alert logs are persisted to Supabase for historical review.  They carry
+    the observed state and the raw telemetry that produced it, not a claim of
+    physical performance.
+    """
+
+    scenario_id: str
+    timestamp: str
+    state: str
+    distance_cm: Optional[float]
+    threat_level: str
+    has_valid_signal: bool
+    source: str
+    fault_event: str
+    age_seconds: Optional[float]
+
+
 # Configurable obstacle warning evaluator instance
 obstacle_evaluator = ObstacleWarningEvaluator(
     warning_threshold_cm=300.0,
@@ -146,6 +187,59 @@ def update_sensor_data(record):
         warning_eval = obstacle_evaluator.process_reading(dist, reading_timestamp=ts)
         state["latest_warning_eval"] = warning_eval.to_dict()
         _refresh_ensemble_locked()
+
+
+# ── Supabase persistence (Step 7) ─────────────────────────────
+
+def _get_supabase_client():
+    """Return a lazily initialised Supabase client or None.
+
+    Requires environment variables; absent or invalid configuration returns
+    None so the API can degrade without raising.
+    """
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv(override=True)
+        from supabase import create_client
+
+        url = os.environ.get("SUPABASE_URL")
+        key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        if not url or not key:
+            return None
+        return create_client(url, key)
+    except Exception:
+        return None
+
+
+def _insert_fusion_state(fusion: FusionState, source: str) -> dict[str, object]:
+    """Insert a fusion-state record into Supabase.
+
+    The insert is best-effort.  Failure, missing configuration, or a locked
+    database must never break the sensor pipeline.  The record is only kept
+    for historical review, not as a performance datum.
+    """
+    client = _get_supabase_client()
+    if client is None:
+        return {"inserted": False, "reason": "supabase_unconfigured"}
+
+    payload = {
+        "user_id": os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "step7-integration"),
+        "scenario_id": source,
+        "timestamp": fusion.timestamp,
+        "fused_threat_level": fusion.fused_threat_level,
+        "sensing_state": fusion.sensing_state,
+        "fused_distance_cm": fusion.fused_distance_cm,
+        "confidence": fusion.confidence,
+        "fresh": fusion.fresh,
+        "age_seconds": fusion.age_seconds,
+        "signal_count": fusion.signal_count,
+    }
+    try:
+        client.table("fusion_state_sessions").insert(payload).execute()
+        return {"inserted": True}
+    except Exception as exc:
+        return {"inserted": False, "reason": str(exc)[:80]}
 
 
 def update_invalid_sensor_telemetry(event):
@@ -717,6 +811,118 @@ def api_fuse():
             "recommended_action": None,
             "modality_breakdown": fusion_res.to_dict(),
         })
+
+
+# ── Step 7: unified live fusion-state endpoint ─────────────────────
+@app.route("/api/fusion-state", methods=["GET"])
+@limiter.limit("200 per minute")
+def api_fusion_state():
+    """Return the authoritative fusion state for the live dashboard.
+
+    Single source of truth for the browser's sensor, fusion, and freshness
+    consumption: fused threat level, sensing state, fused distance, and
+    confidence, plus freshness metadata so the UI can avoid presenting a
+    stale reading as current.
+    """
+    with state_lock:
+        sensor = state.get("sensor_data")
+        sensor_last_update = state.get("sensor_last_update", 0.0)
+        invalid = state.get("sensor_invalid_telemetry")
+        sensor_age = (time.monotonic() - sensor_last_update) if sensor_last_update > 0 else None
+
+        fresh = bool(
+            sensor is not None
+            and invalid is None
+            and sensor_last_update > 0
+            and sensor_age is not None
+            and sensor_age <= obstacle_evaluator.stale_timeout_s
+        )
+
+        ensemble_result = state.get("ensemble_result")
+        if ensemble_result is None:
+            return jsonify(
+                {
+                    "fused_threat_level": "NO DATA",
+                    "sensing_state": "NO VALID DATA",
+                    "fused_distance_cm": None,
+                    "confidence": 0.0,
+                    "fresh": False,
+                    "age_seconds": sensor_age,
+                    "signal_count": 0,
+                }
+            )
+
+        return jsonify(
+            {
+                "fused_threat_level": ensemble_result.fused_threat_level,
+                "sensing_state": ensemble_result.sensing_state,
+                "fused_distance_cm": ensemble_result.fused_distance_cm,
+                "confidence": ensemble_result.confidence,
+                "fresh": fresh,
+                "age_seconds": sensor_age,
+                "signal_count": ensemble_result.signal_count,
+            }
+        )
+
+
+# ── Step 7: alert log ───────────────────────────────────────────────
+@app.route("/api/alert-logs", methods=["GET"])
+@limiter.limit("60 per minute")
+def api_alert_logs():
+    """Return alert-event records for the current user.
+
+    Alert logs are persisted to Supabase by the production pipeline.  When
+    Supabase is not configured, this endpoint returns the in-memory alert
+    log so that the dashboard remains functional.  No sensitive data is
+    returned.
+    """
+    with state_lock:
+        alert_log = state.get("alert_log", [])
+        return jsonify({"records": alert_log, "count": len(alert_log)})
+
+
+# ── Step 7: Supabase fusion-state persistence (production path) ─────
+
+def _supabase_from_env():
+    """Return an initialized Supabase client, or None when unconfigured."""
+    if not os.environ.get("SUPABASE_URL") or not os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
+        return None
+    try:
+        from supabase import create_client
+
+        return create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"])
+    except Exception:
+        return None
+
+
+def _persist_fusion_state(fusion: FusionState, source: str) -> dict[str, object]:
+    """Best-effort Supabase insert of a fusion-state record.
+
+    The fusion-state record is historical telemetry only, never performance
+    evidence.  A failed or missing database must not disrupt the sensor
+    pipeline.
+    """
+    client = _supabase_from_env()
+    if client is None:
+        return {"inserted": False, "reason": "unconfigured"}
+
+    payload = {
+        "user_id": os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "step7-integration"),
+        "scenario_id": source,
+        "timestamp": fusion.timestamp,
+        "fused_threat_level": fusion.fused_threat_level,
+        "sensing_state": fusion.sensing_state,
+        "fused_distance_cm": fusion.fused_distance_cm,
+        "confidence": fusion.confidence,
+        "fresh": fusion.fresh,
+        "age_seconds": fusion.age_seconds,
+        "signal_count": fusion.signal_count,
+    }
+    try:
+        client.table("fusion_state_sessions").insert(payload).execute()
+        return {"inserted": True}
+    except Exception as exc:
+        return {"inserted": False, "reason": str(exc)[:80]}
 
 
 @app.route('/api/config', methods=['GET', 'POST'])

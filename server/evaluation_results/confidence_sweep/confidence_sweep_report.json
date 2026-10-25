@@ -38,7 +38,7 @@
         "car": 0.6749,
         "bicycle": 0.3838,
         "dog": 0.9282,
-        "chair": 0.6191,
+        "chair": 0.6192,
         "bus": 0.7528
       },
       "target_classes_f1": {
@@ -55,7 +55,7 @@
           "precision": 0.816,
           "recall": 0.6986,
           "f1_score": 0.7527,
-          "mAP50": 0.7453
+          "mAP50": 0.7454
         },
         "bicycle": {
           "class_id": 1,
@@ -297,7 +297,7 @@
         },
         "baseball glove": {
           "class_id": 35,
-          "precision": 0.7208,
+          "precision": 0.7209,
           "recall": 0.4375,
           "f1_score": 0.5445,
           "mAP50": 0.4902
@@ -444,7 +444,7 @@
         },
         "chair": {
           "class_id": 56,
-          "precision": 0.6191,
+          "precision": 0.6192,
           "recall": 1.0,
           "f1_score": 0.7648,
           "mAP50": 0.995

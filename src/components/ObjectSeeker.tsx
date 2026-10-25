@@ -1,10 +1,7 @@
 import { useState } from "react";
-import {
-  Compass,
-  Sparkles,
-  Search,
-} from "lucide-react";
+import { Compass, Sparkles, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { playSonarPing } from "@/lib/audioSonar";
 
 interface ObjectDetectionItem {
   label: string;

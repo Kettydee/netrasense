@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-10-14T17:27:01Z",
+  "timestamp": "2026-10-16T04:29:59Z",
   "hardware_environment": {
-    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
     "machine": "arm64",
     "processor": "arm",
-    "python_version": "3.14.3",
-    "torch_version": "2.14.0",
+    "python_version": "3.9.6",
+    "torch_version": "2.8.0",
     "cuda_available": false,
     "mps_available": true,
     "device_evaluated": "mps",
@@ -32,22 +32,22 @@
     "successful_inferences": 100,
     "warmup_runs": 15,
     "model_inference_latency": {
-      "mean_ms": 32.88,
-      "median_ms": 33.28,
-      "std_dev_ms": 3.34,
-      "min_ms": 27.71,
-      "max_ms": 38.45,
-      "p95_ms": 37.21,
-      "fps": 30.42
+      "mean_ms": 32.29,
+      "median_ms": 34.19,
+      "std_dev_ms": 4.68,
+      "min_ms": 27.24,
+      "max_ms": 50.5,
+      "p95_ms": 38.77,
+      "fps": 30.97
     },
     "end_to_end_latency": {
-      "mean_ms": 33.0,
-      "median_ms": 33.4,
-      "std_dev_ms": 3.33,
-      "min_ms": 27.81,
-      "max_ms": 38.57,
-      "p95_ms": 37.33,
-      "fps": 30.3
+      "mean_ms": 32.42,
+      "median_ms": 34.29,
+      "std_dev_ms": 4.68,
+      "min_ms": 27.33,
+      "max_ms": 50.65,
+      "p95_ms": 38.88,
+      "fps": 30.85
     }
   },
   "yolo_benchmark_accelerated_mps": {
@@ -59,22 +59,22 @@
     "successful_inferences": 100,
     "warmup_runs": 15,
     "model_inference_latency": {
-      "mean_ms": 18.58,
-      "median_ms": 16.2,
-      "std_dev_ms": 5.87,
-      "min_ms": 14.22,
-      "max_ms": 54.48,
-      "p95_ms": 27.91,
-      "fps": 53.82
+      "mean_ms": 40.98,
+      "median_ms": 40.56,
+      "std_dev_ms": 4.32,
+      "min_ms": 19.99,
+      "max_ms": 56.93,
+      "p95_ms": 48.63,
+      "fps": 24.4
     },
     "end_to_end_latency": {
-      "mean_ms": 19.78,
-      "median_ms": 17.44,
-      "std_dev_ms": 6.02,
-      "min_ms": 15.03,
-      "max_ms": 55.98,
-      "p95_ms": 29.13,
-      "fps": 50.56
+      "mean_ms": 42.28,
+      "median_ms": 41.97,
+      "std_dev_ms": 4.47,
+      "min_ms": 20.88,
+      "max_ms": 59.19,
+      "p95_ms": 49.97,
+      "fps": 23.65
     }
   },
   "lighting_variations_exploratory": {
@@ -84,7 +84,7 @@
       "original": {
         "total_detections": 8,
         "mean_confidence": 0.782,
-        "mean_latency_ms": 53.78,
+        "mean_latency_ms": 57.05,
         "detected_labels": [
           "bus",
           "person",
@@ -93,8 +93,8 @@
       },
       "reduced_brightness_50pct": {
         "total_detections": 8,
-        "mean_confidence": 0.773,
-        "mean_latency_ms": 32.35,
+        "mean_confidence": 0.771,
+        "mean_latency_ms": 36.26,
         "detected_labels": [
           "bus",
           "person",
@@ -103,8 +103,8 @@
       },
       "increased_brightness_50pct": {
         "total_detections": 7,
-        "mean_confidence": 0.814,
-        "mean_latency_ms": 30.82,
+        "mean_confidence": 0.813,
+        "mean_latency_ms": 40.36,
         "detected_labels": [
           "bus",
           "person"
