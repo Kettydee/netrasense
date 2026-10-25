@@ -581,7 +581,7 @@ export function BlindsEyeLens({
                 <div>
                   <p className="text-base font-bold text-white">Browser Camera is Off</p>
                   <p className="mt-1 text-xs text-white/80">
-                    Click &ldquo;Open Camera&rdquo; below to run in-browser object detection.
+                    Choose your laptop camera or DroidCam above, then click &ldquo;Open Camera&rdquo;.
                   </p>
                 </div>
                 <div className="my-1 flex flex-col items-center gap-2">

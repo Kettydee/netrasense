@@ -41,6 +41,7 @@ export function CameraDeviceSelector({
   const [selectedId, setSelectedId] = useState<string>(selectedCameraId || "");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isHelpOpen, setIsHelpOpen] = useState<boolean>(false);
+  const [permissionError, setPermissionError] = useState<string>("");
 
   const loadCameras = useCallback(async () => {
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.enumerateDevices) return;
@@ -56,6 +57,29 @@ export function CameraDeviceSelector({
       setIsRefreshing(false);
     }
   }, []);
+
+  const requestCameraAccess = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setPermissionError("Camera access is not supported by this browser.");
+      return;
+    }
+
+    setPermissionError("");
+    setIsRefreshing(true);
+    try {
+      // Request permission only to reveal camera names. Stop the temporary stream
+      // immediately; the user still chooses which camera to open.
+      const temporaryStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      temporaryStream.getTracks().forEach((track) => track.stop());
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      setCameras(devices.filter((device) => device.kind === "videoinput"));
+    } catch (error) {
+      console.warn("Could not request camera access:", error);
+      setPermissionError("Allow camera access in your browser, then try again.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     loadCameras();
@@ -150,6 +174,22 @@ export function CameraDeviceSelector({
           />
         </Button>
       </div>
+
+      {cameras.length === 0 && !isStreaming && (
+        <div className="flex flex-col items-center gap-1.5">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={requestCameraAccess}
+            disabled={isRefreshing}
+            className="h-8 rounded-xl text-xs font-semibold"
+          >
+            {isRefreshing ? "Checking Cameras…" : "Allow Camera Access"}
+          </Button>
+          {permissionError && <span className="text-xs text-destructive">{permissionError}</span>}
+        </div>
+      )}
 
       {/* DroidCam Setup Quick Help Modal */}
       <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
