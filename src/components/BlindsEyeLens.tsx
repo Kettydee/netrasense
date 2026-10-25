@@ -94,7 +94,7 @@ export function BlindsEyeLens({
   const [voiceAlerts, setVoiceAlerts] = useState<boolean>(true);
   const [browserDetectedItem, setBrowserDetectedItem] = useState<string>("Scanning...");
   const [browserDetections, setBrowserDetections] = useState<
-    Array<{ label: string; direction: string; distance_cm: number }>
+    Array<{ label: string; direction: string; distance_cm?: number }>
   >([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const [isLoadingBrowserModel, setIsLoadingBrowserModel] = useState<boolean>(true);
@@ -483,8 +483,7 @@ export function BlindsEyeLens({
                 return {
                   label: p.class,
                   direction: dir,
-                  distance_cm: 0,
-                };
+                  };
               }),
             );
           } else {
