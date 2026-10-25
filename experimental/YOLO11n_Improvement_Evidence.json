@@ -1,0 +1,130 @@
+{
+  "task": "NetraSense YOLO11n Detection Performance Improvement",
+  "date": "2026-10-25",
+  "model": "YOLO11n (2.6M params, 6.5 GFLOPs)",
+  "environment": {
+    "python": "3.9.6",
+    "platform": "macOS-27.0.1-arm64 (Apple M4)",
+    "ultralytics": "8.4.177",
+    "pytorch": "2.8.0",
+    "cuda": false
+  },
+  "evaluation_dataset": {
+    "name": "COCO-128",
+    "images": 128,
+    "ground_truth_targets": 929,
+    "classes": 80,
+    "active_classes_in_reported_metrics": 71
+  },
+  "baseline": {
+    "image_size": 640,
+    "confidence_threshold": 0.001,
+    "precision": 0.6935,
+    "recall": 0.5909,
+    "f1": 0.6381,
+    "mAP50": 0.6801,
+    "mAP50_95": 0.5026,
+    "latency_preprocess_ms": 0.4,
+    "latency_inference_ms": 36.4,
+    "latency_postprocess_ms": 1.1,
+    "total_latency_ms": 37.9
+  },
+  "resolution_experiments": [
+    {
+      "image_size": 640,
+      "precision": 0.6935,
+      "recall": 0.5909,
+      "f1": 0.6381,
+      "mAP50": 0.6801,
+      "mAP50_95": 0.5026,
+      "inference_ms": 36.4
+    },
+    {
+      "image_size": 832,
+      "precision": 0.6813,
+      "recall": 0.5682,
+      "f1": 0.6197,
+      "mAP50": 0.6707,
+      "mAP50_95": 0.4735,
+      "inference_ms": 65.5
+    }
+  ],
+  "confidence_threshold_experiments": [
+    {
+      "threshold": 0.001,
+      "precision": 0.6935,
+      "recall": 0.5909,
+      "f1": 0.6381,
+      "mAP50": 0.6801,
+      "mAP50_95": 0.5026
+    },
+    {
+      "threshold": 0.1,
+      "precision": 0.6935,
+      "recall": 0.5909,
+      "f1": 0.6381,
+      "mAP50": 0.6801,
+      "mAP50_95": 0.5026
+    },
+    {
+      "threshold": 0.15,
+      "precision": 0.6935,
+      "recall": 0.5909,
+      "f1": 0.6381,
+      "mAP50": 0.6801,
+      "mAP50_95": 0.5026
+    },
+    {
+      "threshold": 0.2,
+      "precision": 0.6935,
+      "recall": 0.5909,
+      "f1": 0.6381,
+      "mAP50": 0.6801,
+      "mAP50_95": 0.5026
+    },
+    {
+      "threshold": 0.25,
+      "precision": 0.6935,
+      "recall": 0.5909,
+      "f1": 0.6381,
+      "mAP50": 0.6801,
+      "mAP50_95": 0.5026
+    },
+    {
+      "threshold": 0.3,
+      "precision": 0.6935,
+      "recall": 0.5909,
+      "f1": 0.6381,
+      "mAP50": 0.6801,
+      "mAP50_95": 0.5026
+    },
+    {
+      "threshold": 0.4,
+      "precision": 0.6935,
+      "recall": 0.5909,
+      "f1": 0.6381,
+      "mAP50": 0.6801,
+      "mAP50_95": 0.5026
+    },
+    {
+      "threshold": 0.5,
+      "precision": 0.6935,
+      "recall": 0.5909,
+      "f1": 0.6381,
+      "mAP50": 0.6801,
+      "mAP50_95": 0.5026
+    }
+  ],
+  "fine_tuning": {
+    "run_1": {
+      "config": "640px, 100 epochs, early stopping",
+      "val_mAP50": 0.681,
+      "val_mAP50_95": 0.498
+    },
+    "run_2": {
+      "config": "640px, 100 epochs, early stopping, augmentation",
+      "val_mAP50": 0.679,
+      "val_mAP50_95": 0.495
+    }
+  }
+}

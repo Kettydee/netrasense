@@ -1,0 +1,34 @@
+
+========================================================================
+     NetraSense YOLO11n Object Detection Ground-Truth Accuracy
+========================================================================
+Dataset             : COCO-128 (Genuine Ground-Truth Bounding Boxes)
+Dataset License     : Creative Commons Attribution 4.0 (CC BY 4.0)
+Images Evaluated    : 128 images
+Ground-Truth Targets: 929 object instances across 80 classes
+Model Weights       : yolo11n.pt (YOLO11n, 2.6M params, 6.5 GFLOPs)
+
+OVERALL DETECTION ACCURACY:
+------------------------------------------------------------------------
+Precision (P)       : 69.35%
+Recall (R)          : 59.09%
+F1-Score            : 63.81%
+mAP@50              : 68.01%
+mAP@50-95           : 50.26%
+
+KEY ASSISTIVE OBSTACLE CLASSES:
+------------------------------------------------------------------------
+Class       | Precision | Recall | F1-Score | mAP@50
+------------------------------------------------------------------------
+bicycle     | 0.39      | 0.17   | 0.23     | 0.46  
+bus         | 0.77      | 0.71   | 0.74     | 0.72  
+car         | 0.68      | 0.20   | 0.30     | 0.24  
+chair       | 0.63      | 1.00   | 0.77     | 0.99  
+couch       | 0.93      | 0.33   | 0.49     | 0.56  
+dog         | 0.93      | 0.94   | 0.94     | 0.94  
+motorcycle  | 0.75      | 1.00   | 0.86     | 0.99  
+person      | 0.82      | 0.68   | 0.75     | 0.80  
+stop sign   | 1.00      | 0.42   | 0.59     | 0.66  
+------------------------------------------------------------------------
+Artifacts saved to: server/evaluation_results/accuracy/
+========================================================================

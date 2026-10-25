@@ -1,0 +1,589 @@
+{
+  "evaluation_name": "YOLO11n Object Detection Accuracy Benchmark",
+  "evaluation_scope": "Ground-Truth Evaluation (Independent of Latency Benchmarks)",
+  "model_architecture": "YOLO11n",
+  "weights_file": "yolo11n.pt",
+  "dataset_name": "COCO-128",
+  "dataset_license": "Creative Commons Attribution 4.0 (CC BY 4.0)",
+  "dataset_source": "https://cocodataset.org / Ultralytics Verified Ground-Truth",
+  "evaluated_images_count": 80,
+  "total_instances_evaluated": 929,
+  "evaluation_configuration": {
+    "image_size": 640,
+    "confidence_threshold": 0.001,
+    "iou_threshold": 0.6,
+    "eval_device": "CPU (Apple M4)",
+    "metric_calculation": "Standard COCO 101-point interpolated PR curve"
+  },
+  "overall_metrics": {
+    "precision": 0.6935,
+    "recall": 0.5909,
+    "f1_score": 0.6381,
+    "mAP_50": 0.6801,
+    "mAP_50_95": 0.5026
+  },
+  "selected_assistive_obstacle_classes": {
+    "person": {
+      "class_id": 0,
+      "precision": 0.8246,
+      "recall": 0.6849,
+      "f1_score": 0.7483,
+      "mAP50": 0.7959
+    },
+    "bicycle": {
+      "class_id": 1,
+      "precision": 0.388,
+      "recall": 0.1667,
+      "f1_score": 0.2332,
+      "mAP50": 0.4591
+    },
+    "car": {
+      "class_id": 2,
+      "precision": 0.6825,
+      "recall": 0.1957,
+      "f1_score": 0.3041,
+      "mAP50": 0.2356
+    },
+    "motorcycle": {
+      "class_id": 3,
+      "precision": 0.7512,
+      "recall": 1.0,
+      "f1_score": 0.8579,
+      "mAP50": 0.995
+    },
+    "bus": {
+      "class_id": 5,
+      "precision": 0.7742,
+      "recall": 0.7143,
+      "f1_score": 0.7431,
+      "mAP50": 0.7229
+    },
+    "stop sign": {
+      "class_id": 11,
+      "precision": 1.0,
+      "recall": 0.4156,
+      "f1_score": 0.5872,
+      "mAP50": 0.6621
+    },
+    "dog": {
+      "class_id": 16,
+      "precision": 0.9321,
+      "recall": 0.9412,
+      "f1_score": 0.9366,
+      "mAP50": 0.945
+    },
+    "chair": {
+      "class_id": 56,
+      "precision": 0.6324,
+      "recall": 1.0,
+      "f1_score": 0.7748,
+      "mAP50": 0.995
+    },
+    "couch": {
+      "class_id": 57,
+      "precision": 0.9343,
+      "recall": 0.3333,
+      "f1_score": 0.4914,
+      "mAP50": 0.555
+    }
+  },
+  "all_classes": {
+    "person": {
+      "class_id": 0,
+      "precision": 0.8246,
+      "recall": 0.6849,
+      "f1_score": 0.7483,
+      "mAP50": 0.7959
+    },
+    "bicycle": {
+      "class_id": 1,
+      "precision": 0.388,
+      "recall": 0.1667,
+      "f1_score": 0.2332,
+      "mAP50": 0.4591
+    },
+    "car": {
+      "class_id": 2,
+      "precision": 0.6825,
+      "recall": 0.1957,
+      "f1_score": 0.3041,
+      "mAP50": 0.2356
+    },
+    "motorcycle": {
+      "class_id": 3,
+      "precision": 0.7512,
+      "recall": 1.0,
+      "f1_score": 0.8579,
+      "mAP50": 0.995
+    },
+    "airplane": {
+      "class_id": 4,
+      "precision": 0.8449,
+      "recall": 0.8333,
+      "f1_score": 0.8391,
+      "mAP50": 0.955
+    },
+    "bus": {
+      "class_id": 5,
+      "precision": 0.7742,
+      "recall": 0.7143,
+      "f1_score": 0.7431,
+      "mAP50": 0.7229
+    },
+    "train": {
+      "class_id": 6,
+      "precision": 1.0,
+      "recall": 0.9979,
+      "f1_score": 0.9989,
+      "mAP50": 0.995
+    },
+    "truck": {
+      "class_id": 7,
+      "precision": 0.559,
+      "recall": 0.25,
+      "f1_score": 0.3455,
+      "mAP50": 0.4024
+    },
+    "boat": {
+      "class_id": 8,
+      "precision": 0.6352,
+      "recall": 0.3333,
+      "f1_score": 0.4372,
+      "mAP50": 0.4911
+    },
+    "traffic light": {
+      "class_id": 9,
+      "precision": 0.5042,
+      "recall": 0.1429,
+      "f1_score": 0.2226,
+      "mAP50": 0.2267
+    },
+    "fire hydrant": {
+      "class_id": 10,
+      "precision": 0.8119,
+      "recall": 1.0,
+      "f1_score": 0.8962,
+      "mAP50": 0.995
+    },
+    "stop sign": {
+      "class_id": 11,
+      "precision": 1.0,
+      "recall": 0.4156,
+      "f1_score": 0.5872,
+      "mAP50": 0.6621
+    },
+    "parking meter": {
+      "class_id": 12,
+      "precision": 0.9508,
+      "recall": 1.0,
+      "f1_score": 0.9748,
+      "mAP50": 0.995
+    },
+    "bench": {
+      "class_id": 13,
+      "precision": 0.7666,
+      "recall": 1.0,
+      "f1_score": 0.8679,
+      "mAP50": 0.995
+    },
+    "bird": {
+      "class_id": 14,
+      "precision": 0.6377,
+      "recall": 0.7778,
+      "f1_score": 0.7008,
+      "mAP50": 0.9046
+    },
+    "cat": {
+      "class_id": 15,
+      "precision": 0.5607,
+      "recall": 1.0,
+      "f1_score": 0.7186,
+      "mAP50": 0.995
+    },
+    "dog": {
+      "class_id": 16,
+      "precision": 0.9321,
+      "recall": 0.9412,
+      "f1_score": 0.9366,
+      "mAP50": 0.945
+    },
+    "horse": {
+      "class_id": 17,
+      "precision": 0.6131,
+      "recall": 1.0,
+      "f1_score": 0.7602,
+      "mAP50": 0.995
+    },
+    "sheep": {
+      "class_id": 18,
+      "precision": 0.8483,
+      "recall": 1.0,
+      "f1_score": 0.9179,
+      "mAP50": 0.995
+    },
+    "cow": {
+      "class_id": 19,
+      "precision": 0.9018,
+      "recall": 0.8889,
+      "f1_score": 0.8953,
+      "mAP50": 0.9612
+    },
+    "elephant": {
+      "class_id": 20,
+      "precision": 0.8201,
+      "recall": 0.3333,
+      "f1_score": 0.474,
+      "mAP50": 0.4292
+    },
+    "bear": {
+      "class_id": 21,
+      "precision": 0.9058,
+      "recall": 0.5352,
+      "f1_score": 0.6728,
+      "mAP50": 0.7558
+    },
+    "zebra": {
+      "class_id": 22,
+      "precision": 0.3575,
+      "recall": 0.0526,
+      "f1_score": 0.0918,
+      "mAP50": 0.1667
+    },
+    "giraffe": {
+      "class_id": 23,
+      "precision": 0.9738,
+      "recall": 0.5714,
+      "f1_score": 0.7202,
+      "mAP50": 0.7967
+    },
+    "backpack": {
+      "class_id": 24,
+      "precision": 0.6828,
+      "recall": 1.0,
+      "f1_score": 0.8115,
+      "mAP50": 0.995
+    },
+    "umbrella": {
+      "class_id": 25,
+      "precision": 0.7271,
+      "recall": 0.8,
+      "f1_score": 0.7618,
+      "mAP50": 0.755
+    },
+    "handbag": {
+      "class_id": 26,
+      "precision": 0.5236,
+      "recall": 1.0,
+      "f1_score": 0.6874,
+      "mAP50": 0.995
+    },
+    "tie": {
+      "class_id": 27,
+      "precision": 1.0,
+      "recall": 0.476,
+      "f1_score": 0.645,
+      "mAP50": 0.7512
+    },
+    "suitcase": {
+      "class_id": 28,
+      "precision": 0.5443,
+      "recall": 0.4071,
+      "f1_score": 0.4658,
+      "mAP50": 0.555
+    },
+    "frisbee": {
+      "class_id": 29,
+      "precision": 0.6829,
+      "recall": 0.4342,
+      "f1_score": 0.5309,
+      "mAP50": 0.5218
+    },
+    "skis": {
+      "class_id": 30,
+      "precision": 0.4635,
+      "recall": 0.25,
+      "f1_score": 0.3248,
+      "mAP50": 0.3055
+    },
+    "snowboard": {
+      "class_id": 31,
+      "precision": 0.7014,
+      "recall": 0.4286,
+      "f1_score": 0.5321,
+      "mAP50": 0.425
+    },
+    "sports ball": {
+      "class_id": 32,
+      "precision": 0.9688,
+      "recall": 0.6,
+      "f1_score": 0.741,
+      "mAP50": 0.7283
+    },
+    "kite": {
+      "class_id": 33,
+      "precision": 0.7804,
+      "recall": 0.5155,
+      "f1_score": 0.6209,
+      "mAP50": 0.6086
+    },
+    "baseball bat": {
+      "class_id": 34,
+      "precision": 0.6245,
+      "recall": 0.3333,
+      "f1_score": 0.4347,
+      "mAP50": 0.5001
+    },
+    "baseball glove": {
+      "class_id": 35,
+      "precision": 0.7426,
+      "recall": 0.4375,
+      "f1_score": 0.5506,
+      "mAP50": 0.6423
+    },
+    "skateboard": {
+      "class_id": 36,
+      "precision": 0.783,
+      "recall": 0.2778,
+      "f1_score": 0.4101,
+      "mAP50": 0.3879
+    },
+    "surfboard": {
+      "class_id": 37,
+      "precision": 0.5793,
+      "recall": 0.1667,
+      "f1_score": 0.2589,
+      "mAP50": 0.2584
+    },
+    "tennis racket": {
+      "class_id": 38,
+      "precision": 0.8769,
+      "recall": 0.5,
+      "f1_score": 0.6369,
+      "mAP50": 0.6477
+    },
+    "bottle": {
+      "class_id": 39,
+      "precision": 0.8958,
+      "recall": 0.2727,
+      "f1_score": 0.4182,
+      "mAP50": 0.4503
+    },
+    "wine glass": {
+      "class_id": 40,
+      "precision": 0.6452,
+      "recall": 0.7143,
+      "f1_score": 0.678,
+      "mAP50": 0.6896
+    },
+    "cup": {
+      "class_id": 41,
+      "precision": 0.4602,
+      "recall": 1.0,
+      "f1_score": 0.6303,
+      "mAP50": 0.995
+    },
+    "fork": {
+      "class_id": 42,
+      "precision": 0.3611,
+      "recall": 0.5,
+      "f1_score": 0.4193,
+      "mAP50": 0.4975
+    },
+    "knife": {
+      "class_id": 43,
+      "precision": 1.0,
+      "recall": 0.0,
+      "f1_score": 0.0,
+      "mAP50": 0.895
+    },
+    "spoon": {
+      "class_id": 44,
+      "precision": 0.3559,
+      "recall": 0.1818,
+      "f1_score": 0.2407,
+      "mAP50": 0.2405
+    },
+    "bowl": {
+      "class_id": 45,
+      "precision": 0.7687,
+      "recall": 0.5,
+      "f1_score": 0.6059,
+      "mAP50": 0.6878
+    },
+    "banana": {
+      "class_id": 46,
+      "precision": 0.5232,
+      "recall": 1.0,
+      "f1_score": 0.687,
+      "mAP50": 0.995
+    },
+    "apple": {
+      "class_id": 47,
+      "precision": 0.6151,
+      "recall": 1.0,
+      "f1_score": 0.7617,
+      "mAP50": 0.995
+    },
+    "sandwich": {
+      "class_id": 48,
+      "precision": 0.6404,
+      "recall": 1.0,
+      "f1_score": 0.7808,
+      "mAP50": 0.8679
+    },
+    "orange": {
+      "class_id": 49,
+      "precision": 0.5743,
+      "recall": 1.0,
+      "f1_score": 0.7296,
+      "mAP50": 0.995
+    },
+    "broccoli": {
+      "class_id": 50,
+      "precision": 0.5286,
+      "recall": 0.5429,
+      "f1_score": 0.5356,
+      "mAP50": 0.5507
+    },
+    "carrot": {
+      "class_id": 51,
+      "precision": 0.6944,
+      "recall": 0.8333,
+      "f1_score": 0.7576,
+      "mAP50": 0.762
+    },
+    "hot dog": {
+      "class_id": 52,
+      "precision": 0.8439,
+      "recall": 0.5714,
+      "f1_score": 0.6815,
+      "mAP50": 0.7165
+    },
+    "pizza": {
+      "class_id": 53,
+      "precision": 0.6951,
+      "recall": 0.7805,
+      "f1_score": 0.7353,
+      "mAP50": 0.9125
+    },
+    "donut": {
+      "class_id": 54,
+      "precision": 0.5327,
+      "recall": 0.6154,
+      "f1_score": 0.571,
+      "mAP50": 0.5665
+    },
+    "cake": {
+      "class_id": 55,
+      "precision": 0.6128,
+      "recall": 0.5,
+      "f1_score": 0.5507,
+      "mAP50": 0.5506
+    },
+    "chair": {
+      "class_id": 56,
+      "precision": 0.6324,
+      "recall": 1.0,
+      "f1_score": 0.7748,
+      "mAP50": 0.995
+    },
+    "couch": {
+      "class_id": 57,
+      "precision": 0.9343,
+      "recall": 0.3333,
+      "f1_score": 0.4914,
+      "mAP50": 0.555
+    },
+    "potted plant": {
+      "class_id": 58,
+      "precision": 1.0,
+      "recall": 0.0,
+      "f1_score": 0.0,
+      "mAP50": 0.1237
+    },
+    "bed": {
+      "class_id": 59,
+      "precision": 0.6957,
+      "recall": 0.5,
+      "f1_score": 0.5818,
+      "mAP50": 0.5286
+    },
+    "dining table": {
+      "class_id": 60,
+      "precision": 1.0,
+      "recall": 0.0,
+      "f1_score": 0.0,
+      "mAP50": 0.1956
+    },
+    "toilet": {
+      "class_id": 61,
+      "precision": 0.5786,
+      "recall": 1.0,
+      "f1_score": 0.733,
+      "mAP50": 0.995
+    },
+    "tv": {
+      "class_id": 62,
+      "precision": 0.2312,
+      "recall": 0.4,
+      "f1_score": 0.2931,
+      "mAP50": 0.3556
+    },
+    "laptop": {
+      "class_id": 63,
+      "precision": 0.3033,
+      "recall": 0.1667,
+      "f1_score": 0.2151,
+      "mAP50": 0.2829
+    },
+    "mouse": {
+      "class_id": 64,
+      "precision": 0.8539,
+      "recall": 1.0,
+      "f1_score": 0.9212,
+      "mAP50": 0.995
+    },
+    "remote": {
+      "class_id": 65,
+      "precision": 0.6021,
+      "recall": 0.1045,
+      "f1_score": 0.1782,
+      "mAP50": 0.4306
+    },
+    "keyboard": {
+      "class_id": 66,
+      "precision": 0.8088,
+      "recall": 0.7778,
+      "f1_score": 0.793,
+      "mAP50": 0.863
+    },
+    "cell phone": {
+      "class_id": 67,
+      "precision": 0.4527,
+      "recall": 1.0,
+      "f1_score": 0.6232,
+      "mAP50": 0.995
+    },
+    "microwave": {
+      "class_id": 68,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1_score": 0.0,
+      "mAP50": 0.0
+    },
+    "oven": {
+      "class_id": 69,
+      "precision": 0.6742,
+      "recall": 0.3333,
+      "f1_score": 0.4461,
+      "mAP50": 0.6621
+    },
+    "toaster": {
+      "class_id": 70,
+      "precision": 1.0,
+      "recall": 0.8631,
+      "f1_score": 0.9265,
+      "mAP50": 0.995
+    }
+  }
+}
