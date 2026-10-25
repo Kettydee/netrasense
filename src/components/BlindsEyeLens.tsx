@@ -20,6 +20,7 @@ import { CameraDeviceSelector } from "@/components/CameraDeviceSelector";
 import { speak } from "@/lib/netrasense";
 import { SmartAssistiveSuite } from "@/components/SmartAssistiveSuite";
 import { combineDetections, detectExtra, loadExtraDetector } from "@/lib/browserDualDetector";
+import { detectSmallObjects, loadSmallObjectDetector } from "@/lib/smallObjectDetector";
 
 interface YoloDetection {
   label: string;
@@ -57,9 +58,13 @@ export function BlindsEyeLens({
   onCameraStatusChange,
 }: BlindsEyeLensProps = {}) {
   const [engineMode, setEngineMode] = useState<"yolo" | "browser">("browser");
-  const [browserDetectionMode, setBrowserDetectionMode] = useState<"original" | "combined">("original");
+  const [browserDetectionMode, setBrowserDetectionMode] = useState<"original" | "combined" | "small">("original");
   const [extraDetectorStatus, setExtraDetectorStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const extraDetectorReadyRef = useRef(false);
+  const [smallStatus, setSmallStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const smallReadyRef = useRef(false);
+  const smallLastRunRef = useRef(0);
+  const smallResultsRef = useRef<Array<{ bbox: [number, number, number, number]; class: string; score: number }>>([]);
   const extraDetectorLastRunRef = useRef(0);
   const extraDetectionsRef = useRef<Array<{ bbox: [number, number, number, number]; class: string; score: number }>>([]);
   const [serverUrl, setServerUrl] = useState<string>("http://localhost:5000");
@@ -246,6 +251,19 @@ export function BlindsEyeLens({
     return () => { active = false; };
   }, [browserDetectionMode]);
 
+  useEffect(() => {
+    if (browserDetectionMode !== "small") return;
+    let active = true;
+    setSmallStatus("loading");
+    loadSmallObjectDetector().then(() => {
+      if (active) { smallReadyRef.current = true; setSmallStatus("ready"); }
+    }).catch((error) => {
+      console.error("Small-object model failed:", error);
+      if (active) { smallReadyRef.current = false; setSmallStatus("error"); setBrowserDetectionMode("original"); }
+    });
+    return () => { active = false; };
+  }, [browserDetectionMode]);
+
   // Browser TTS Speak function - uses chosen NetraSense AI Voice
   const speakBrowser = useCallback(
     (text: string) => {
@@ -323,7 +341,7 @@ export function BlindsEyeLens({
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
-        const originalPredictions = await browserModel.detect(video);
+        const originalPredictions = await browserModel.detect(video, 30, 0.35);
         let predictions = originalPredictions.map((p) => ({ bbox: p.bbox, class: p.class, score: p.score }));
         if (browserDetectionMode === "combined" && extraDetectorReadyRef.current) {
           const now = Date.now();
@@ -341,6 +359,31 @@ export function BlindsEyeLens({
             }
           }
           predictions = combineDetections(predictions, extraDetectionsRef.current);
+        }
+        if (browserDetectionMode === "small" && smallReadyRef.current) {
+          const now = Date.now();
+          if (now - smallLastRunRef.current > 1800) {
+            smallLastRunRef.current = now;
+            try {
+              const capture = document.createElement("canvas");
+              capture.width = video.videoWidth;
+              capture.height = video.videoHeight;
+              capture.getContext("2d")?.drawImage(video, 0, 0);
+              smallResultsRef.current = await detectSmallObjects(capture);
+            } catch (error) {
+              console.warn("Small-object detection failed on frame:", error);
+              smallResultsRef.current = [];
+            }
+          }
+          // Use targeted model results only when it has recognized an object.
+          // Suppress generic person labels for close-up hand-only scenes, but
+          // retain original predictions when the targeted model finds nothing.
+          if (smallResultsRef.current.length > 0) {
+            const targeted = smallResultsRef.current.filter(p => p.score >= 0.22);
+            if (targeted.length > 0) {
+              predictions = combineDetections(predictions.filter(p => p.class !== "person"), targeted.map(p => ({ ...p, score: Math.max(p.score, 0.49) })));
+            }
+          }
         }
 
         if (ctx) {
@@ -433,19 +476,19 @@ export function BlindsEyeLens({
             const uniqueSummaries = Array.from(new Set(detectedSummaries));
             setBrowserDetectedItem(uniqueSummaries.join(" · "));
             setBrowserDetections(
-              predictions.map((p) => {
+              predictions.filter(p => p.score >= 0.48).map((p) => {
                 const cX = p.bbox[0] + p.bbox[2] / 2;
                 const dir =
                   cX < canvas.width * 0.33 ? "left" : cX > canvas.width * 0.66 ? "right" : "center";
                 return {
                   label: p.class,
                   direction: dir,
-                  distance_cm: 150,
+                  distance_cm: 0,
                 };
               }),
             );
           } else {
-            setBrowserDetectedItem("Path clear");
+            setBrowserDetectedItem("No objects detected");
             setBrowserDetections([]);
           }
         }
@@ -504,7 +547,7 @@ export function BlindsEyeLens({
                 ? `YOLO11 · ${serverStatus?.mode ?? "all"} mode · ${serverStatus?.fps ?? 0} FPS`
                 : engineMode === "browser"
                   ? browserModel
-                    ? browserDetectionMode === "combined" ? `COCO-SSD + YOLOS (${extraDetectorStatus})` : "COCO-SSD loaded"
+                    ? browserDetectionMode === "small" ? `Small Objects (${smallStatus})` : browserDetectionMode === "combined" ? `COCO-SSD + YOLOS (${extraDetectorStatus})` : "COCO-SSD loaded"
                     : "Loading browser AI..."
                   : "Server not connected"}
             </p>
@@ -558,6 +601,8 @@ export function BlindsEyeLens({
           <span className="font-semibold text-muted-foreground">Browser detection:</span>
           <Button size="sm" variant={browserDetectionMode === "original" ? "default" : "outline"} onClick={() => { setBrowserDetectionMode("original"); extraDetectionsRef.current = []; }}>Original COCO-SSD</Button>
           <Button size="sm" variant={browserDetectionMode === "combined" ? "default" : "outline"} onClick={() => setBrowserDetectionMode("combined")}>Combined (experimental)</Button>
+          <Button size="sm" variant={browserDetectionMode === "small" ? "default" : "outline"} onClick={() => setBrowserDetectionMode("small")}>Small Objects (experimental)</Button>
+          {browserDetectionMode === "small" && <span role="status" className="text-muted-foreground">Text-guided model: {smallStatus} · First download may take time</span>}
           {browserDetectionMode === "combined" && <span role="status" className="text-muted-foreground">Secondary YOLOS model: {extraDetectorStatus}</span>}
           <span className="text-muted-foreground">Experimental YOLOS is not Ultralytics YOLO; compare accuracy before relying on it.</span>
         </div>
