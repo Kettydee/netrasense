@@ -1,0 +1,16 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.kettydee.netrasense"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.kettydee.netrasense"
+        minSdk 23
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+}
