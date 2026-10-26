@@ -1,17 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  Smartphone,
-  Camera,
-  RefreshCw,
-  HelpCircle,
-  CheckCircle2,
-} from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
+import { Smartphone, Camera, RefreshCw, HelpCircle, CheckCircle2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -48,7 +37,6 @@ export function CameraDeviceSelector({
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoInputs = devices.filter((d) => d.kind === "videoinput" && d.deviceId);
       setCameras(videoInputs);
-
     } catch (err) {
       console.warn("Could not enumerate camera devices:", err);
     } finally {
@@ -119,7 +107,8 @@ export function CameraDeviceSelector({
   };
 
   const hasDroidCam = cameras.some((c) => /droidcam/i.test(c.label));
-  const cameraNamesAreHidden = cameras.length === 0 || !cameras.some((camera) => camera.label.trim());
+  const cameraNamesAreHidden =
+    cameras.length === 0 || !cameras.some((camera) => camera.label.trim());
 
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
@@ -204,7 +193,11 @@ export function CameraDeviceSelector({
             disabled={isRefreshing}
             className="h-8 rounded-xl text-xs font-semibold"
           >
-            {isRefreshing ? "Checking Cameras…" : cameras.length === 0 ? "Allow Camera Access" : "Show Camera Names"}
+            {isRefreshing
+              ? "Checking Cameras…"
+              : cameras.length === 0
+                ? "Allow Camera Access"
+                : "Show Camera Names"}
           </Button>
           <span className="max-w-[230px] text-center text-[10px] text-muted-foreground">
             Permission is used to list camera names. You choose which camera to open.
@@ -306,4 +299,3 @@ export function CameraDeviceSelector({
     </div>
   );
 }
-

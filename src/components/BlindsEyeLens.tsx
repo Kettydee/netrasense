@@ -268,7 +268,9 @@ export function BlindsEyeLens({
       .catch((error: unknown) => {
         console.error("Failed to load browser detection model:", error);
         if (active) {
-          setBrowserModelError("Browser detection could not load. Check your connection and retry.");
+          setBrowserModelError(
+            "Browser detection could not load. Check your connection and retry.",
+          );
           setBrowserDetectedItem("AI unavailable");
         }
       })
@@ -282,11 +284,14 @@ export function BlindsEyeLens({
   }, [engineMode, isBrowserCameraActive, browserModel, modelRetryKey]);
 
   // Stop any active camera as soon as the component leaves the page.
-  useEffect(() => () => {
-    cameraSessionRef.current += 1;
-    const stream = videoRef.current?.srcObject as MediaStream | null;
-    stream?.getTracks().forEach((track) => track.stop());
-  }, []);
+  useEffect(
+    () => () => {
+      cameraSessionRef.current += 1;
+      const stream = videoRef.current?.srcObject as MediaStream | null;
+      stream?.getTracks().forEach((track) => track.stop());
+    },
+    [],
+  );
 
   // Browser TTS Speak function - uses chosen NetraSense AI Voice
   const speakBrowser = useCallback(
@@ -340,11 +345,15 @@ export function BlindsEyeLens({
       setCameraSession(cameraSessionRef.current);
       const openedSession = cameraSessionRef.current;
       nextStream.getVideoTracks().forEach((track) => {
-        track.addEventListener("ended", () => {
-          if (cameraSessionRef.current !== openedSession) return;
-          stopBrowserCamera();
-          setCameraError("The selected camera disconnected. Choose a camera and open it again.");
-        }, { once: true });
+        track.addEventListener(
+          "ended",
+          () => {
+            if (cameraSessionRef.current !== openedSession) return;
+            stopBrowserCamera();
+            setCameraError("The selected camera disconnected. Choose a camera and open it again.");
+          },
+          { once: true },
+        );
       });
       browserDetectionSignatureRef.current = "__new_camera__";
       announcedObjectsRef.current.clear();
@@ -437,7 +446,8 @@ export function BlindsEyeLens({
             const inferenceCanvas = inferenceCanvasRef.current ?? document.createElement("canvas");
             inferenceCanvasRef.current = inferenceCanvas;
             if (inferenceCanvas.width !== inferenceWidth) inferenceCanvas.width = inferenceWidth;
-            if (inferenceCanvas.height !== inferenceHeight) inferenceCanvas.height = inferenceHeight;
+            if (inferenceCanvas.height !== inferenceHeight)
+              inferenceCanvas.height = inferenceHeight;
             const inferenceContext = inferenceCanvas.getContext("2d", { alpha: false });
             if (inferenceContext && overlayContext) {
               inferenceContext.drawImage(video, 0, 0, inferenceWidth, inferenceHeight);
@@ -455,7 +465,9 @@ export function BlindsEyeLens({
                   prediction.bbox[3] * scaleY,
                 ] as [number, number, number, number],
               }));
-              const visible = predictions.filter((prediction) => prediction.score >= displayThreshold);
+              const visible = predictions.filter(
+                (prediction) => prediction.score >= displayThreshold,
+              );
 
               overlayContext.clearRect(0, 0, canvas.width, canvas.height);
               const now = Date.now();
@@ -466,7 +478,12 @@ export function BlindsEyeLens({
               for (const prediction of visible) {
                 const [x, y, width, height] = prediction.bbox;
                 const centerX = x + width / 2;
-                const direction = centerX < sourceWidth / 3 ? "left" : centerX < (sourceWidth * 2) / 3 ? "center" : "right";
+                const direction =
+                  centerX < sourceWidth / 3
+                    ? "left"
+                    : centerX < (sourceWidth * 2) / 3
+                      ? "center"
+                      : "right";
                 const titleDirection = direction[0]!.toUpperCase() + direction.slice(1);
 
                 overlayContext.strokeStyle = "#f59e0b";
@@ -503,18 +520,24 @@ export function BlindsEyeLens({
               }
 
               if (alerts.length > 0) {
-                const message = alerts.length === 1
-                  ? alerts[0]!
-                  : `${alerts.slice(0, 3).join(", ")}${alerts.length > 3 ? ", and more" : ""}`;
+                const message =
+                  alerts.length === 1
+                    ? alerts[0]!
+                    : `${alerts.slice(0, 3).join(", ")}${alerts.length > 3 ? ", and more" : ""}`;
                 speakBrowser(message);
               }
 
               const uniqueSummaries = Array.from(new Set(summaries));
-              const summary = uniqueSummaries.length > 0 ? uniqueSummaries.join(" · ") : "No objects detected";
+              const summary =
+                uniqueSummaries.length > 0 ? uniqueSummaries.join(" · ") : "No objects detected";
               const uniqueStateDetections = Array.from(
-                new Map(stateDetections.map((item) => [`${item.label}:${item.direction}`, item])).values(),
+                new Map(
+                  stateDetections.map((item) => [`${item.label}:${item.direction}`, item]),
+                ).values(),
               );
-              const stateSignature = uniqueStateDetections.map((item) => `${item.label}:${item.direction}`).join("|");
+              const stateSignature = uniqueStateDetections
+                .map((item) => `${item.label}:${item.direction}`)
+                .join("|");
               if (stateSignature !== browserDetectionSignatureRef.current) {
                 browserDetectionSignatureRef.current = stateSignature;
                 setBrowserDetectedItem(summary);
@@ -540,7 +563,12 @@ export function BlindsEyeLens({
         }
       }
 
-      if (!cancelled && sessionId === cameraSessionRef.current && isBrowserCameraActive && engineMode === "browser") {
+      if (
+        !cancelled &&
+        sessionId === cameraSessionRef.current &&
+        isBrowserCameraActive &&
+        engineMode === "browser"
+      ) {
         timerId = window.setTimeout(() => void detectFrame(), detectionIntervalMs);
       }
     };
@@ -553,7 +581,14 @@ export function BlindsEyeLens({
       cancelled = true;
       if (timerId !== undefined) window.clearTimeout(timerId);
     };
-  }, [cameraSession, isBrowserCameraActive, browserModel, engineMode, speakBrowser, reportVisionTelemetry]);
+  }, [
+    cameraSession,
+    isBrowserCameraActive,
+    browserModel,
+    engineMode,
+    speakBrowser,
+    reportVisionTelemetry,
+  ]);
 
   const threatColor = (level?: string) => {
     switch (level) {
@@ -600,8 +635,8 @@ export function BlindsEyeLens({
                     : !isBrowserCameraActive
                       ? "Choose a camera to start"
                       : browserModel
-                    ? "Object detection active"
-                    : "Loading browser AI..."
+                        ? "Object detection active"
+                        : "Loading browser AI..."
                   : "Server not connected"}
             </p>
           </div>
@@ -708,7 +743,8 @@ export function BlindsEyeLens({
                 <div>
                   <p className="text-base font-bold text-white">Browser Camera is Off</p>
                   <p className="mt-1 text-xs text-white/80">
-                    Choose your laptop camera or DroidCam above, then click &ldquo;Open Camera&rdquo;.
+                    Choose your laptop camera or DroidCam above, then click &ldquo;Open
+                    Camera&rdquo;.
                   </p>
                 </div>
                 <div className="my-1 flex flex-col items-center gap-2">
@@ -724,14 +760,22 @@ export function BlindsEyeLens({
                     onClick={() => startBrowserCamera()}
                     className="mt-1 bg-white text-black hover:bg-white/90 font-bold shadow-md"
                   >
-                    {isStartingCamera ? "Opening Camera…" : isLoadingBrowserModel ? "Loading AI…" : "Open Camera"}
+                    {isStartingCamera
+                      ? "Opening Camera…"
+                      : isLoadingBrowserModel
+                        ? "Loading AI…"
+                        : "Open Camera"}
                   </Button>
                   {!selectedCameraId && (
                     <p className="max-w-xs text-xs text-amber-200" role="status">
                       Choose a camera above. If the list is empty, allow camera access first.
                     </p>
                   )}
-                  {cameraError && <p className="max-w-xs text-xs text-rose-300" role="alert">{cameraError}</p>}
+                  {cameraError && (
+                    <p className="max-w-xs text-xs text-rose-300" role="alert">
+                      {cameraError}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -764,11 +808,22 @@ export function BlindsEyeLens({
           <Button size="sm" variant="destructive" onClick={stopBrowserCamera}>
             <CameraOff className="mr-1.5 size-4" /> Stop Camera
           </Button>
-          {cameraError && <p className="w-full text-xs text-rose-400" role="alert">{cameraError}</p>}
+          {cameraError && (
+            <p className="w-full text-xs text-rose-400" role="alert">
+              {cameraError}
+            </p>
+          )}
           {browserModelError && (
-            <div className="flex w-full items-center justify-between gap-2 text-xs text-rose-400" role="alert">
+            <div
+              className="flex w-full items-center justify-between gap-2 text-xs text-rose-400"
+              role="alert"
+            >
               <span>{browserModelError}</span>
-              <Button size="sm" variant="outline" onClick={() => setModelRetryKey((key) => key + 1)}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setModelRetryKey((key) => key + 1)}
+              >
                 <RefreshCw className="mr-1.5 size-3.5" /> Retry AI
               </Button>
             </div>
@@ -944,4 +999,3 @@ export function BlindsEyeLens({
     </div>
   );
 }
-
