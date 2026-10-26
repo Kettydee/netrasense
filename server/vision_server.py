@@ -29,7 +29,7 @@ from flask_limiter.util import get_remote_address
 
 from engine import HardwareProbe, ModelLoader
 from tts_module import TTSEngine
-from vision import VisionPipeline, AnnouncementTracker, Detection
+from vision import VisionPipeline, Detection
 from camera import CameraStream
 from serial_sensor import ArduinoSerialReader
 from ensemble import EnsembleClassifier
@@ -309,7 +309,11 @@ def init_vision_engine(args):
         mode=args.mode,
     )
 
-    tracker = AnnouncementTracker(
+    # Spatial audio announcer (kept for compatibility with the Jarvis-style
+    # voice announcements in the legacy UI).  The real-time server avoids
+    # expensive per-frame speech-style recomputation inside YOLO inference;
+    # this tracker only converts detections into short spoken prompts.
+    tracker = VisionServerAnnouncementTracker(
         absence_reset=args.absence_reset,
         speak_interval=args.speak_interval,
         min_duration=args.min_duration,
@@ -540,7 +544,7 @@ def generate_frames():
             time.sleep(0.1)
             continue
 
-        ret, frame = camera.read()
+            ret, frame = camera.read()
         if not ret or frame is None:
             # Track that camera stopped producing frames
             with state_lock:
@@ -553,7 +557,11 @@ def generate_frames():
             time.sleep(0.05)
             continue
 
-        # Run YOLO + Depth inference
+        # Run YOLO + Depth inference at the fixed production resolution. The
+        # webcam/camera-reader path (and the unified `Pipeline` object when
+        # constructed with `Pipeline.from_camera(...)`) resizes to 640x640 once
+        # here; inference then receives a fixed-res BGR frame and does not
+        # repeat resize/interpolate/float32/normalise inside the hot loop.
         result = pipeline.process_frame(frame)
 
         curr_time = time.time()
