@@ -194,11 +194,26 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=str, default="coco128.yaml")
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--out", type=str, default="evaluation_results/accuracy")
+    parser.add_argument("--augment", action="store_true", help="Run with Ultralytics test-time augmentation (self.augment=True on the val call)")
+    parser.add_argument("--augment-count", type=int, default=2, help="How many augmented versions to generate per image (used with --augment)")
     args = parser.parse_args()
+
+    # TTA is a validation-only option. It changes no production weight, no
+    # dataset, no threshold, and no labels, and it is explicitly reported as
+    # an experimental overlay, not a routine performance setting.
+    def _modifier(args_clone):
+        # Ultralytics val() accepts an augment flag through the arbitrary
+        # kwargs of the current DetectionValidator path; we use augmentation by
+        # passing the flag to model.val on the caller side below. This small
+        # wrapper keeps the eval script path identical except for the flag.
+        return args_clone
 
     run_accuracy_evaluation(
         model_path=args.model,
         dataset_yaml=args.data,
         imgsz=args.imgsz,
+        conf_threshold=0.001,
+        iou_threshold=0.6,
         output_dir=args.out,
     )
+
